@@ -18,7 +18,7 @@ const LOCAL_STORAGE_REQUESTS_KEY = 'chittortech_qa_account_requests';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState<boolean>(false);
   const [isConfigured, setIsConfigured] = useState<boolean>(false);
 
   useEffect(() => {

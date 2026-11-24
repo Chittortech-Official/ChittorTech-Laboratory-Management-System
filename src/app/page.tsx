@@ -5,25 +5,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import { AuthLayout } from '@/components/auth/AuthLayout';
 import { Header } from '@/components/common/Header';
 import { ProtectedLanding } from '@/components/common/ProtectedLanding';
-import { Loader2 } from 'lucide-react';
 
 export default function HomePage() {
-  const { user, loading, logout } = useAuth();
+  const { user, logout } = useAuth();
   const [justAuthenticated, setJustAuthenticated] = useState(false);
 
-  // Initial session check
-  if (loading) {
-    return (
-      <div className="min-h-[100dvh] flex flex-col items-center justify-center bg-slate-50 text-slate-600 gap-3">
-        <Loader2 className="h-7 w-7 animate-spin text-blue-600" />
-        <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-          Loading ChittorTech QA System...
-        </p>
-      </div>
-    );
-  }
-
-  // If not logged in, render the official Authentication experience (Login / Request Account / Forgot Password)
+  // If not logged in, render the official Authentication experience immediately (zero blocking loader)
   if (!user && !justAuthenticated) {
     return (
       <AuthLayout
