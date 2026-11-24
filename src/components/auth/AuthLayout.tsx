@@ -9,6 +9,7 @@ import { LoginForm } from './LoginForm';
 import { RequestAccountForm } from './RequestAccountForm';
 import { ForgotPasswordView } from './ForgotPasswordView';
 import { isSupabaseConfigured } from '@/lib/supabase/client';
+import { BlossomPetals } from '@/components/common/BlossomPetals';
 
 interface AuthLayoutProps {
   onAuthSuccess: () => void;
@@ -58,10 +59,13 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({ onAuthSuccess }) => {
   return (
     <div
       ref={containerRef}
-      className="min-h-[100dvh] w-full bg-slate-50 flex flex-col justify-between p-3 sm:p-5 lg:p-7"
+      className="relative min-h-[100dvh] w-full bg-slate-50 flex flex-col justify-between p-3 sm:p-5 lg:p-7 overflow-x-hidden"
     >
+      {/* Background Subtle Blossom Falling Petals Animation */}
+      <BlossomPetals />
+
       {/* Top minimal status bar */}
-      <header className="w-full max-w-6xl mx-auto flex items-center justify-between text-xs text-slate-500 py-1">
+      <header className="relative z-10 w-full max-w-6xl mx-auto flex items-center justify-between text-xs text-slate-500 py-1">
         <div className="flex items-center gap-2">
           <span className="inline-block h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
           <span className="font-semibold text-slate-700">ChittorTech Industrial Node</span>
@@ -79,7 +83,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({ onAuthSuccess }) => {
       </header>
 
       {/* Main Responsive Grid Container */}
-      <main className="w-full max-w-5xl mx-auto my-auto py-2">
+      <main className="relative z-10 w-full max-w-5xl mx-auto my-auto py-2">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center">
           {/* Left / Branding Section */}
           <div
@@ -185,7 +189,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({ onAuthSuccess }) => {
       </main>
 
       {/* Footer minimal info */}
-      <footer className="w-full max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between text-center sm:text-left gap-2 text-[11px] text-slate-400 py-1">
+      <footer className="relative z-10 w-full max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between text-center sm:text-left gap-2 text-[11px] text-slate-400 py-1">
         <p>© {new Date().getFullYear()} ChittorTech. All rights reserved. Industrial Quality Assurance Suite.</p>
         <p className="flex items-center gap-3">
           <span className="hover:text-slate-600 cursor-pointer">Security Protocol</span>
