@@ -18,7 +18,8 @@ import { LaboratoryRecord, UserProfile } from '@/types';
 import { calculateOxideSum } from '@/lib/laboratory/exportService';
 import { calculateBoguePhases, BogueResult } from '@/lib/laboratory/bogueEngine';
 import { generateProcessAdvisory, CopilotAnalysisResult, ProcessAdvisory } from '@/lib/laboratory/aiCopilotEngine';
-import { Sparkles, Award, TrendingUp, Info, Bot, Zap, Coins, Flame, AlertOctagon, CheckCheck } from 'lucide-react';
+import { parseXrfInstrumentFile, generateDemoXrfCsv, ParsedSample } from '@/lib/laboratory/xrfParser';
+import { Sparkles, Award, TrendingUp, Info, Bot, Zap, Coins, Flame, AlertOctagon, CheckCheck, UploadCloud, FileSpreadsheet, Download, CheckCircle, FileText } from 'lucide-react';
 
 interface NewEntryFormProps {
   user: UserProfile | null;
@@ -50,6 +51,67 @@ export const NewEntryForm: React.FC<NewEntryFormProps> = ({ user, onRecordSaved 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  // XRF / Spectrometer Instrument Auto-Import State
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isParsingXrf, setIsParsingXrf] = useState(false);
+  const [xrfSuccessNotice, setXrfSuccessNotice] = useState<string | null>(null);
+  const [xrfSamples, setXrfSamples] = useState<ParsedSample[]>([]);
+  const [selectedXrfIndex, setSelectedXrfIndex] = useState<number>(0);
+
+  const applyParsedSample = (sample: ParsedSample, sourceFileName?: string) => {
+    setValues((prev) => ({
+      ...prev,
+      ...sample.values,
+    }));
+
+    if (sample.sampleId) {
+      setSampleId(sample.sampleId);
+    }
+    if (sample.testDate) {
+      setTestDate(sample.testDate);
+    }
+
+    setXrfSuccessNotice(
+      `⚡ Successfully imported ${sample.matchedParametersCount} parameters from ${sample.detectedInstrument} (${sourceFileName || sample.sampleId || 'Spectrometer export'})!`
+    );
+  };
+
+  const handleProcessXrfFile = async (file: File) => {
+    setIsParsingXrf(true);
+    setXrfSuccessNotice(null);
+    setError(null);
+    try {
+      const result = await parseXrfInstrumentFile(file);
+      if (!result.success || result.samples.length === 0) {
+        throw new Error(result.error || 'Failed to detect chemical parameters in file.');
+      }
+
+      setXrfSamples(result.samples);
+      setSelectedXrfIndex(0);
+      applyParsedSample(result.samples[0], result.fileName);
+    } catch (err: any) {
+      console.error('XRF Import error:', err);
+      setError(err.message || 'Error parsing spectrometer file.');
+    } finally {
+      setIsParsingXrf(false);
+    }
+  };
+
+  const handleFileDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleProcessXrfFile(e.dataTransfer.files[0]);
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      handleProcessXrfFile(e.target.files[0]);
+    }
+  };
 
   // Live sum calculation
   const currentSum = calculateOxideSum({
@@ -246,6 +308,113 @@ export const NewEntryForm: React.FC<NewEntryFormProps> = ({ user, onRecordSaved 
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* XRF / SPECTROMETER 1-CLICK INSTRUMENT AUTO-IMPORT DROPZONE */}
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-xs space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <span className="p-1.5 rounded-lg bg-amber-50 text-amber-600">
+                <Zap className="w-4 h-4" />
+              </span>
+              <div>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900 flex items-center gap-1.5">
+                  <span>1-Click XRF / Spectrometer File Auto-Import</span>
+                  <span className="text-[9px] font-bold bg-amber-100 text-amber-800 px-1.5 py-0.2 rounded-full border border-amber-200">
+                    ZERO TYPING
+                  </span>
+                </h3>
+                <p className="text-[11px] text-slate-500">
+                  Drag & drop raw export file from Thermo Scientific ARL, Panalytical Zetium/Axios, Bruker, or Shimadzu.
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={generateDemoXrfCsv}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-xl border border-blue-200 transition-colors self-start sm:self-center"
+              title="Download dummy XRF spectrometer CSV file to test instant drag-and-drop"
+            >
+              <Download className="w-3.5 h-3.5 text-blue-600" />
+              <span>Download Demo XRF File (.csv)</span>
+            </button>
+          </div>
+
+          {/* Drag & Drop Target Area */}
+          <div
+            onDragOver={(e) => {
+              e.preventDefault();
+              setIsDragging(true);
+            }}
+            onDragLeave={() => setIsDragging(false)}
+            onDrop={handleFileDrop}
+            onClick={() => fileInputRef.current?.click()}
+            className={`cursor-pointer rounded-xl border-2 border-dashed p-5 text-center transition-all ${
+              isDragging
+                ? 'border-blue-500 bg-blue-50/80 scale-[1.01]'
+                : 'border-slate-200 bg-slate-50/60 hover:bg-blue-50/40 hover:border-blue-300'
+            }`}
+          >
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileSelect}
+              accept=".csv,.xlsx,.xls,.txt,.tsv"
+              className="hidden"
+            />
+
+            <div className="flex flex-col items-center justify-center gap-1.5">
+              <div className="p-2.5 rounded-full bg-white shadow-xs text-blue-600 border border-slate-200/80">
+                <UploadCloud className="w-6 h-6 animate-pulse" />
+              </div>
+              <p className="text-xs font-bold text-slate-800">
+                {isParsingXrf ? 'Parsing Spectrometer Oxides...' : 'Drop XRF file here or click to browse'}
+              </p>
+              <p className="text-[10px] text-slate-400">
+                Supports .CSV, .XLSX, .XLS, .TXT, .TSV &bull; Auto-detects CaO, SiO₂, Al₂O₃, SO₃, LOI, Fe₂O₃, MgO, Cl
+              </p>
+            </div>
+          </div>
+
+          {/* Success Notice / Multi-Sample Selector */}
+          {xrfSuccessNotice && (
+            <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between text-xs text-emerald-800 animate-in fade-in">
+              <div className="flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>{xrfSuccessNotice}</span>
+              </div>
+            </div>
+          )}
+
+          {/* If multi samples detected in the uploaded file */}
+          {xrfSamples.length > 1 && (
+            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+              <div className="flex items-center justify-between text-[11px] font-bold text-slate-700">
+                <span>Multiple Test Batches Detected in File ({xrfSamples.length}):</span>
+                <span className="text-slate-400 font-normal">Click to switch loaded batch</span>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                {xrfSamples.map((samp, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => {
+                      setSelectedXrfIndex(idx);
+                      applyParsedSample(samp);
+                    }}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold font-mono transition-all ${
+                      selectedXrfIndex === idx
+                        ? 'bg-blue-600 text-white shadow-xs'
+                        : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
+                    }`}
+                  >
+                    {samp.sampleId || `Batch #${idx + 1}`}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Section 1: Sampling Metadata (Date, Category, Sample ID, Shift) */}
         <div>
           <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-1.5">
