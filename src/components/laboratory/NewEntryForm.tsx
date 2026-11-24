@@ -17,7 +17,8 @@ import { CHEMICAL_PARAMETERS, PLANT_CATEGORIES, LAB_SHIFTS } from '@/lib/laborat
 import { LaboratoryRecord, UserProfile } from '@/types';
 import { calculateOxideSum } from '@/lib/laboratory/exportService';
 import { calculateBoguePhases, BogueResult } from '@/lib/laboratory/bogueEngine';
-import { Sparkles, Award, TrendingUp, Info } from 'lucide-react';
+import { generateProcessAdvisory, CopilotAnalysisResult, ProcessAdvisory } from '@/lib/laboratory/aiCopilotEngine';
+import { Sparkles, Award, TrendingUp, Info, Bot, Zap, Coins, Flame, AlertOctagon, CheckCheck } from 'lucide-react';
 
 interface NewEntryFormProps {
   user: UserProfile | null;
@@ -73,6 +74,25 @@ export const NewEntryForm: React.FC<NewEntryFormProps> = ({ user, onRecordSaved 
       so3: values.so3 ? parseFloat(values.so3) : null,
     });
   }, [values.lime, values.silica, values.alumina, values.iron, values.so3]);
+
+  // Real-time AI Plant Copilot & Process Advisory
+  const copilot = React.useMemo(() => {
+    return generateProcessAdvisory(
+      {
+        loi: values.loi ? parseFloat(values.loi) : null,
+        ir: values.ir ? parseFloat(values.ir) : null,
+        so3: values.so3 ? parseFloat(values.so3) : null,
+        lime: values.lime ? parseFloat(values.lime) : null,
+        silica: values.silica ? parseFloat(values.silica) : null,
+        alumina: values.alumina ? parseFloat(values.alumina) : null,
+        iron: values.iron ? parseFloat(values.iron) : null,
+        magnesia: values.magnesia ? parseFloat(values.magnesia) : null,
+        chloride: values.chloride ? parseFloat(values.chloride) : null,
+        category,
+      },
+      bogue
+    );
+  }, [values, category, bogue]);
 
   const handleFieldChange = (key: string, val: string) => {
     // Only allow numbers and decimal point
@@ -583,6 +603,119 @@ export const NewEntryForm: React.FC<NewEntryFormProps> = ({ user, onRecordSaved 
             </div>
           )}
         </div>
+
+        {/* AI Plant Copilot & Process Advisory Panel */}
+        {copilot.hasAnalysis && (
+          <div className="rounded-2xl border border-indigo-200 bg-gradient-to-br from-indigo-50/70 via-purple-50/30 to-white p-5 space-y-4 shadow-sm animate-in fade-in">
+            {/* Copilot Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-indigo-200/60">
+              <div className="flex items-center gap-2.5">
+                <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 to-purple-600 text-white shadow-xs">
+                  <Bot className="w-5 h-5" />
+                  <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                  </span>
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                    <span>AI Plant Copilot & Process Advisory</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 border border-indigo-200">
+                      Active Operational Intelligence
+                    </span>
+                  </h4>
+                  <p className="text-[11px] text-slate-500">
+                    Real-time operational directives for Kiln, Ball Mill, and raw material blending to prevent wastage and quality deviation.
+                  </p>
+                </div>
+              </div>
+
+              {/* Health Score & Savings Potential */}
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <div className="px-3 py-1.5 rounded-xl bg-white border border-indigo-200/80 shadow-xs flex items-center gap-2">
+                  <div className="text-right">
+                    <div className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Process Health</div>
+                    <div className="text-xs font-bold text-slate-800">
+                      {copilot.overallHealthScore}/100
+                    </div>
+                  </div>
+                  <div className={`w-2.5 h-2.5 rounded-full ${
+                    copilot.overallHealthScore >= 85
+                      ? 'bg-emerald-500'
+                      : copilot.overallHealthScore >= 65
+                      ? 'bg-amber-500'
+                      : 'bg-rose-500'
+                  }`} />
+                </div>
+
+                {copilot.totalSavingsPotentialDaily !== '₹0' && (
+                  <div className="px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 shadow-xs flex items-center gap-1.5 text-xs font-bold text-emerald-800">
+                    <Coins className="w-4 h-4 text-emerald-600" />
+                    <span>Est. Savings: {copilot.totalSavingsPotentialDaily}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Advisory Directives List */}
+            <div className="space-y-3">
+              {copilot.advisories.map((advisory) => {
+                const isCrit = advisory.severity === 'critical';
+                const isWarn = advisory.severity === 'warning';
+                const isOpt = advisory.severity === 'optimal';
+
+                return (
+                  <div
+                    key={advisory.id}
+                    className={`p-4 rounded-xl border transition-all ${
+                      isCrit
+                        ? 'bg-rose-50/80 border-rose-300 text-rose-950'
+                        : isWarn
+                        ? 'bg-amber-50/70 border-amber-300 text-amber-950'
+                        : 'bg-emerald-50/60 border-emerald-200 text-emerald-950'
+                    }`}
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 mb-2 border-b border-black/5">
+                      <div className="flex items-center gap-2">
+                        <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${
+                          isCrit
+                            ? 'bg-rose-600 text-white'
+                            : isWarn
+                            ? 'bg-amber-500 text-white'
+                            : 'bg-emerald-600 text-white'
+                        }`}>
+                          {advisory.targetEquipment}
+                        </span>
+                        <h5 className="text-xs font-bold text-slate-900">{advisory.title}</h5>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] font-mono font-bold text-slate-700 bg-white/80 px-2 py-0.5 rounded border border-slate-200">
+                          {advisory.parameterTrigger}: {advisory.observedValue}
+                        </span>
+                        {advisory.savingsEstimate && (
+                          <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-100/70 px-2 py-0.5 rounded">
+                            {advisory.savingsEstimate}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Hindi Plant Operator Directive (Prominent) */}
+                    <div className="text-xs text-slate-800 leading-relaxed font-medium mt-1">
+                      {advisory.actionHindi}
+                    </div>
+
+                    {/* Technical English Recommendation */}
+                    <div className="text-[11px] text-slate-500 mt-1 italic">
+                      Technical Directive: {advisory.actionEnglish}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Section 3: Notes & Action Buttons */}
         <div className="space-y-4 pt-2 border-t border-slate-100">
