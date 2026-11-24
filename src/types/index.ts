@@ -91,6 +91,7 @@ export type DashboardTab =
   | 'new_entry'
   | 'previous_records'
   | 'analytics'
+  | 'comparison'
   | 'reports'
   | 'email_reports'
   | 'settings';

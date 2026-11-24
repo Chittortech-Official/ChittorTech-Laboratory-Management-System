@@ -12,9 +12,11 @@ import { DashboardTab, LaboratoryRecord } from '@/types';
 import { NewEntryForm } from './NewEntryForm';
 import { PreviousRecords } from './PreviousRecords';
 import { AnalyticsView } from './AnalyticsView';
+import { DualLineComparison } from './DualLineComparison';
 import { ReportsView } from './ReportsView';
 import { EmailReportsView } from './EmailReportsView';
 import { CHEMICAL_PARAMETERS } from '@/lib/laboratory/constants';
+import { Scale } from 'lucide-react';
 
 export const LaboratoryDashboard: React.FC = () => {
   const { user, logout, isConfigured } = useAuth();
@@ -55,6 +57,7 @@ export const LaboratoryDashboard: React.FC = () => {
     { id: 'new_entry', label: 'New Laboratory Entry', icon: <PlusCircle className="w-4 h-4" /> },
     { id: 'previous_records', label: 'Previous Records', icon: <Database className="w-4 h-4" /> },
     { id: 'analytics', label: 'Analytics', icon: <BarChart3 className="w-4 h-4" /> },
+    { id: 'comparison', label: 'Multi-Line Comparison', icon: <Scale className="w-4 h-4" /> },
     { id: 'reports', label: 'Reports & Downloads', icon: <FileText className="w-4 h-4" /> },
     { id: 'email_reports', label: 'Email Reports', icon: <Mail className="w-4 h-4" /> },
     { id: 'settings', label: 'Account Settings', icon: <Settings className="w-4 h-4" /> },
@@ -315,6 +318,22 @@ export const LaboratoryDashboard: React.FC = () => {
               </div>
 
               <div
+                onClick={() => setActiveTab('comparison')}
+                className="p-4 bg-white rounded-2xl border border-slate-200 shadow-sm hover:border-amber-400 cursor-pointer transition-all flex items-center justify-between"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 rounded-xl bg-amber-50 text-amber-600">
+                    <Scale className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-900">Multi-Line Split Comparison</h4>
+                    <p className="text-[11px] text-slate-500">Ball Mill 1 vs 2 consistency</p>
+                  </div>
+                </div>
+                <ArrowRight className="w-4 h-4 text-slate-400" />
+              </div>
+
+              <div
                 onClick={() => setActiveTab('reports')}
                 className="p-4 bg-white rounded-2xl border border-slate-200 shadow-sm hover:border-emerald-400 cursor-pointer transition-all flex items-center justify-between"
               >
@@ -375,6 +394,11 @@ export const LaboratoryDashboard: React.FC = () => {
       {/* 4. ANALYTICS TAB */}
       {activeTab === 'analytics' && (
         <AnalyticsView userId={userId} />
+      )}
+
+      {/* 4.5 DUAL-CIRCUIT MULTI-LINE COMPARISON TAB */}
+      {activeTab === 'comparison' && (
+        <DualLineComparison userId={userId} />
       )}
 
       {/* 5. REPORTS & DOWNLOADS TAB */}

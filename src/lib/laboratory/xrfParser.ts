@@ -353,3 +353,4 @@ export function generateDemoXrfCsv(): void {
   link.click();
   document.body.removeChild(link);
 }
+
