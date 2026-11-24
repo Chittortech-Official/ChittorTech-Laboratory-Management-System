@@ -9,6 +9,7 @@ interface AuthContextType extends AuthState {
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ success: boolean; error?: string }>;
   submitAccountRequest: (payload: AccountRequestPayload) => Promise<{ success: boolean; error?: string }>;
+  updateProfile: (data: Partial<UserProfile>) => Promise<{ success: boolean; error?: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -205,6 +206,49 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const updateProfile = async (data: Partial<UserProfile>): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const updatedUser: UserProfile = {
+        ...(user || {
+          id: 'usr_' + Date.now(),
+          email: '',
+          fullName: 'QA Specialist',
+        }),
+        ...data,
+      };
+
+      setUser(updatedUser);
+
+      // Persist to local storage
+      try {
+        localStorage.setItem(LOCAL_STORAGE_USER_KEY, JSON.stringify(updatedUser));
+      } catch (e) {
+        // ignore
+      }
+
+      // If Supabase is connected, update metadata
+      if (isSupabaseConfigured()) {
+        const supabase = getSupabaseClient();
+        if (supabase) {
+          await supabase.auth.updateUser({
+            data: {
+              full_name: updatedUser.fullName,
+              company_name: updatedUser.companyName,
+              plant_name: updatedUser.plantName,
+              designation: updatedUser.designation,
+              role: updatedUser.role,
+            },
+          });
+        }
+      }
+
+      return { success: true };
+    } catch (err: any) {
+      console.error('Update profile error:', err);
+      return { success: false, error: err.message || 'Failed to update profile' };
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -215,6 +259,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         logout,
         resetPassword,
         submitAccountRequest,
+        updateProfile,
       }}
     >
       {children}
