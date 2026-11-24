@@ -118,7 +118,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchMode, onSuccess })
         />
       </div>
 
-      <div className="flex items-center justify-between pt-0.5">
+      <div className="flex items-center pt-0.5">
         <label className="flex items-center gap-2 cursor-pointer select-none">
           <input
             type="checkbox"
@@ -128,13 +128,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchMode, onSuccess })
           />
           <span className="text-xs text-slate-600">Remember device</span>
         </label>
-        <button
-          type="button"
-          onClick={() => onSwitchMode('forgot-password')}
-          className="text-xs font-semibold text-blue-600 hover:text-blue-700 hover:underline transition-colors"
-        >
-          Forgot password?
-        </button>
       </div>
 
       <div className="pt-1">
