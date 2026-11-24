@@ -50,3 +50,85 @@ body {
   animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+/* Blossom Petals Falling Animation */
+@keyframes petalFall {
+  0% {
+    top: -40px;
+    opacity: 0;
+  }
+  6% {
+    opacity: var(--petal-opacity, 0.9);
+  }
+  90% {
+    opacity: var(--petal-opacity, 0.9);
+  }
+  100% {
+    top: 105vh;
+    opacity: 0;
+  }
+}
+
+@keyframes petalSway {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(var(--sway-distance, 40px));
+  }
+}
+
+@keyframes petalFlip {
+  0% {
+    transform: rotateZ(0deg) rotateY(0deg) rotateX(0deg);
+  }
+  50% {
+    transform: rotateZ(calc(180deg * var(--rot-dir, 1))) rotateY(65deg) rotateX(35deg);
+  }
+  100% {
+    transform: rotateZ(calc(360deg * var(--rot-dir, 1))) rotateY(0deg) rotateX(0deg);
+  }
+}
+
+.blossom-petals-layer {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.blossom-petal-item {
+  position: absolute;
+  will-change: top, transform, opacity;
+  animation-name: petalFall;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+.blossom-petal-sway {
+  width: 100%;
+  height: 100%;
+  will-change: transform;
+  animation-name: petalSway;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
+.blossom-petal-flip {
+  width: 100%;
+  height: 100%;
+  will-change: transform;
+  transform-style: preserve-3d;
+  animation-name: petalFlip;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .blossom-petals-layer {
+    display: none !important;
+  }
+}
+

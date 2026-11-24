@@ -186,135 +186,71 @@ export const BlossomPetals: React.FC = () => {
   };
 
   return (
-    <>
-      <style jsx global>{`
-        @keyframes petalFall {
-          0% {
-            top: -40px;
-            opacity: 0;
-          }
-          5% {
-            opacity: var(--petal-opacity);
-          }
-          92% {
-            opacity: var(--petal-opacity);
-          }
-          100% {
-            top: 105vh;
-            opacity: 0;
-          }
-        }
-
-        @keyframes petalSway {
-          0%, 100% {
-            transform: translateX(0);
-          }
-          50% {
-            transform: translateX(var(--sway-distance));
-          }
-        }
-
-        @keyframes petalFlip {
-          0% {
-            transform: rotateZ(0deg) rotateY(0deg) rotateX(0deg);
-          }
-          50% {
-            transform: rotateZ(calc(180deg * var(--rot-dir))) rotateY(65deg) rotateX(35deg);
-          }
-          100% {
-            transform: rotateZ(calc(360deg * var(--rot-dir))) rotateY(0deg) rotateX(0deg);
-          }
-        }
-
-        .blossom-petals-layer {
-          position: fixed;
-          inset: 0;
-          width: 100vw;
-          height: 100vh;
-          pointer-events: none;
-          overflow: hidden;
-          z-index: 1;
-        }
-
-        .blossom-petal-item {
-          position: absolute;
-          will-change: top, transform, opacity;
-          animation-name: petalFall;
-          animation-timing-function: linear;
-          animation-iteration-count: infinite;
-        }
-
-        .blossom-petal-sway {
-          width: 100%;
-          height: 100%;
-          will-change: transform;
-          animation-name: petalSway;
-          animation-timing-function: ease-in-out;
-          animation-iteration-count: infinite;
-        }
-
-        .blossom-petal-flip {
-          width: 100%;
-          height: 100%;
-          will-change: transform;
-          transform-style: preserve-3d;
-          animation-name: petalFlip;
-          animation-timing-function: ease-in-out;
-          animation-iteration-count: infinite;
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-          .blossom-petals-layer {
-            display: none !important;
-          }
-        }
-      `}</style>
-
-      <div className="blossom-petals-layer" aria-hidden="true">
-        {petals.map((petal) => {
-          const colors = getPetalColors(petal.colorScheme);
-          return (
+    <div
+      className="blossom-petals-layer"
+      aria-hidden="true"
+      style={{
+        position: 'fixed',
+        inset: 0,
+        top: 0,
+        left: 0,
+        width: '100vw',
+        height: '100vh',
+        pointerEvents: 'none',
+        overflow: 'hidden',
+        zIndex: 1,
+      }}
+    >
+      {petals.map((petal) => {
+        const colors = getPetalColors(petal.colorScheme);
+        return (
+          <div
+            key={petal.id}
+            className="blossom-petal-item"
+            style={
+              {
+                position: 'absolute',
+                top: '-40px',
+                left: `${petal.left}%`,
+                width: `${petal.size}px`,
+                height: `${petal.size * 1.3}px`,
+                animationDuration: `${petal.duration}s`,
+                animationDelay: `${petal.delay}s`,
+                pointerEvents: 'none',
+                '--petal-opacity': petal.opacity,
+              } as React.CSSProperties
+            }
+          >
             <div
-              key={petal.id}
-              className="blossom-petal-item"
+              className="blossom-petal-sway"
               style={
                 {
-                  left: `${petal.left}%`,
-                  width: `${petal.size}px`,
-                  height: `${petal.size * 1.3}px`,
-                  animationDuration: `${petal.duration}s`,
-                  animationDelay: `${petal.delay}s`,
-                  '--petal-opacity': petal.opacity,
+                  width: '100%',
+                  height: '100%',
+                  animationDuration: `${petal.swayDuration}s`,
+                  animationDelay: `${petal.delay * 0.5}s`,
+                  '--sway-distance': `${petal.swayDistance}px`,
                 } as React.CSSProperties
               }
             >
               <div
-                className="blossom-petal-sway"
+                className="blossom-petal-flip"
                 style={
                   {
-                    animationDuration: `${petal.swayDuration}s`,
-                    animationDelay: `${petal.delay * 0.5}s`,
-                    '--sway-distance': `${petal.swayDistance}px`,
+                    width: '100%',
+                    height: '100%',
+                    animationDuration: `${petal.rotationDuration}s`,
+                    animationDelay: `${petal.delay * 0.7}s`,
+                    '--rot-dir': petal.rotationDirection,
                   } as React.CSSProperties
                 }
               >
-                <div
-                  className="blossom-petal-flip"
-                  style={
-                    {
-                      animationDuration: `${petal.rotationDuration}s`,
-                      animationDelay: `${petal.delay * 0.7}s`,
-                      '--rot-dir': petal.rotationDirection,
-                    } as React.CSSProperties
-                  }
-                >
-                  {renderPetalSvg(petal.shape, colors, petal.id)}
-                </div>
+                {renderPetalSvg(petal.shape, colors, petal.id)}
               </div>
             </div>
-          );
-        })}
-      </div>
-    </>
+          </div>
+        );
+      })}
+    </div>
   );
 };
