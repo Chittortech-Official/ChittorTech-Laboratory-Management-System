@@ -16,6 +16,8 @@ import {
 import { CHEMICAL_PARAMETERS, PLANT_CATEGORIES, LAB_SHIFTS } from '@/lib/laboratory/constants';
 import { LaboratoryRecord, UserProfile } from '@/types';
 import { calculateOxideSum } from '@/lib/laboratory/exportService';
+import { calculateBoguePhases, BogueResult } from '@/lib/laboratory/bogueEngine';
+import { Sparkles, Award, TrendingUp, Info } from 'lucide-react';
 
 interface NewEntryFormProps {
   user: UserProfile | null;
@@ -60,6 +62,17 @@ export const NewEntryForm: React.FC<NewEntryFormProps> = ({ user, onRecordSaved 
     magnesia: values.magnesia ? Number(values.magnesia) : null,
     chloride: values.chloride ? Number(values.chloride) : null,
   });
+
+  // Real-time Bogue Mineral Phases & Moduli Engine
+  const bogue = React.useMemo(() => {
+    return calculateBoguePhases({
+      lime: values.lime ? parseFloat(values.lime) : null,
+      silica: values.silica ? parseFloat(values.silica) : null,
+      alumina: values.alumina ? parseFloat(values.alumina) : null,
+      iron: values.iron ? parseFloat(values.iron) : null,
+      so3: values.so3 ? parseFloat(values.so3) : null,
+    });
+  }, [values.lime, values.silica, values.alumina, values.iron, values.so3]);
 
   const handleFieldChange = (key: string, val: string) => {
     // Only allow numbers and decimal point
@@ -349,6 +362,226 @@ export const NewEntryForm: React.FC<NewEntryFormProps> = ({ user, onRecordSaved 
               </div>
             ))}
           </div>
+        </div>
+
+        {/* Real-time Bogue Mineral & Moduli Quality Engine (Cement Chemist Copilot) */}
+        <div className="rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50/70 via-indigo-50/40 to-slate-50 p-5 space-y-4 shadow-sm animate-in fade-in">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-blue-200/70">
+            <div className="flex items-center gap-2.5">
+              <span className="p-2 rounded-xl bg-blue-600 text-white shadow-xs">
+                <Sparkles className="w-4 h-4" />
+              </span>
+              <div>
+                <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <span>Real-Time Bogue Mineral & Moduli Engine</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200">
+                    ASTM C150 / IS 269
+                  </span>
+                </h4>
+                <p className="text-[11px] text-slate-500">
+                  Calculates LSF, Silica & Alumina Moduli, and Bogue mineral phases instantly as you type.
+                </p>
+              </div>
+            </div>
+
+            {bogue.hasSufficientData && (
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  <Award className="w-3 h-3" />
+                  {bogue.strengthProfile}
+                </span>
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                  {bogue.sulfateResistance}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {!bogue.hasSufficientData ? (
+            <div className="py-6 text-center text-xs text-slate-500 bg-white/70 rounded-xl border border-dashed border-blue-200/80 p-4">
+              <Calculator className="w-6 h-6 text-blue-400 mx-auto mb-2" />
+              <p className="font-semibold text-slate-700">Enter Lime (CaO), Silica (SiO₂), Alumina (Al₂O₃), and Iron (Fe₂O₃) above.</p>
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                The engine will instantly compute LSF, SM, AM, C₃S, C₂S, C₃A, and C₄AF with zero manual calculator effort.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {/* Row 1: The 3 Core Moduli Ratios */}
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-2">
+                  Core Cement Moduli (Quality Ratios)
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {/* LSF */}
+                  <div className="p-3 bg-white rounded-xl border border-slate-200 shadow-xs flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-bold text-slate-900">LSF</span>
+                        <span className="text-[10px] text-slate-400 font-normal">(Lime Saturation)</span>
+                      </div>
+                      <div className="text-lg font-bold font-mono text-slate-900 mt-0.5">
+                        {bogue.lsf !== null ? bogue.lsf.toFixed(3) : '-'}
+                      </div>
+                      <span className="text-[10px] text-slate-400">Target: 0.92 – 0.98</span>
+                    </div>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                      bogue.lsfStatus === 'optimal'
+                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                        : bogue.lsfStatus === 'low'
+                        ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                        : 'bg-rose-50 text-rose-700 border border-rose-200'
+                    }`}>
+                      {bogue.lsfStatus}
+                    </span>
+                  </div>
+
+                  {/* SM */}
+                  <div className="p-3 bg-white rounded-xl border border-slate-200 shadow-xs flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-bold text-slate-900">SM / SR</span>
+                        <span className="text-[10px] text-slate-400 font-normal">(Silica Ratio)</span>
+                      </div>
+                      <div className="text-lg font-bold font-mono text-slate-900 mt-0.5">
+                        {bogue.sm !== null ? bogue.sm.toFixed(2) : '-'}
+                      </div>
+                      <span className="text-[10px] text-slate-400">Target: 2.10 – 2.70</span>
+                    </div>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                      bogue.smStatus === 'optimal'
+                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                        : 'bg-amber-50 text-amber-700 border border-amber-200'
+                    }`}>
+                      {bogue.smStatus}
+                    </span>
+                  </div>
+
+                  {/* AM */}
+                  <div className="p-3 bg-white rounded-xl border border-slate-200 shadow-xs flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-bold text-slate-900">AM / AR</span>
+                        <span className="text-[10px] text-slate-400 font-normal">(Alumina Ratio)</span>
+                      </div>
+                      <div className="text-lg font-bold font-mono text-slate-900 mt-0.5">
+                        {bogue.am !== null ? bogue.am.toFixed(2) : '-'}
+                      </div>
+                      <span className="text-[10px] text-slate-400">Target: 1.20 – 1.80</span>
+                    </div>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                      bogue.amStatus === 'optimal'
+                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                        : 'bg-amber-50 text-amber-700 border border-amber-200'
+                    }`}>
+                      {bogue.amStatus}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Row 2: The 4 Bogue Mineral Compounds */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                    Bogue Mineral Phase Distribution (% wt/wt)
+                  </span>
+                  <span className="text-[11px] font-mono text-slate-600">
+                    Total Silicates (C₃S + C₂S): <strong className="text-blue-700">{bogue.totalSilicates}%</strong>
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {/* C3S (Alite) */}
+                  <div className="p-3 bg-white rounded-xl border border-slate-200 shadow-xs space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-blue-900">C₃S (Alite)</span>
+                      <span className="text-[10px] text-slate-400">28d Strength</span>
+                    </div>
+                    <div className="text-xl font-extrabold font-mono text-blue-700">
+                      {bogue.c3s !== null ? `${bogue.c3s.toFixed(1)}%` : '-'}
+                    </div>
+                    <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                      <div
+                        className="bg-blue-600 h-1.5 rounded-full transition-all duration-300"
+                        style={{ width: `${Math.min(100, Math.max(0, (bogue.c3s || 0) * 1.3))}%` }}
+                      />
+                    </div>
+                    <p className="text-[10px] text-slate-400">Normal: 45 – 65%</p>
+                  </div>
+
+                  {/* C2S (Belite) */}
+                  <div className="p-3 bg-white rounded-xl border border-slate-200 shadow-xs space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-slate-900">C₂S (Belite)</span>
+                      <span className="text-[10px] text-slate-400">Late Strength</span>
+                    </div>
+                    <div className="text-xl font-extrabold font-mono text-slate-800">
+                      {bogue.c2s !== null ? `${bogue.c2s.toFixed(1)}%` : '-'}
+                    </div>
+                    <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                      <div
+                        className="bg-indigo-500 h-1.5 rounded-full transition-all duration-300"
+                        style={{ width: `${Math.min(100, Math.max(0, (bogue.c2s || 0) * 2.5))}%` }}
+                      />
+                    </div>
+                    <p className="text-[10px] text-slate-400">Normal: 12 – 28%</p>
+                  </div>
+
+                  {/* C3A (Tricalcium Aluminate) */}
+                  <div className="p-3 bg-white rounded-xl border border-slate-200 shadow-xs space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-amber-900">C₃A (Celite)</span>
+                      <span className="text-[10px] text-slate-400">Setting Heat</span>
+                    </div>
+                    <div className="text-xl font-extrabold font-mono text-amber-700">
+                      {bogue.c3a !== null ? `${bogue.c3a.toFixed(1)}%` : '-'}
+                    </div>
+                    <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                      <div
+                        className="bg-amber-500 h-1.5 rounded-full transition-all duration-300"
+                        style={{ width: `${Math.min(100, Math.max(0, (bogue.c3a || 0) * 6))}%` }}
+                      />
+                    </div>
+                    <p className="text-[10px] text-slate-400">Normal: 5 – 12%</p>
+                  </div>
+
+                  {/* C4AF (Ferrite) */}
+                  <div className="p-3 bg-white rounded-xl border border-slate-200 shadow-xs space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-slate-900">C₄AF (Ferrite)</span>
+                      <span className="text-[10px] text-slate-400">Flux & Tone</span>
+                    </div>
+                    <div className="text-xl font-extrabold font-mono text-slate-800">
+                      {bogue.c4af !== null ? `${bogue.c4af.toFixed(1)}%` : '-'}
+                    </div>
+                    <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                      <div
+                        className="bg-slate-500 h-1.5 rounded-full transition-all duration-300"
+                        style={{ width: `${Math.min(100, Math.max(0, (bogue.c4af || 0) * 5))}%` }}
+                      />
+                    </div>
+                    <p className="text-[10px] text-slate-400">Normal: 8 – 15%</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Actionable Chemical Observations */}
+              {bogue.insights.length > 0 && (
+                <div className="p-3.5 bg-white/90 rounded-xl border border-blue-200/80 text-xs text-slate-700 space-y-1.5">
+                  <div className="flex items-center gap-1.5 text-blue-900 font-bold text-[11px] uppercase tracking-wider">
+                    <Info className="w-3.5 h-3.5 text-blue-600" />
+                    <span>Real-Time Quality Advisory</span>
+                  </div>
+                  <ul className="space-y-1 pl-4 list-disc text-[11px] text-slate-600 leading-relaxed">
+                    {bogue.insights.map((ins, idx) => (
+                      <li key={idx}>{ins}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Section 3: Notes & Action Buttons */}

@@ -2,6 +2,7 @@ import { LaboratoryRecord } from '@/types';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
+import { calculateBoguePhases } from './bogueEngine';
 
 export interface ReportMeta {
   title?: string;
@@ -294,23 +295,41 @@ export function exportToCsv(records: LaboratoryRecord[], filename: string = 'Chi
 }
 
 export function exportToExcel(records: LaboratoryRecord[], filename: string = 'ChittorTech_Lab_Records') {
-  const data = records.map((r) => ({
-    'Test Date': r.test_date,
-    Category: r.category,
-    'Sample ID': r.sample_id || '',
-    Shift: r.shift || '',
-    'LOI (%)': r.loi,
-    'IR (%)': r.ir,
-    'SO3 (%)': r.so3,
-    'CaO / Lime (%)': r.lime,
-    'SiO2 / Silica (%)': r.silica,
-    'Al2O3 / Alumina (%)': r.alumina,
-    'Fe2O3 / Iron (%)': r.iron,
-    'MgO / Magnesia (%)': r.magnesia,
-    'Cl / Chloride (%)': r.chloride,
-    'Total Oxides (%)': calculateOxideSum(r),
-    Notes: r.notes || '',
-  }));
+  const data = records.map((r) => {
+    const bogue = calculateBoguePhases({
+      lime: r.lime,
+      silica: r.silica,
+      alumina: r.alumina,
+      iron: r.iron,
+      so3: r.so3,
+    });
+
+    return {
+      'Test Date': r.test_date,
+      Category: r.category,
+      'Sample ID': r.sample_id || '',
+      Shift: r.shift || '',
+      'LOI (%)': r.loi,
+      'IR (%)': r.ir,
+      'SO3 (%)': r.so3,
+      'CaO / Lime (%)': r.lime,
+      'SiO2 / Silica (%)': r.silica,
+      'Al2O3 / Alumina (%)': r.alumina,
+      'Fe2O3 / Iron (%)': r.iron,
+      'MgO / Magnesia (%)': r.magnesia,
+      'Cl / Chloride (%)': r.chloride,
+      'Total Oxides (%)': calculateOxideSum(r),
+      'LSF (Lime Saturation)': bogue.lsf !== null ? bogue.lsf : '',
+      'SM (Silica Ratio)': bogue.sm !== null ? bogue.sm : '',
+      'AM (Alumina Ratio)': bogue.am !== null ? bogue.am : '',
+      'C3S Alite (%)': bogue.c3s !== null ? bogue.c3s : '',
+      'C2S Belite (%)': bogue.c2s !== null ? bogue.c2s : '',
+      'C3A (%)': bogue.c3a !== null ? bogue.c3a : '',
+      'C4AF (%)': bogue.c4af !== null ? bogue.c4af : '',
+      'Strength Profile': bogue.strengthProfile,
+      Notes: r.notes || '',
+    };
+  });
 
   const worksheet = XLSX.utils.json_to_sheet(data);
   const workbook = XLSX.utils.book_new();
