@@ -28,6 +28,7 @@ export default function RootLayout({
     <html lang="en" className={jakarta.variable}>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+        <link rel="stylesheet" href="/styles.css" />
       </head>
       <body className="min-h-[100dvh] bg-slate-50 text-slate-900 antialiased">
         <AuthProvider>
