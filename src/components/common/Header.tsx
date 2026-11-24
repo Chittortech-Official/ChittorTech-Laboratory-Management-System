@@ -59,7 +59,7 @@ export const Header: React.FC<HeaderProps> = ({ onLogout }) => {
               }`}
             />
             <span className="text-[11px] font-medium">
-              {isConfigured ? 'Supabase Live' : 'Sandbox Storage'}
+              {isConfigured ? 'Database Live' : 'Local Storage'}
             </span>
           </div>
 

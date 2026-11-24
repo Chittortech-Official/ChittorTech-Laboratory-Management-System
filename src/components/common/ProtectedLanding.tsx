@@ -116,7 +116,7 @@ export const ProtectedLanding: React.FC = () => {
               </p>
               <p className="text-xs sm:text-sm font-bold text-slate-900 mt-0.5 flex items-center gap-1.5">
                 <span className={`h-2 w-2 rounded-full ${isConfigured ? 'bg-emerald-500' : 'bg-amber-400'}`} />
-                <span>{isConfigured ? 'Live Supabase Cloud' : 'Development Sandbox'}</span>
+                <span>{isConfigured ? 'Live Cloud Database' : 'Local Storage'}</span>
               </p>
               <p className="text-[11px] text-slate-500 font-mono truncate">
                 {isConfigured ? 'znouayrbfheqqhlqfuf' : 'Local Storage'}
