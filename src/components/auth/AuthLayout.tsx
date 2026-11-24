@@ -175,7 +175,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({ onAuthSuccess }) => {
           <div className="lg:col-span-6 flex justify-center w-full">
             <div
               ref={formBoxRef}
-              className="w-full max-w-md rounded-lg border border-slate-200 bg-white p-5 sm:p-7 shadow-elevated"
+              className={`w-full ${mode === 'request-account' ? 'max-w-lg' : 'max-w-md'} rounded-lg border border-slate-200 bg-white p-5 sm:p-7 shadow-elevated transition-all`}
             >
               {mode === 'login' && (
                 <LoginForm
