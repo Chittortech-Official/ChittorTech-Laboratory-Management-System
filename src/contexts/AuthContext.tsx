@@ -186,44 +186,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const submitAccountRequest = async (payload: AccountRequestPayload): Promise<{ success: boolean; error?: string }> => {
-    if (isSupabaseConfigured()) {
-      const supabase = getSupabaseClient();
-      if (!supabase) return { success: false, error: 'Database connection is not available.' };
+    try {
+      const response = await fetch('/api/account-request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
 
-      const { error } = await supabase.from('account_requests').insert([
-        {
-          full_name: payload.fullName,
-          work_email: payload.workEmail,
-          company_name: payload.companyName,
-          plant_name: payload.plantName,
-          designation: payload.designation,
-          phone: payload.phone,
-          city: payload.city,
-          state: payload.state,
-          reason: payload.reason,
-          status: 'pending',
-        },
-      ]);
-
-      if (error) {
-        console.error('Account request insertion error:', error);
-        return { success: false, error: error.message };
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        return { success: false, error: data.error || 'Failed to submit account request.' };
       }
 
       return { success: true };
-    } else {
-      // Local fallback storing request in localStorage
-      try {
-        const existing = JSON.parse(localStorage.getItem(LOCAL_STORAGE_REQUESTS_KEY) || '[]');
-        existing.push({
-          ...payload,
-          id: 'req_' + Math.random().toString(36).substring(2, 9),
-          status: 'pending',
-          createdAt: new Date().toISOString(),
-        });
-        localStorage.setItem(LOCAL_STORAGE_REQUESTS_KEY, JSON.stringify(existing));
-      } catch {}
-      return { success: true };
+    } catch (err: any) {
+      console.error('Submit account request error:', err);
+      return { success: false, error: err.message || 'Connection error. Please try again.' };
     }
   };
 
