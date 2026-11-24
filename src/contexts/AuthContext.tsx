@@ -1,19 +1,20 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { UserProfile, AuthState } from '@/types';
+import { UserProfile, AuthState, AccountRequestPayload } from '@/types';
 import { getSupabaseClient, isSupabaseConfigured } from '@/lib/supabase/client';
 
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  signup: (fullName: string, email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ success: boolean; error?: string }>;
+  submitAccountRequest: (payload: AccountRequestPayload) => Promise<{ success: boolean; error?: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const LOCAL_STORAGE_USER_KEY = 'chittortech_lms_user';
+const LOCAL_STORAGE_USER_KEY = 'chittortech_qa_lms_user';
+const LOCAL_STORAGE_REQUESTS_KEY = 'chittortech_qa_account_requests';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null);
@@ -33,7 +34,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setUser({
               id: session.user.id,
               email: session.user.email || '',
-              fullName: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User',
+              fullName: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'QA Engineer',
+              role: session.user.user_metadata?.role || 'qa_engineer',
+              companyName: session.user.user_metadata?.company_name || 'Industrial Facility',
+              plantName: session.user.user_metadata?.plant_name || 'Main QA Lab',
+              designation: session.user.user_metadata?.designation || 'Quality Engineer',
               createdAt: session.user.created_at,
             });
           } else {
@@ -42,13 +47,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setLoading(false);
         });
 
-        // Listen for Supabase auth changes
+        // Listen for Supabase auth state changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
           if (session?.user) {
             setUser({
               id: session.user.id,
               email: session.user.email || '',
-              fullName: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User',
+              fullName: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'QA Engineer',
+              role: session.user.user_metadata?.role || 'qa_engineer',
+              companyName: session.user.user_metadata?.company_name || 'Industrial Facility',
+              plantName: session.user.user_metadata?.plant_name || 'Main QA Lab',
+              designation: session.user.user_metadata?.designation || 'Quality Engineer',
               createdAt: session.user.created_at,
             });
           } else {
@@ -62,15 +71,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         };
       }
     } else {
-      // Local fallback during initial setup/testing before env keys are added
+      // Local fallback during development/testing
       try {
         const cached = localStorage.getItem(LOCAL_STORAGE_USER_KEY);
         if (cached) {
           setUser(JSON.parse(cached));
         }
-      } catch {
-        // Storage unavailable or invalid
-      }
+      } catch {}
       setLoading(false);
     }
   }, []);
@@ -88,59 +95,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           id: data.user.id,
           email: data.user.email || email,
           fullName: data.user.user_metadata?.full_name || email.split('@')[0],
+          role: data.user.user_metadata?.role || 'qa_engineer',
+          companyName: data.user.user_metadata?.company_name || 'Industrial Facility',
+          plantName: data.user.user_metadata?.plant_name || 'Main QA Lab',
+          designation: data.user.user_metadata?.designation || 'Quality Engineer',
           createdAt: data.user.created_at,
         });
       }
       return { success: true };
     } else {
-      // Local development simulation
+      // Local development simulation for test credentials
       const mockUser: UserProfile = {
         id: 'usr_' + Math.random().toString(36).substring(2, 9),
         email,
-        fullName: email.split('@')[0].replace('.', ' '),
-        role: 'technician',
-        createdAt: new Date().toISOString(),
-      };
-      setUser(mockUser);
-      try {
-        localStorage.setItem(LOCAL_STORAGE_USER_KEY, JSON.stringify(mockUser));
-      } catch {}
-      return { success: true };
-    }
-  };
-
-  const signup = async (fullName: string, email: string, password: string): Promise<{ success: boolean; error?: string }> => {
-    if (isSupabaseConfigured()) {
-      const supabase = getSupabaseClient();
-      if (!supabase) return { success: false, error: 'Supabase client unavailable' };
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: fullName,
-          },
-        },
-      });
-      if (error) {
-        return { success: false, error: error.message };
-      }
-      if (data.user) {
-        setUser({
-          id: data.user.id,
-          email: data.user.email || email,
-          fullName,
-          createdAt: data.user.created_at,
-        });
-      }
-      return { success: true };
-    } else {
-      // Local development simulation
-      const mockUser: UserProfile = {
-        id: 'usr_' + Math.random().toString(36).substring(2, 9),
-        email,
-        fullName,
-        role: 'technician',
+        fullName: email.split('@')[0].replace('.', ' ').toUpperCase(),
+        role: 'qa_engineer',
+        companyName: 'ChittorTech Cement Works',
+        plantName: 'Chittorgarh Unit 1',
+        designation: 'Senior QA / QC Chemist',
         createdAt: new Date().toISOString(),
       };
       setUser(mockUser);
@@ -169,7 +141,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (isSupabaseConfigured()) {
       const supabase = getSupabaseClient();
       if (!supabase) return { success: false, error: 'Supabase client unavailable' };
-      const { error } = await supabase.auth.resetPasswordForEmail(email);
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : undefined,
+      });
       if (error) {
         return { success: false, error: error.message };
       }
@@ -179,8 +153,60 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const submitAccountRequest = async (payload: AccountRequestPayload): Promise<{ success: boolean; error?: string }> => {
+    if (isSupabaseConfigured()) {
+      const supabase = getSupabaseClient();
+      if (!supabase) return { success: false, error: 'Supabase client is not available.' };
+
+      const { error } = await supabase.from('account_requests').insert([
+        {
+          full_name: payload.fullName,
+          work_email: payload.workEmail,
+          company_name: payload.companyName,
+          plant_name: payload.plantName,
+          designation: payload.designation,
+          phone: payload.phone,
+          city: payload.city,
+          state: payload.state,
+          reason: payload.reason,
+          status: 'pending',
+        },
+      ]);
+
+      if (error) {
+        console.error('Account request insertion error:', error);
+        return { success: false, error: error.message };
+      }
+
+      return { success: true };
+    } else {
+      // Local fallback storing request in localStorage
+      try {
+        const existing = JSON.parse(localStorage.getItem(LOCAL_STORAGE_REQUESTS_KEY) || '[]');
+        existing.push({
+          ...payload,
+          id: 'req_' + Math.random().toString(36).substring(2, 9),
+          status: 'pending',
+          createdAt: new Date().toISOString(),
+        });
+        localStorage.setItem(LOCAL_STORAGE_REQUESTS_KEY, JSON.stringify(existing));
+      } catch {}
+      return { success: true };
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, isConfigured, login, signup, logout, resetPassword }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        isConfigured,
+        login,
+        logout,
+        resetPassword,
+        submitAccountRequest,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
@@ -193,4 +219,3 @@ export function useAuth(): AuthContextType {
   }
   return context;
 }
-

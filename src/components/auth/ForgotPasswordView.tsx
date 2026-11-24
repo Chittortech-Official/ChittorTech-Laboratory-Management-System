@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Mail, ArrowLeft, ArrowRight, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Mail, ArrowLeft, ArrowRight, Loader2, CheckCircle2, AlertCircle, KeyRound } from 'lucide-react';
 import { AuthInput } from './AuthInput';
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthMode } from '@/types';
@@ -22,7 +22,7 @@ export const ForgotPasswordView: React.FC<ForgotPasswordViewProps> = ({ onSwitch
     setError(undefined);
 
     if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-      setError('Please provide a valid registered laboratory email address.');
+      setError('Please provide a valid registered work email address.');
       return;
     }
 
@@ -32,10 +32,10 @@ export const ForgotPasswordView: React.FC<ForgotPasswordViewProps> = ({ onSwitch
       if (result.success) {
         setSubmitted(true);
       } else {
-        setError(result.error || 'Unable to process reset request.');
+        setError(result.error || 'Unable to process password reset request.');
       }
     } catch {
-      setError('A connection error occurred. Please try again.');
+      setError('A connection error occurred while contacting the authentication server.');
     } finally {
       setIsSubmitting(false);
     }
@@ -43,26 +43,28 @@ export const ForgotPasswordView: React.FC<ForgotPasswordViewProps> = ({ onSwitch
 
   if (submitted) {
     return (
-      <div className="w-full space-y-4 py-2 text-center">
+      <div className="w-full space-y-4 py-2 text-center animate-fadeIn">
         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200">
           <CheckCircle2 className="h-6 w-6" />
         </div>
         <div>
-          <h3 className="text-lg font-bold text-slate-900">Recovery Email Dispatched</h3>
-          <p className="mt-1 text-xs text-slate-500">
-            Instructions to securely reset your credentials have been forwarded to:
+          <h3 className="text-lg font-bold text-slate-900">Recovery Instructions Dispatched</h3>
+          <p className="mt-1.5 text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
+            Secure password reset credentials have been dispatched to:
             <br />
             <strong className="text-slate-800">{email}</strong>
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => onSwitchMode('login')}
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 hover:underline"
-        >
-          <ArrowLeft className="h-3.5 w-3.5" />
-          <span>Return to Sign In</span>
-        </button>
+        <div className="pt-2">
+          <button
+            type="button"
+            onClick={() => onSwitchMode('login')}
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 hover:underline"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            <span>Return to Sign In</span>
+          </button>
+        </div>
       </div>
     );
   }
@@ -73,23 +75,27 @@ export const ForgotPasswordView: React.FC<ForgotPasswordViewProps> = ({ onSwitch
         <button
           type="button"
           onClick={() => onSwitchMode('login')}
-          className="mb-1.5 inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-slate-800 transition-colors"
+          className="mb-1.5 inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
-          <span>Back to Login</span>
+          <span>Back to Sign In</span>
         </button>
+        <div className="inline-flex items-center gap-1.5 rounded bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-700 border border-slate-200 mb-1.5">
+          <KeyRound className="h-3 w-3 text-blue-600" />
+          <span>Credential Recovery</span>
+        </div>
         <h2 className="text-xl font-bold tracking-tight text-slate-900">
-          Reset Password
+          Reset Laboratory Password
         </h2>
         <p className="mt-0.5 text-xs text-slate-500">
-          Enter your registered email to receive secure recovery instructions.
+          Enter your registered work email to receive secure password recovery instructions.
         </p>
       </div>
 
       {error && (
         <div
           role="alert"
-          className="flex items-start gap-2.5 rounded-md border border-red-200 bg-red-50/70 p-3 text-xs text-red-800"
+          className="flex items-start gap-2.5 rounded-md border border-red-200 bg-red-50/80 p-3 text-xs text-red-800"
         >
           <AlertCircle className="h-4 w-4 shrink-0 text-red-600 mt-0.5" />
           <p className="font-medium">{error}</p>
@@ -98,9 +104,9 @@ export const ForgotPasswordView: React.FC<ForgotPasswordViewProps> = ({ onSwitch
 
       <AuthInput
         id="reset-email"
-        label="Registered Email"
+        label="Registered Work Email"
         type="email"
-        placeholder="technician@chittortech.com"
+        placeholder="engineer@plant.cementcorp.com"
         value={email}
         onChange={(e) => {
           setEmail(e.target.value);
@@ -115,16 +121,16 @@ export const ForgotPasswordView: React.FC<ForgotPasswordViewProps> = ({ onSwitch
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full flex items-center justify-center gap-2 rounded-md bg-blue-600 px-4 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+          className="w-full flex items-center justify-center gap-2 rounded-md bg-blue-600 px-4 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
         >
           {isSubmitting ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
-              <span>Sending instructions...</span>
+              <span>Transmitting reset link...</span>
             </>
           ) : (
             <>
-              <span>Send Reset Instructions</span>
+              <span>Send Recovery Link</span>
               <ArrowRight className="h-4 w-4" />
             </>
           )}
@@ -133,4 +139,3 @@ export const ForgotPasswordView: React.FC<ForgotPasswordViewProps> = ({ onSwitch
     </form>
   );
 };
-

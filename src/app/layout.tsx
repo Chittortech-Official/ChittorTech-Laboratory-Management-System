@@ -10,8 +10,8 @@ const jakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: 'ChittorTech | Laboratory Management System',
-  description: 'Enterprise laboratory operations, specimen entry, and diagnostic records management system by ChittorTech.',
+  title: 'ChittorTech | QA Laboratory Management System',
+  description: 'Enterprise Quality Assurance & Quality Control (QA/QC) laboratory management system for industrial manufacturing facilities and cement plants by ChittorTech.',
   icons: {
     icon: '/favicon.ico',
     shortcut: '/favicon.ico',
@@ -37,4 +37,3 @@ export default function RootLayout({
     </html>
   );
 }
-
