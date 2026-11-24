@@ -67,12 +67,18 @@ export const Header: React.FC<HeaderProps> = ({ onLogout, onOpenSettings }) => {
     }
   };
 
-  const handleCopyEmail = (e: React.MouseEvent) => {
+  const handleCopyEmail = async (e: React.MouseEvent) => {
+    e.preventDefault();
     e.stopPropagation();
-    if (user?.email) {
-      navigator.clipboard.writeText(user.email);
+    if (!user?.email) return;
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(user.email);
+      }
       setCopiedEmail(true);
       setTimeout(() => setCopiedEmail(false), 2000);
+    } catch (err) {
+      console.warn('Clipboard write notice:', err);
     }
   };
 
