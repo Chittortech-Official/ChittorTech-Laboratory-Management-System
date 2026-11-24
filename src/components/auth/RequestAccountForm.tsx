@@ -64,37 +64,19 @@ export const RequestAccountForm: React.FC<RequestAccountFormProps> = ({ onSwitch
     }
   }, [currentStep]);
 
-  // Direction-aware horizontal GSAP transition
-  const animateTransition = (nextStep: number, navDirection: 'forward' | 'backward') => {
+  // Step entrance animation on step change
+  useEffect(() => {
+    if (!stepContainerRef.current) return;
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (prefersReducedMotion || !stepContainerRef.current) {
-      setDirection(navDirection);
-      setCurrentStep(nextStep);
-      setStepError(null);
-      return;
-    }
+    if (prefersReducedMotion) return;
 
-    const outX = navDirection === 'forward' ? -22 : 22;
-    const inX = navDirection === 'forward' ? 22 : -22;
-
-    gsap.to(stepContainerRef.current, {
-      x: outX,
-      opacity: 0,
-      duration: 0.18,
-      ease: 'power2.in',
-      onComplete: () => {
-        setDirection(navDirection);
-        setCurrentStep(nextStep);
-        setStepError(null);
-
-        gsap.fromTo(
-          stepContainerRef.current,
-          { x: inX, opacity: 0 },
-          { x: 0, opacity: 1, duration: 0.24, ease: 'power2.out' }
-        );
-      },
-    });
-  };
+    const inX = direction === 'forward' ? 18 : -18;
+    gsap.fromTo(
+      stepContainerRef.current,
+      { x: inX, opacity: 0 },
+      { x: 0, opacity: 1, duration: 0.22, ease: 'power2.out' }
+    );
+  }, [currentStep, direction]);
 
   const updateField = (field: keyof AccountRequestPayload, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -180,20 +162,26 @@ export const RequestAccountForm: React.FC<RequestAccountFormProps> = ({ onSwitch
   const handleNext = () => {
     if (!validateCurrentStep()) return;
     if (currentStep < 9) {
-      animateTransition(currentStep + 1, 'forward');
+      setDirection('forward');
+      setCurrentStep((prev) => prev + 1);
+      setStepError(null);
     }
   };
 
   const handleBack = () => {
     if (currentStep > 1) {
-      animateTransition(currentStep - 1, 'backward');
+      setDirection('backward');
+      setCurrentStep((prev) => prev - 1);
+      setStepError(null);
     } else {
       onSwitchMode('login');
     }
   };
 
   const jumpToStep = (stepNumber: number) => {
-    animateTransition(stepNumber, stepNumber < currentStep ? 'backward' : 'forward');
+    setDirection(stepNumber < currentStep ? 'backward' : 'forward');
+    setCurrentStep(stepNumber);
+    setStepError(null);
   };
 
   // Keyboard navigation: Enter moves to next step (for single-line inputs)

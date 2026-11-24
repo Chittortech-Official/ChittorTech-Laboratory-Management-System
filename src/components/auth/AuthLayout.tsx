@@ -45,26 +45,14 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({ onAuthSuccess }) => {
   }, []);
 
   const handleSwitchMode = (newMode: AuthMode) => {
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (prefersReducedMotion || !formBoxRef.current) {
-      setMode(newMode);
-      return;
+    setMode(newMode);
+    if (formBoxRef.current) {
+      gsap.fromTo(
+        formBoxRef.current,
+        { opacity: 0.6, y: 6 },
+        { opacity: 1, y: 0, duration: 0.22, ease: 'power2.out' }
+      );
     }
-
-    gsap.to(formBoxRef.current, {
-      opacity: 0,
-      y: 6,
-      duration: 0.18,
-      ease: 'power2.in',
-      onComplete: () => {
-        setMode(newMode);
-        gsap.fromTo(
-          formBoxRef.current,
-          { opacity: 0, y: -6 },
-          { opacity: 1, y: 0, duration: 0.22, ease: 'power2.out' }
-        );
-      },
-    });
   };
 
   return (
