@@ -23,6 +23,7 @@ import {
 import gsap from 'gsap';
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthMode, AccountRequestPayload } from '@/types';
+import { StateSelect } from '@/components/common/StateSelect';
 
 interface RequestAccountFormProps {
   onSwitchMode: (mode: AuthMode) => void;
@@ -140,7 +141,7 @@ export const RequestAccountForm: React.FC<RequestAccountFormProps> = ({ onSwitch
           return false;
         }
         if (!formData.state.trim()) {
-          setStepError('Please enter the state or province of your facility.');
+          setStepError('Please select your State or Union Territory.');
           return false;
         }
         break;
@@ -544,20 +545,13 @@ export const RequestAccountForm: React.FC<RequestAccountFormProps> = ({ onSwitch
 
                 <div>
                   <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">
-                    State / Province
+                    State / Union Territory
                   </label>
-                  <div className="relative rounded-md shadow-subtle">
-                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
-                      <MapPin className="h-4 w-4" />
-                    </div>
-                    <input
-                      type="text"
-                      value={formData.state}
-                      onChange={(e) => updateField('state', e.target.value)}
-                      placeholder="e.g. Rajasthan"
-                      className="block w-full rounded-md border border-slate-300 bg-white pl-9 pr-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/15 focus:outline-none transition-colors"
-                    />
-                  </div>
+                  <StateSelect
+                    value={formData.state}
+                    onChange={(val) => updateField('state', val)}
+                    placeholder="Select your State / Union Territory"
+                  />
                 </div>
               </div>
             </div>
