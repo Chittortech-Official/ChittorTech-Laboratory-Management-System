@@ -18,9 +18,20 @@ import { EmailReportsView } from './EmailReportsView';
 import { CHEMICAL_PARAMETERS } from '@/lib/laboratory/constants';
 import { Scale } from 'lucide-react';
 
-export const LaboratoryDashboard: React.FC = () => {
+interface LaboratoryDashboardProps {
+  activeTab?: DashboardTab;
+  onTabChange?: (tab: DashboardTab) => void;
+}
+
+export const LaboratoryDashboard: React.FC<LaboratoryDashboardProps> = ({
+  activeTab: externalTab,
+  onTabChange,
+}) => {
   const { user, logout, isConfigured } = useAuth();
-  const [activeTab, setActiveTab] = useState<DashboardTab>('dashboard');
+  const [internalTab, setInternalTab] = useState<DashboardTab>('dashboard');
+
+  const activeTab = externalTab !== undefined ? externalTab : internalTab;
+  const setActiveTab = onTabChange || setInternalTab;
 
   const userId = user?.id || 'plant-engineer-default';
   const userName = user?.fullName || 'QA Chemist';
@@ -60,7 +71,6 @@ export const LaboratoryDashboard: React.FC = () => {
     { id: 'comparison', label: 'Multi-Line Comparison', icon: <Scale className="w-4 h-4" /> },
     { id: 'reports', label: 'Reports & Downloads', icon: <FileText className="w-4 h-4" /> },
     { id: 'email_reports', label: 'Email Reports', icon: <Mail className="w-4 h-4" /> },
-    { id: 'settings', label: 'Account Settings', icon: <Settings className="w-4 h-4" /> },
   ];
 
   return (
@@ -424,11 +434,19 @@ export const LaboratoryDashboard: React.FC = () => {
       {/* 7. ACCOUNT SETTINGS TAB */}
       {activeTab === 'settings' && (
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-6 animate-in fade-in">
-          <div>
-            <h3 className="text-base font-bold text-slate-900">Laboratory Node & Account Settings</h3>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Current authentication session and connected database node configuration.
-            </p>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
+            <div>
+              <h3 className="text-base font-bold text-slate-900">Laboratory Node & Account Settings</h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Current authentication session and connected database node configuration.
+              </p>
+            </div>
+            <button
+              onClick={() => setActiveTab('dashboard')}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors self-start sm:self-auto"
+            >
+              &larr; Back to Dashboard
+            </button>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

@@ -5,10 +5,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import { AuthLayout } from '@/components/auth/AuthLayout';
 import { Header } from '@/components/common/Header';
 import { LaboratoryDashboard } from '@/components/laboratory/LaboratoryDashboard';
+import { DashboardTab } from '@/types';
 
 export default function HomePage() {
   const { user, logout } = useAuth();
   const [justAuthenticated, setJustAuthenticated] = useState(false);
+  const [activeTab, setActiveTab] = useState<DashboardTab>('dashboard');
 
   // If not logged in, render the official Authentication experience immediately (zero blocking loader)
   if (!user && !justAuthenticated) {
@@ -25,6 +27,7 @@ export default function HomePage() {
   return (
     <div className="min-h-[100dvh] bg-slate-50 flex flex-col justify-between">
       <Header
+        onOpenSettings={() => setActiveTab('settings')}
         onLogout={async () => {
           setJustAuthenticated(false);
           await logout();
@@ -32,7 +35,10 @@ export default function HomePage() {
       />
 
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        <LaboratoryDashboard />
+        <LaboratoryDashboard
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+        />
       </main>
 
       <footer className="w-full border-t border-slate-200 bg-white py-4 text-center text-xs text-slate-400">

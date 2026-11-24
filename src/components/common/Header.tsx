@@ -150,7 +150,7 @@ export const Header: React.FC<HeaderProps> = ({ onLogout, onOpenSettings }) => {
           </div>
 
           {/* User Info & Actions */}
-          <div className="flex items-center gap-3 sm:gap-4">
+          <div className="flex items-center gap-2.5 sm:gap-3">
             {/* Database Connection Pill */}
             <div className="hidden sm:flex items-center gap-2 rounded-full border border-slate-200/80 bg-slate-50/80 px-3 py-1 text-xs text-slate-600">
               <span className="relative flex h-2 w-2">
@@ -161,6 +161,17 @@ export const Header: React.FC<HeaderProps> = ({ onLogout, onOpenSettings }) => {
                 Database Live
               </span>
             </div>
+
+            {/* Account Settings Header Button right next to Profile */}
+            <button
+              type="button"
+              onClick={onOpenSettings}
+              title="Open Account & Laboratory Settings"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-slate-700 hover:text-blue-600 hover:bg-slate-50 hover:border-slate-300 transition-all text-xs font-semibold shadow-xs"
+            >
+              <Settings className="w-4 h-4 text-slate-500" />
+              <span className="hidden sm:inline">Settings</span>
+            </button>
 
             {/* ENTERPRISE PROFILE TRIGGER & DROPDOWN */}
             <div className="relative" ref={profileRef}>
@@ -290,7 +301,7 @@ export const Header: React.FC<HeaderProps> = ({ onLogout, onOpenSettings }) => {
                     </span>
                   </div>
 
-                  {/* 4. Action Buttons (Edit Profile + Sign Out) */}
+                  {/* 4. Action Buttons (Edit Profile + Settings + Sign Out) */}
                   <div className="pt-2 space-y-2">
                     <button
                       type="button"
@@ -299,6 +310,18 @@ export const Header: React.FC<HeaderProps> = ({ onLogout, onOpenSettings }) => {
                     >
                       <Edit3 className="w-3.5 h-3.5" />
                       Edit Profile & Facility Info
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsProfileOpen(false);
+                        onOpenSettings?.();
+                      }}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2 text-xs font-bold text-slate-700 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200 transition-colors"
+                    >
+                      <Settings className="w-3.5 h-3.5 text-slate-500" />
+                      Account & Laboratory Node Settings
                     </button>
 
                     <button
