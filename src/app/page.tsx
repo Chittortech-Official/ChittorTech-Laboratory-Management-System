@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthLayout } from '@/components/auth/AuthLayout';
 import { Header } from '@/components/common/Header';
-import { ProtectedLanding } from '@/components/common/ProtectedLanding';
+import { LaboratoryDashboard } from '@/components/laboratory/LaboratoryDashboard';
 
 export default function HomePage() {
   const { user, logout } = useAuth();
@@ -31,8 +31,8 @@ export default function HomePage() {
         }}
       />
 
-      <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        <ProtectedLanding />
+      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        <LaboratoryDashboard />
       </main>
 
       <footer className="w-full border-t border-slate-200 bg-white py-4 text-center text-xs text-slate-400">
