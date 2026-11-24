@@ -22,43 +22,65 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isConfigured, setIsConfigured] = useState<boolean>(false);
 
   useEffect(() => {
+    let isMounted = true;
     const configured = isSupabaseConfigured();
     setIsConfigured(configured);
+
+    // Failsafe timeout: never keep user stuck on loading spinner for more than 1.2s
+    const timer = setTimeout(() => {
+      if (isMounted) {
+        setLoading(false);
+      }
+    }, 1200);
 
     if (configured) {
       const supabase = getSupabaseClient();
       if (supabase) {
-        // Fetch current active session from Supabase
-        supabase.auth.getSession().then(({ data: { session } }) => {
-          if (session?.user) {
-            setUser({
-              id: session.user.id,
-              email: session.user.email || '',
-              fullName: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'QA Engineer',
-              role: session.user.user_metadata?.role || 'qa_engineer',
-              companyName: session.user.user_metadata?.company_name || 'Industrial Facility',
-              plantName: session.user.user_metadata?.plant_name || 'Main QA Lab',
-              designation: session.user.user_metadata?.designation || 'Quality Engineer',
-              createdAt: session.user.created_at,
-            });
-          } else {
-            setUser(null);
-          }
-          setLoading(false);
-        });
+        // Fetch current active session from Supabase safely
+        supabase.auth.getSession()
+          .then(({ data, error }) => {
+            if (!isMounted) return;
+            if (error) {
+              console.warn('Session check notice:', error.message);
+              setUser(null);
+            } else if (data?.session?.user) {
+              const u = data.session.user;
+              setUser({
+                id: u.id,
+                email: u.email || '',
+                fullName: u.user_metadata?.full_name || u.email?.split('@')[0] || 'QA Engineer',
+                role: u.user_metadata?.role || 'qa_engineer',
+                companyName: u.user_metadata?.company_name || 'Industrial Facility',
+                plantName: u.user_metadata?.plant_name || 'Main QA Lab',
+                designation: u.user_metadata?.designation || 'Quality Engineer',
+                createdAt: u.created_at,
+              });
+            } else {
+              setUser(null);
+            }
+          })
+          .catch((err) => {
+            console.warn('Session getSession catch:', err);
+            if (isMounted) setUser(null);
+          })
+          .finally(() => {
+            if (isMounted) setLoading(false);
+          });
 
         // Listen for Supabase auth state changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+          if (!isMounted) return;
           if (session?.user) {
+            const u = session.user;
             setUser({
-              id: session.user.id,
-              email: session.user.email || '',
-              fullName: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'QA Engineer',
-              role: session.user.user_metadata?.role || 'qa_engineer',
-              companyName: session.user.user_metadata?.company_name || 'Industrial Facility',
-              plantName: session.user.user_metadata?.plant_name || 'Main QA Lab',
-              designation: session.user.user_metadata?.designation || 'Quality Engineer',
-              createdAt: session.user.created_at,
+              id: u.id,
+              email: u.email || '',
+              fullName: u.user_metadata?.full_name || u.email?.split('@')[0] || 'QA Engineer',
+              role: u.user_metadata?.role || 'qa_engineer',
+              companyName: u.user_metadata?.company_name || 'Industrial Facility',
+              plantName: u.user_metadata?.plant_name || 'Main QA Lab',
+              designation: u.user_metadata?.designation || 'Quality Engineer',
+              createdAt: u.created_at,
             });
           } else {
             setUser(null);
@@ -67,8 +89,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
 
         return () => {
+          isMounted = false;
+          clearTimeout(timer);
           subscription.unsubscribe();
         };
+      } else {
+        setLoading(false);
       }
     } else {
       // Local fallback during development/testing
@@ -80,26 +106,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } catch {}
       setLoading(false);
     }
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timer);
+    };
   }, []);
 
   const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     if (isSupabaseConfigured()) {
       const supabase = getSupabaseClient();
-      if (!supabase) return { success: false, error: 'Supabase client unavailable' };
+      if (!supabase) return { success: false, error: 'Database connection unavailable' };
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
         return { success: false, error: error.message };
       }
       if (data.user) {
+        const u = data.user;
         setUser({
-          id: data.user.id,
-          email: data.user.email || email,
-          fullName: data.user.user_metadata?.full_name || email.split('@')[0],
-          role: data.user.user_metadata?.role || 'qa_engineer',
-          companyName: data.user.user_metadata?.company_name || 'Industrial Facility',
-          plantName: data.user.user_metadata?.plant_name || 'Main QA Lab',
-          designation: data.user.user_metadata?.designation || 'Quality Engineer',
-          createdAt: data.user.created_at,
+          id: u.id,
+          email: u.email || email,
+          fullName: u.user_metadata?.full_name || email.split('@')[0],
+          role: u.user_metadata?.role || 'qa_engineer',
+          companyName: u.user_metadata?.company_name || 'Industrial Facility',
+          plantName: u.user_metadata?.plant_name || 'Main QA Lab',
+          designation: u.user_metadata?.designation || 'Quality Engineer',
+          createdAt: u.created_at,
         });
       }
       return { success: true };
@@ -140,7 +172,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const resetPassword = async (email: string): Promise<{ success: boolean; error?: string }> => {
     if (isSupabaseConfigured()) {
       const supabase = getSupabaseClient();
-      if (!supabase) return { success: false, error: 'Supabase client unavailable' };
+      if (!supabase) return { success: false, error: 'Database connection unavailable' };
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : undefined,
       });
@@ -156,7 +188,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const submitAccountRequest = async (payload: AccountRequestPayload): Promise<{ success: boolean; error?: string }> => {
     if (isSupabaseConfigured()) {
       const supabase = getSupabaseClient();
-      if (!supabase) return { success: false, error: 'Supabase client is not available.' };
+      if (!supabase) return { success: false, error: 'Database connection is not available.' };
 
       const { error } = await supabase.from('account_requests').insert([
         {

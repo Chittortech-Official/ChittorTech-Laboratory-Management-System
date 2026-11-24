@@ -1,16 +1,15 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-
 export const isSupabaseConfigured = (): boolean => {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
   return (
-    typeof supabaseUrl === 'string' &&
-    supabaseUrl.trim().length > 0 &&
-    !supabaseUrl.includes('your-project') &&
-    typeof supabaseAnonKey === 'string' &&
-    supabaseAnonKey.trim().length > 0 &&
-    !supabaseAnonKey.includes('your-anon-key')
+    typeof url === 'string' &&
+    url.trim().length > 0 &&
+    !url.includes('your-project') &&
+    typeof key === 'string' &&
+    key.trim().length > 0 &&
+    !key.includes('your-anon-key')
   );
 };
 
@@ -21,7 +20,9 @@ export const getSupabaseClient = (): SupabaseClient | null => {
     return null;
   }
   if (!supabaseInstance) {
-    supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+    supabaseInstance = createClient(url, key, {
       auth: {
         persistSession: true,
         autoRefreshToken: true,
@@ -31,4 +32,3 @@ export const getSupabaseClient = (): SupabaseClient | null => {
   }
   return supabaseInstance;
 };
-
