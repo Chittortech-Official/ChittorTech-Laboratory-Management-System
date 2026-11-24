@@ -523,10 +523,10 @@ export const RequestAccountForm: React.FC<RequestAccountFormProps> = ({ onSwitch
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+              <div className="space-y-3 pt-1">
                 <div>
                   <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">
-                    City
+                    City <span className="text-red-500">*</span>
                   </label>
                   <div className="relative rounded-md shadow-subtle">
                     <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
@@ -545,12 +545,13 @@ export const RequestAccountForm: React.FC<RequestAccountFormProps> = ({ onSwitch
 
                 <div>
                   <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">
-                    State / Union Territory
+                    State / Union Territory <span className="text-red-500">*</span>
                   </label>
                   <StateSelect
                     value={formData.state}
                     onChange={(val) => updateField('state', val)}
                     placeholder="Select your State / Union Territory"
+                    placement="up"
                   />
                 </div>
               </div>

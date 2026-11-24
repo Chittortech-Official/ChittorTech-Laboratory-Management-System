@@ -50,6 +50,7 @@ interface StateSelectProps {
   onChange: (value: string) => void;
   placeholder?: string;
   disabled?: boolean;
+  placement?: 'up' | 'down' | 'auto';
 }
 
 export const StateSelect: React.FC<StateSelectProps> = ({
@@ -57,11 +58,28 @@ export const StateSelect: React.FC<StateSelectProps> = ({
   onChange,
   placeholder = 'Select your State / Union Territory',
   disabled = false,
+  placement = 'auto',
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [openUpwards, setOpenUpwards] = useState(placement === 'up');
   const containerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Determine open direction based on viewport space
+  useEffect(() => {
+    if (isOpen) {
+      if (placement === 'up') {
+        setOpenUpwards(true);
+      } else if (placement === 'down') {
+        setOpenUpwards(false);
+      } else if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        const spaceBelow = window.innerHeight - rect.bottom;
+        setOpenUpwards(spaceBelow < 260);
+      }
+    }
+  }, [isOpen, placement]);
 
   // Close when clicking outside
   useEffect(() => {
@@ -88,6 +106,21 @@ export const StateSelect: React.FC<StateSelectProps> = ({
     } else {
       setSearchQuery('');
     }
+  }, [isOpen]);
+
+  // Keyboard navigation: Escape closes
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        setIsOpen(false);
+      }
+    };
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
   }, [isOpen]);
 
   // Filtered lists
@@ -144,11 +177,16 @@ export const StateSelect: React.FC<StateSelectProps> = ({
         </span>
       </button>
 
-      {/* Dropdown Menu */}
+      {/* Dropdown Menu (Opens upwards or downwards smoothly, without overflowing card boundaries) */}
       {isOpen && (
-        <div className="absolute z-50 mt-1.5 w-full rounded-lg border border-slate-200 bg-white shadow-elevated overflow-hidden animate-fadeIn">
+        <div
+          className={`absolute z-50 w-full rounded-lg border border-slate-200 bg-white shadow-2xl overflow-hidden animate-fadeIn ${
+            openUpwards ? 'bottom-full mb-1.5' : 'top-full mt-1.5'
+          }`}
+          style={{ minWidth: '240px' }}
+        >
           {/* Search Box */}
-          <div className="p-2 border-b border-slate-100 bg-slate-50/70">
+          <div className="p-2 border-b border-slate-100 bg-slate-50/80">
             <div className="relative">
               <Search className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
               <input
@@ -156,7 +194,7 @@ export const StateSelect: React.FC<StateSelectProps> = ({
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search state or UT..."
+                placeholder="Search state or union territory..."
                 className="w-full rounded-md border border-slate-200 bg-white pl-8 pr-7 py-1.5 text-xs text-slate-800 placeholder:text-slate-400 focus:border-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-600/20"
               />
               {searchQuery && (
@@ -172,7 +210,7 @@ export const StateSelect: React.FC<StateSelectProps> = ({
           </div>
 
           {/* Options List */}
-          <div className="max-h-56 overflow-y-auto py-1 text-xs">
+          <div className="max-h-48 overflow-y-auto py-1 text-xs">
             {totalResults === 0 ? (
               <div className="py-4 text-center text-slate-400 text-xs">
                 No matching state or union territory found
@@ -182,7 +220,7 @@ export const StateSelect: React.FC<StateSelectProps> = ({
                 {/* 28 States */}
                 {filteredStates.length > 0 && (
                   <div>
-                    <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 bg-slate-50/60 sticky top-0">
+                    <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 bg-slate-50/90 sticky top-0 border-b border-slate-100/60">
                       States ({filteredStates.length})
                     </div>
                     {filteredStates.map((st) => {
@@ -209,7 +247,7 @@ export const StateSelect: React.FC<StateSelectProps> = ({
                 {/* 8 Union Territories */}
                 {filteredUTs.length > 0 && (
                   <div className="mt-1 border-t border-slate-100">
-                    <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 bg-slate-50/60 sticky top-0">
+                    <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 bg-slate-50/90 sticky top-0 border-b border-slate-100/60">
                       Union Territories ({filteredUTs.length})
                     </div>
                     {filteredUTs.map((ut) => {
