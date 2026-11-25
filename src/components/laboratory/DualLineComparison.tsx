@@ -123,49 +123,107 @@ export const DualLineComparison: React.FC<DualLineComparisonProps> = ({ userId }
     return 'Tie';
   }, [statsA, statsB]);
 
-  // Dual SVG Timeline Chart coordinates
+  const [hoveredPoint, setHoveredPoint] = useState<{
+    line: 'A' | 'B';
+    lineName: string;
+    date: string;
+    sampleId?: string;
+    val: number;
+    x: number;
+    y: number;
+  } | null>(null);
+
+  // Dual SVG Overlay Trend Chart coordinates (plots sequential batches across dates)
   const svgChart = useMemo(() => {
-    // Combine unique dates
-    const allDates = Array.from(new Set([...recordsA.map((r) => r.test_date), ...recordsB.map((r) => r.test_date)])).sort();
-    if (allDates.length < 2) return null;
+    const validA = recordsA.filter((r) => r[selectedParam] !== null && r[selectedParam] !== undefined && !isNaN(Number(r[selectedParam])));
+    const validB = recordsB.filter((r) => r[selectedParam] !== null && r[selectedParam] !== undefined && !isNaN(Number(r[selectedParam])));
 
-    const width = 800;
-    const height = 260;
-    const padX = 50;
-    const padY = 30;
-
-    const valuesA = recordsA.map((r) => r[selectedParam]).filter((v): v is number => v !== null && v !== undefined);
-    const valuesB = recordsB.map((r) => r[selectedParam]).filter((v): v is number => v !== null && v !== undefined);
-    const allValues = [...valuesA, ...valuesB];
+    const allValues = [
+      ...validA.map((r) => Number(r[selectedParam])),
+      ...validB.map((r) => Number(r[selectedParam])),
+    ];
 
     if (allValues.length === 0) return null;
 
-    const minVal = Math.min(...allValues);
-    const maxVal = Math.max(...allValues);
-    const rangeVal = maxVal - minVal === 0 ? 1 : maxVal - minVal;
+    const width = 860;
+    const height = 280;
+    const padX = 56;
+    const padTop = 28;
+    const padBottom = 42;
+    const plotW = width - padX * 2;
+    const plotH = height - padTop - padBottom;
 
-    // Helper to map points
-    const makePoints = (recs: LaboratoryRecord[]) => {
-      return recs
-        .map((r) => {
-          const val = r[selectedParam];
-          if (val === null || val === undefined) return null;
-          const dateIdx = allDates.indexOf(r.test_date);
-          const x = padX + (dateIdx / (allDates.length - 1)) * (width - padX * 2);
-          const y = height - padY - ((val - minVal) / rangeVal) * (height - padY * 2);
-          return { x, y, date: r.test_date, sampleId: r.sample_id, val };
-        })
-        .filter(Boolean) as { x: number; y: number; date: string; sampleId?: string; val: number }[];
+    const rawMin = Math.min(...allValues);
+    const rawMax = Math.max(...allValues);
+    const rawRange = rawMax - rawMin;
+    const margin = rawRange === 0 ? Math.max(Math.abs(rawMax) * 0.1, 0.5) : rawRange * 0.12;
+    const minVal = Math.max(0, rawMin - margin);
+    const maxVal = rawMax + margin;
+    const rangeVal = maxVal - minVal || 1;
+
+    const mapSeries = (series: LaboratoryRecord[]) => {
+      const n = series.length;
+      return series.map((r, idx) => {
+        const val = Number(r[selectedParam]);
+        const x = n === 1 ? padX + plotW / 2 : padX + (idx / (n - 1)) * plotW;
+        const y = padTop + plotH - ((val - minVal) / rangeVal) * plotH;
+        return { x, y, date: r.test_date, sampleId: r.sample_id, val };
+      });
     };
 
-    const pointsA = makePoints(recordsA);
-    const pointsB = makePoints(recordsB);
+    const pointsA = mapSeries(validA);
+    const pointsB = mapSeries(validB);
 
     const pathA = pointsA.reduce((acc, p, i) => (i === 0 ? `M ${p.x} ${p.y}` : `${acc} L ${p.x} ${p.y}`), '');
     const pathB = pointsB.reduce((acc, p, i) => (i === 0 ? `M ${p.x} ${p.y}` : `${acc} L ${p.x} ${p.y}`), '');
 
-    return { width, height, allDates, pointsA, pointsB, pathA, pathB, minVal, maxVal };
-  }, [recordsA, recordsB, selectedParam]);
+    const areaA =
+      pointsA.length > 1
+        ? `${pathA} L ${pointsA[pointsA.length - 1].x} ${padTop + plotH} L ${pointsA[0].x} ${padTop + plotH} Z`
+        : '';
+
+    const meanAY =
+      statsA.mean !== null
+        ? padTop + plotH - ((statsA.mean - minVal) / rangeVal) * plotH
+        : null;
+    const meanBY =
+      statsB.mean !== null
+        ? padTop + plotH - ((statsB.mean - minVal) / rangeVal) * plotH
+        : null;
+
+    // Build X-axis labels from combined sorted points
+    const combinedTimeline = [...pointsA, ...pointsB].sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
+    const xLabels =
+      combinedTimeline.length <= 6
+        ? combinedTimeline
+        : [
+            combinedTimeline[0],
+            combinedTimeline[Math.floor(combinedTimeline.length / 2)],
+            combinedTimeline[combinedTimeline.length - 1],
+          ];
+
+    return {
+      width,
+      height,
+      padX,
+      padTop,
+      padBottom,
+      plotW,
+      plotH,
+      pointsA,
+      pointsB,
+      pathA,
+      pathB,
+      areaA,
+      meanAY,
+      meanBY,
+      minVal,
+      maxVal,
+      xLabels,
+    };
+  }, [recordsA, recordsB, selectedParam, statsA.mean, statsB.mean]);
 
   const activeParamMeta = CHEMICAL_PARAMETERS.find((p) => p.key === selectedParam) || CHEMICAL_PARAMETERS[0];
 
@@ -451,54 +509,172 @@ export const DualLineComparison: React.FC<DualLineComparisonProps> = ({ userId }
           </div>
         </div>
 
-        {/* SVG Dual Line Chart */}
-        <div className="w-full bg-slate-50/70 rounded-xl p-4 border border-slate-100 overflow-hidden">
+        {/* SVG Dual-Line Overlay Trend Chart */}
+        <div className="w-full bg-slate-50/70 rounded-xl p-4 border border-slate-100 overflow-hidden relative">
           {!svgChart ? (
             <div className="py-16 text-center text-slate-400 text-xs">
               <Activity className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-              Not enough recorded batches in {selectedMonth} to plot dual timeline for both circuits.
+              No recorded batches for {lineA} or {lineB} in {selectedMonth} to plot trend.
             </div>
           ) : (
             <div className="w-full overflow-x-auto">
-              <svg viewBox={`0 0 ${svgChart.width} ${svgChart.height}`} className="w-full h-64 overflow-visible">
+              {/* Interactive Hover Banner */}
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-2 min-h-[24px] px-1">
+                <div className="flex items-center gap-3 text-[11px] text-slate-500">
+                  {statsA.mean !== null && (
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className="w-3 border-t-2 border-dashed border-blue-400" />
+                      {lineA} Avg: <strong className="font-mono text-blue-700">{statsA.mean.toFixed(2)}%</strong>
+                    </span>
+                  )}
+                  {statsB.mean !== null && (
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className="w-3 border-t-2 border-dashed border-emerald-400" />
+                      {lineB} Avg: <strong className="font-mono text-emerald-700">{statsB.mean.toFixed(2)}%</strong>
+                    </span>
+                  )}
+                </div>
+
+                {hoveredPoint ? (
+                  <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-lg bg-slate-900 text-white text-[11px] font-mono shadow-xs">
+                    <span className={`w-2 h-2 rounded-full ${hoveredPoint.line === 'A' ? 'bg-blue-400' : 'bg-emerald-400'}`} />
+                    <span className="font-bold">{hoveredPoint.lineName}</span>
+                    <span className="text-slate-300">|</span>
+                    <span>{hoveredPoint.sampleId || 'Sample'}</span>
+                    <span className="text-slate-300">({formatDateDDMMYYYY(hoveredPoint.date)})</span>
+                    <span className="font-bold text-amber-300">{hoveredPoint.val.toFixed(activeParamMeta.decimals || 2)}%</span>
+                  </div>
+                ) : (
+                  <span className="text-[10px] text-slate-400">Hover over any data point to inspect batch drift</span>
+                )}
+              </div>
+
+              <svg
+                viewBox={`0 0 ${svgChart.width} ${svgChart.height}`}
+                className="w-full min-w-[540px] h-64 overflow-visible"
+                onMouseLeave={() => setHoveredPoint(null)}
+              >
+                <defs>
+                  <linearGradient id="areaGradA" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#2563eb" stopOpacity="0.16" />
+                    <stop offset="100%" stopColor="#2563eb" stopOpacity="0.01" />
+                  </linearGradient>
+                </defs>
+
                 {/* Horizontal grid lines */}
-                <line x1="50" y1="30" x2={svgChart.width - 50} y2="30" stroke="#e2e8f0" strokeDasharray="4 4" />
-                <line x1="50" y1={svgChart.height / 2} x2={svgChart.width - 50} y2={svgChart.height / 2} stroke="#e2e8f0" strokeDasharray="4 4" />
-                <line x1="50" y1={svgChart.height - 30} x2={svgChart.width - 50} y2={svgChart.height - 30} stroke="#e2e8f0" strokeDasharray="4 4" />
+                <line x1={svgChart.padX} y1={svgChart.padTop} x2={svgChart.width - svgChart.padX} y2={svgChart.padTop} stroke="#e2e8f0" strokeDasharray="4 4" />
+                <line x1={svgChart.padX} y1={svgChart.padTop + svgChart.plotH / 2} x2={svgChart.width - svgChart.padX} y2={svgChart.padTop + svgChart.plotH / 2} stroke="#e2e8f0" strokeDasharray="4 4" />
+                <line x1={svgChart.padX} y1={svgChart.padTop + svgChart.plotH} x2={svgChart.width - svgChart.padX} y2={svgChart.padTop + svgChart.plotH} stroke="#cbd5e1" strokeWidth="1" />
 
                 {/* Y Axis Labels */}
-                <text x="44" y="34" fill="#94a3b8" fontSize="10" textAnchor="end" fontFamily="monospace">
+                <text x={svgChart.padX - 8} y={svgChart.padTop + 4} fill="#64748b" fontSize="10" textAnchor="end" fontFamily="monospace">
                   {svgChart.maxVal.toFixed(2)}%
                 </text>
-                <text x="44" y={svgChart.height / 2 + 3} fill="#94a3b8" fontSize="10" textAnchor="end" fontFamily="monospace">
+                <text x={svgChart.padX - 8} y={svgChart.padTop + svgChart.plotH / 2 + 4} fill="#64748b" fontSize="10" textAnchor="end" fontFamily="monospace">
                   {((svgChart.maxVal + svgChart.minVal) / 2).toFixed(2)}%
                 </text>
-                <text x="44" y={svgChart.height - 27} fill="#94a3b8" fontSize="10" textAnchor="end" fontFamily="monospace">
+                <text x={svgChart.padX - 8} y={svgChart.padTop + svgChart.plotH + 4} fill="#64748b" fontSize="10" textAnchor="end" fontFamily="monospace">
                   {svgChart.minVal.toFixed(2)}%
                 </text>
 
+                {/* Mean Reference Lines */}
+                {svgChart.meanAY !== null && (
+                  <line
+                    x1={svgChart.padX}
+                    y1={svgChart.meanAY}
+                    x2={svgChart.width - svgChart.padX}
+                    y2={svgChart.meanAY}
+                    stroke="#93c5fd"
+                    strokeWidth="1.2"
+                    strokeDasharray="6 4"
+                  />
+                )}
+                {svgChart.meanBY !== null && (
+                  <line
+                    x1={svgChart.padX}
+                    y1={svgChart.meanBY}
+                    x2={svgChart.width - svgChart.padX}
+                    y2={svgChart.meanBY}
+                    stroke="#6ee7b7"
+                    strokeWidth="1.2"
+                    strokeDasharray="6 4"
+                  />
+                )}
+
+                {/* Subtle Area under Line A */}
+                {svgChart.areaA && <path d={svgChart.areaA} fill="url(#areaGradA)" />}
+
                 {/* Path A (Blue) */}
                 {svgChart.pathA && (
-                  <path d={svgChart.pathA} fill="none" stroke="#2563eb" strokeWidth="2.5" strokeLinecap="round" />
+                  <path d={svgChart.pathA} fill="none" stroke="#2563eb" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                 )}
 
                 {/* Path B (Emerald) */}
                 {svgChart.pathB && (
-                  <path d={svgChart.pathB} fill="none" stroke="#059669" strokeWidth="2.5" strokeLinecap="round" strokeDasharray="2 0" />
+                  <path d={svgChart.pathB} fill="none" stroke="#059669" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                 )}
+
+                {/* X-Axis Date Labels (DD-MM-YYYY) */}
+                {svgChart.xLabels.map((lbl, idx) => (
+                  <text
+                    key={`xlabel-${idx}`}
+                    x={lbl.x}
+                    y={svgChart.padTop + svgChart.plotH + 20}
+                    fill="#64748b"
+                    fontSize="10"
+                    textAnchor="middle"
+                    fontFamily="monospace"
+                  >
+                    {formatDateDDMMYYYY(lbl.date)}
+                  </text>
+                ))}
 
                 {/* Points A */}
                 {svgChart.pointsA.map((pt, i) => (
-                  <circle key={`A-${i}`} cx={pt.x} cy={pt.y} r="4" fill="#ffffff" stroke="#2563eb" strokeWidth="2">
-                    <title>{`${lineA} [${formatDateDDMMYYYY(pt.date)}]: ${pt.val.toFixed(2)}%`}</title>
-                  </circle>
+                  <g
+                    key={`A-${i}`}
+                    className="cursor-pointer"
+                    onMouseEnter={() =>
+                      setHoveredPoint({
+                        line: 'A',
+                        lineName: lineA,
+                        date: pt.date,
+                        sampleId: pt.sampleId,
+                        val: pt.val,
+                        x: pt.x,
+                        y: pt.y,
+                      })
+                    }
+                  >
+                    <circle cx={pt.x} cy={pt.y} r="5" fill="#ffffff" stroke="#2563eb" strokeWidth="2.5" />
+                    <text x={pt.x} y={pt.y - 10} fill="#1e40af" fontSize="10" fontWeight="bold" textAnchor="middle" fontFamily="monospace">
+                      {pt.val.toFixed(activeParamMeta.decimals || 2)}
+                    </text>
+                  </g>
                 ))}
 
                 {/* Points B */}
                 {svgChart.pointsB.map((pt, i) => (
-                  <circle key={`B-${i}`} cx={pt.x} cy={pt.y} r="4" fill="#ffffff" stroke="#059669" strokeWidth="2">
-                    <title>{`${lineB} [${formatDateDDMMYYYY(pt.date)}]: ${pt.val.toFixed(2)}%`}</title>
-                  </circle>
+                  <g
+                    key={`B-${i}`}
+                    className="cursor-pointer"
+                    onMouseEnter={() =>
+                      setHoveredPoint({
+                        line: 'B',
+                        lineName: lineB,
+                        date: pt.date,
+                        sampleId: pt.sampleId,
+                        val: pt.val,
+                        x: pt.x,
+                        y: pt.y,
+                      })
+                    }
+                  >
+                    <circle cx={pt.x} cy={pt.y} r="5" fill="#ffffff" stroke="#059669" strokeWidth="2.5" />
+                    <text x={pt.x} y={pt.y - 10} fill="#065f46" fontSize="10" fontWeight="bold" textAnchor="middle" fontFamily="monospace">
+                      {pt.val.toFixed(activeParamMeta.decimals || 2)}
+                    </text>
+                  </g>
                 ))}
               </svg>
             </div>
