@@ -13,9 +13,15 @@ export default function HomePage() {
   const { user, loading, logout } = useAuth();
   const [justAuthenticated, setJustAuthenticated] = useState(false);
   const [activeTab, setActiveTab] = useState<DashboardTab>('dashboard');
+  const [mounted, setMounted] = useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // 1. While Supabase session is being checked and restored on reload, display professional centered loading screen
-  if (loading && !user && !justAuthenticated) {
+  // (Also prevents React SSR / Client hydration mismatch)
+  if (!mounted || (loading && !user && !justAuthenticated)) {
     return (
       <div className="min-h-[100dvh] bg-slate-50 flex flex-col items-center justify-center p-4">
         <div className="flex flex-col items-center max-w-sm text-center space-y-4 animate-in fade-in duration-200">

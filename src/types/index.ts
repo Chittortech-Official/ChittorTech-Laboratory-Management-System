@@ -48,7 +48,7 @@ export interface LaboratoryRecord {
   test_date: string; // YYYY-MM-DD
   category: string; // e.g. 'Ball Mill'
   sample_id?: string;
-  shift?: 'General' | 'Shift A' | 'Shift B' | 'Shift C';
+  shift?: 'Night Shift' | 'General' | 'Shift B' | 'Shift A' | 'Shift C' | string;
   loi: number | null; // Loss on Ignition (%)
   ir: number | null; // Insoluble Residue (%)
   so3: number | null; // Sulphur Trioxide (%)

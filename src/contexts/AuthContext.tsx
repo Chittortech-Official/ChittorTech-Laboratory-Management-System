@@ -18,20 +18,7 @@ const LOCAL_STORAGE_USER_KEY = 'chittortech_qa_lms_user';
 const LOCAL_STORAGE_REQUESTS_KEY = 'chittortech_qa_account_requests';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  // 1. Initial State: Read cached user from localStorage immediately if available
-  const [user, setUser] = useState<UserProfile | null>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const cached = localStorage.getItem(LOCAL_STORAGE_USER_KEY);
-        if (cached) {
-          return JSON.parse(cached);
-        }
-      } catch (err) {
-        console.warn('Could not read cached auth session:', err);
-      }
-    }
-    return null;
-  });
+  const [user, setUser] = useState<UserProfile | null>(null);
 
   // Explicit initialization flag: TRUE while checking session with Supabase
   const [loading, setLoading] = useState<boolean>(true);
@@ -39,6 +26,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let isMounted = true;
+
+    // Immediately restore cached user on client mount without causing SSR hydration mismatch
+    try {
+      const cached = localStorage.getItem(LOCAL_STORAGE_USER_KEY);
+      if (cached) {
+        setUser(JSON.parse(cached));
+      }
+    } catch (err) {
+      console.warn('Could not read cached auth session:', err);
+    }
     const configured = isSupabaseConfigured();
     setIsConfigured(configured);
 

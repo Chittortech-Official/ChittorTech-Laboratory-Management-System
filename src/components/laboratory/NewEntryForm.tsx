@@ -36,9 +36,9 @@ export const NewEntryForm: React.FC<NewEntryFormProps> = ({ user, onRecordSaved 
   const today = new Date().toISOString().split('T')[0];
 
   const [testDate, setTestDate] = useState<string>(today);
-  const [category, setCategory] = useState<string>('Ball Mill');
+  const [category, setCategory] = useState<string>('Ball mill');
   const [sampleId, setSampleId] = useState<string>('Sample-1');
-  const [shift, setShift] = useState<'General' | 'Shift A' | 'Shift B' | 'Shift C'>('General');
+  const [shift, setShift] = useState<string>('General');
   const [notes, setNotes] = useState<string>('');
 
   // The 11 Chemical Parameters in Exact Sequence:

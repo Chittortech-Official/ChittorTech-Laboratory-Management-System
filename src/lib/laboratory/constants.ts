@@ -103,19 +103,35 @@ export const CHEMICAL_PARAMETERS: ParameterMetadata[] = [
 ];
 
 export const PLANT_CATEGORIES = [
-  'Ball Mill',
-  'Ball Mill - Line 1',
-  'Ball Mill - Line 2',
-  'Raw Mill Feed',
-  'Kiln Clinker',
-  'Finished Cement (OPC)',
-  'Finished Cement (PPC)',
+  'Ball mill',
+  'VRM',
+  'RP',
+  'KF',
+  'NKF',
+  'CLK',
+  'NCLK',
+  'G43',
+  'G53',
+  'G53 S',
+  'GPF',
+  'GPF+',
+  'L43',
+  'L53',
+  'L53 S',
+  'LPF',
+  'LPF+',
+  'AC1',
+  'AC2',
 ] as const;
 
+export type PlantCategory = (typeof PLANT_CATEGORIES)[number];
+
 export const LAB_SHIFTS = [
+  'Night Shift',
   'General',
-  'Shift A',
   'Shift B',
-  'Shift C',
+  'Shift A',
 ] as const;
+
+export type LabShift = (typeof LAB_SHIFTS)[number];
 

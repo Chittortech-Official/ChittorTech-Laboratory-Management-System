@@ -7,7 +7,7 @@ import {
   ChevronLeft, ChevronRight, FileSpreadsheet, Beaker
 } from 'lucide-react';
 import { LaboratoryRecord, ChemicalParameterKey } from '@/types';
-import { CHEMICAL_PARAMETERS, PLANT_CATEGORIES } from '@/lib/laboratory/constants';
+import { CHEMICAL_PARAMETERS, PLANT_CATEGORIES, LAB_SHIFTS } from '@/lib/laboratory/constants';
 import { generateSingleRecordPdf, exportToCsv, exportToExcel, buildExcelFilename } from '@/lib/laboratory/exportService';
 import { useConfirmationModal } from '@/contexts/ConfirmationModalContext';
 
@@ -519,14 +519,15 @@ export const PreviousRecords: React.FC<PreviousRecordsProps> = ({
                     Shift
                   </label>
                   <select
-                    value={editFormData.shift || 'Shift A'}
+                    value={editFormData.shift || 'General'}
                     onChange={(e) => setEditFormData({ ...editFormData, shift: e.target.value as any })}
                     className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                   >
-                    <option value="Shift A">Shift A (06:00 - 14:00)</option>
-                    <option value="Shift B">Shift B (14:00 - 22:00)</option>
-                    <option value="Shift C">Shift C (22:00 - 06:00)</option>
-                    <option value="General">General Shift (09:00 - 17:30)</option>
+                    {LAB_SHIFTS.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div>
@@ -534,7 +535,7 @@ export const PreviousRecords: React.FC<PreviousRecordsProps> = ({
                     Category
                   </label>
                   <select
-                    value={editFormData.category || 'Ball Mill'}
+                    value={editFormData.category || 'Ball mill'}
                     onChange={(e) => setEditFormData({ ...editFormData, category: e.target.value })}
                     className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                   >

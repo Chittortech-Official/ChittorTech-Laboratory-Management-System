@@ -87,7 +87,7 @@ export async function POST(request: Request) {
     const {
       user_id,
       test_date,
-      category = 'Ball Mill',
+      category = 'Ball mill',
       sample_id = 'Sample-1',
       shift = 'General',
       loi = null,

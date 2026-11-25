@@ -26,8 +26,8 @@ export const DualLineComparison: React.FC<DualLineComparisonProps> = ({ userId }
   });
 
   // Circuit Line Selectors
-  const [lineA, setLineA] = useState<string>('Ball Mill - Line 1');
-  const [lineB, setLineB] = useState<string>('Ball Mill - Line 2');
+  const [lineA, setLineA] = useState<string>('Ball mill');
+  const [lineB, setLineB] = useState<string>('VRM');
   const [selectedParam, setSelectedParam] = useState<ChemicalParameterKey>('so3');
 
   // Fetch all records
@@ -63,16 +63,16 @@ export const DualLineComparison: React.FC<DualLineComparisonProps> = ({ userId }
   // Quick Presets
   const applyPreset = (preset: 'mill1_vs_mill2' | 'raw_vs_clinker' | 'clinker_vs_cement') => {
     if (preset === 'mill1_vs_mill2') {
-      setLineA('Ball Mill - Line 1');
-      setLineB('Ball Mill - Line 2');
+      setLineA('Ball mill');
+      setLineB('VRM');
       setSelectedParam('so3');
     } else if (preset === 'raw_vs_clinker') {
-      setLineA('Raw Mill Feed');
-      setLineB('Kiln Clinker');
+      setLineA('CLK');
+      setLineB('NCLK');
       setSelectedParam('lime');
     } else if (preset === 'clinker_vs_cement') {
-      setLineA('Kiln Clinker');
-      setLineB('Finished Cement (OPC)');
+      setLineA('G43');
+      setLineB('G53');
       setSelectedParam('so3');
     }
   };
@@ -80,13 +80,13 @@ export const DualLineComparison: React.FC<DualLineComparisonProps> = ({ userId }
   // Filter records for Line A and Line B
   const recordsA = useMemo(() => {
     return records
-      .filter((r) => r.category === lineA || (lineA === 'Ball Mill' && r.category.includes('Ball Mill')))
+      .filter((r) => r.category === lineA || r.category?.toLowerCase() === lineA.toLowerCase())
       .sort((a, b) => new Date(a.test_date).getTime() - new Date(b.test_date).getTime());
   }, [records, lineA]);
 
   const recordsB = useMemo(() => {
     return records
-      .filter((r) => r.category === lineB || (lineB === 'Ball Mill' && r.category.includes('Ball Mill')))
+      .filter((r) => r.category === lineB || r.category?.toLowerCase() === lineB.toLowerCase())
       .sort((a, b) => new Date(a.test_date).getTime() - new Date(b.test_date).getTime());
   }, [records, lineB]);
 
