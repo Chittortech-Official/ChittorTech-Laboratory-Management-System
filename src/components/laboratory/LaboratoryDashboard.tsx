@@ -116,8 +116,8 @@ export const LaboratoryDashboard: React.FC<LaboratoryDashboardProps> = ({
                     <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-700 border border-emerald-200">
                       QA Node Active
                     </span>
-                    <span className="text-xs text-slate-400 font-mono">
-                      {new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+                    <span className="text-xs text-slate-500 font-mono font-bold bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                      {formatDateDDMMYYYY(new Date())}
                     </span>
                   </div>
                   <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 mt-1">

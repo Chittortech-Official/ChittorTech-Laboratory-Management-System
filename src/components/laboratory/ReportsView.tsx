@@ -11,7 +11,8 @@ import {
   generateLaboratoryPdf, 
   exportToCsv, 
   exportToExcel,
-  buildExcelFilename
+  buildExcelFilename,
+  formatDateDDMMYYYY
 } from '@/lib/laboratory/exportService';
 import { useConfirmationModal } from '@/contexts/ConfirmationModalContext';
 
@@ -48,7 +49,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
 
   // Compute reporting period string
   const getReportingPeriodLabel = (): string => {
-    if (periodType === 'single_date') return `Date: ${selectedDate}`;
+    if (periodType === 'single_date') return `Date: ${formatDateDDMMYYYY(selectedDate)}`;
     if (periodType === 'current_month') {
       const now = new Date();
       return now.toLocaleString('default', { month: 'long', year: 'numeric' });
@@ -58,7 +59,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
       d.setMonth(d.getMonth() - 1);
       return d.toLocaleString('default', { month: 'long', year: 'numeric' });
     }
-    return `${startDate} to ${endDate}`;
+    return `${formatDateDDMMYYYY(startDate)} to ${formatDateDDMMYYYY(endDate)}`;
   };
 
   // Fetch records matching criteria
@@ -251,24 +252,37 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
           {periodType === 'single_date' && (
             <div>
-              <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
-                Selected Date
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-[11px] font-bold text-slate-600 uppercase">
+                  Selected Date
+                </label>
+                <span className="text-[10px] font-mono font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">
+                  {formatDateDDMMYYYY(selectedDate)}
+                </span>
+              </div>
               <input
                 type="date"
                 value={selectedDate}
                 onChange={(e) => setSelectedDate(e.target.value)}
                 className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-slate-800 font-semibold"
               />
+              <p className="text-[10px] text-slate-500 font-mono mt-1">
+                Active: <strong className="text-slate-800">{formatDateDDMMYYYY(selectedDate)}</strong> (DD-MM-YYYY)
+              </p>
             </div>
           )}
 
           {periodType === 'custom_range' && (
             <>
               <div>
-                <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
-                  Start Date
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-[11px] font-bold text-slate-600 uppercase">
+                    Start Date
+                  </label>
+                  <span className="text-[10px] font-mono font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">
+                    {formatDateDDMMYYYY(startDate)}
+                  </span>
+                </div>
                 <input
                   type="date"
                   value={startDate}
@@ -277,9 +291,14 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
                 />
               </div>
               <div>
-                <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
-                  End Date
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-[11px] font-bold text-slate-600 uppercase">
+                    End Date
+                  </label>
+                  <span className="text-[10px] font-mono font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">
+                    {formatDateDDMMYYYY(endDate)}
+                  </span>
+                </div>
                 <input
                   type="date"
                   value={endDate}

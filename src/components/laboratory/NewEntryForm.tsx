@@ -610,11 +610,16 @@ export const NewEntryForm: React.FC<NewEntryFormProps> = ({ user, onRecordSaved 
           </h3>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-            {/* Field 1: Date (Calendar Picker) */}
+            {/* Field 1: Date (Calendar Picker with strict DD-MM-YYYY indicator) */}
             <div>
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">
-                Testing Date <span className="text-red-500">*</span>
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600">
+                  Testing Date <span className="text-red-500">*</span>
+                </label>
+                <span className="text-[10px] font-mono font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">
+                  {formatDateDDMMYYYY(testDate)}
+                </span>
+              </div>
               <div className="relative rounded-md shadow-subtle">
                 <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
                   <Calendar className="h-4 w-4" />
@@ -627,6 +632,9 @@ export const NewEntryForm: React.FC<NewEntryFormProps> = ({ user, onRecordSaved 
                   required
                 />
               </div>
+              <p className="text-[10px] text-slate-500 font-mono mt-1">
+                Format: <strong className="text-slate-800 font-bold">{formatDateDDMMYYYY(testDate)}</strong> (DD-MM-YYYY)
+              </p>
             </div>
 
             {/* Field 2: Category (Ball Mill first & default) */}

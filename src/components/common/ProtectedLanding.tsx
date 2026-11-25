@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { formatDateDDMMYYYY } from '@/lib/laboratory/exportService';
 import {
   ShieldCheck,
   CheckCircle2,
@@ -32,8 +33,8 @@ export const ProtectedLanding: React.FC = () => {
                 <span className="rounded bg-emerald-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-800 border border-emerald-200">
                   Authenticated Session
                 </span>
-                <span className="text-xs text-slate-400 font-mono">
-                  {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                <span className="text-xs text-slate-500 font-mono font-bold bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                  {formatDateDDMMYYYY(new Date())}
                 </span>
               </div>
               <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 mt-1">

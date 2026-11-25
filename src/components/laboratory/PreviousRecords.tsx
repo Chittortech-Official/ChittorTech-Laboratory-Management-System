@@ -541,9 +541,14 @@ export const PreviousRecords: React.FC<PreviousRecordsProps> = ({
               {/* Top metadata grid */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
-                    Test Date
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-[11px] font-bold text-slate-600 uppercase">
+                      Test Date
+                    </label>
+                    <span className="text-[10px] font-mono font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">
+                      {formatDateDDMMYYYY(editFormData.test_date)}
+                    </span>
+                  </div>
                   <input
                     type="date"
                     required
@@ -551,6 +556,9 @@ export const PreviousRecords: React.FC<PreviousRecordsProps> = ({
                     onChange={(e) => setEditFormData({ ...editFormData, test_date: e.target.value })}
                     className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                   />
+                  <p className="text-[10px] text-slate-500 font-mono mt-1">
+                    Format: <strong className="text-slate-800">{formatDateDDMMYYYY(editFormData.test_date)}</strong> (DD-MM-YYYY)
+                  </p>
                 </div>
                 <div>
                   <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">

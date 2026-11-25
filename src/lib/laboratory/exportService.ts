@@ -115,7 +115,7 @@ export function generatePdfDocument(records: LaboratoryRecord[], meta: ReportMet
   // 3. Structured Data Table in exact standard parameter sequence:
   // LOI -> IR -> SO3 -> SiO2 -> Al2O3 -> Fe2O3 -> CaO -> MgO -> K2O -> Na2O -> Chloride
   const tableHeaders = [
-    'Date',
+    'Date (DD-MM-YYYY)',
     'Category',
     'Sample',
     'Shift',
@@ -228,7 +228,7 @@ export function generateLaboratoryPdf(records: LaboratoryRecord[], options: Expo
 
 export function generateSingleRecordPdf(record: LaboratoryRecord, options: ExportPdfOptions = {}) {
   downloadPdfReport([record], {
-    periodLabel: `Single Batch (${record.test_date})`,
+    periodLabel: `Single Batch (${formatDateDDMMYYYY(record.test_date)})`,
     category: record.category,
     userName: options.userName,
     userEmail: options.userEmail,

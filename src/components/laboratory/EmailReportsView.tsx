@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { LaboratoryRecord, EmailDispatchHistory } from '@/types';
 import { PLANT_CATEGORIES } from '@/lib/laboratory/constants';
-import { generateLaboratoryPdfBase64 } from '@/lib/laboratory/exportService';
+import { generateLaboratoryPdfBase64, formatDateDDMMYYYY } from '@/lib/laboratory/exportService';
 import { useConfirmationModal } from '@/contexts/ConfirmationModalContext';
 
 interface EmailReportsViewProps {
@@ -69,7 +69,7 @@ export const EmailReportsView: React.FC<EmailReportsViewProps> = ({
 
   // Compute reporting period string
   const getReportingPeriodLabel = (): string => {
-    if (periodType === 'single_date') return `Date: ${selectedDate}`;
+    if (periodType === 'single_date') return `Date: ${formatDateDDMMYYYY(selectedDate)}`;
     if (periodType === 'current_month') {
       const now = new Date();
       return now.toLocaleString('default', { month: 'long', year: 'numeric' });
@@ -79,7 +79,7 @@ export const EmailReportsView: React.FC<EmailReportsViewProps> = ({
       d.setMonth(d.getMonth() - 1);
       return d.toLocaleString('default', { month: 'long', year: 'numeric' });
     }
-    return `${startDate} to ${endDate}`;
+    return `${formatDateDDMMYYYY(startDate)} to ${formatDateDDMMYYYY(endDate)}`;
   };
 
   // Fetch records for preview
