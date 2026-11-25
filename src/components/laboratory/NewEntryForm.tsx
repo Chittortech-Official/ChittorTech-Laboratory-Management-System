@@ -12,6 +12,10 @@ import {
   Clock,
   Tag,
   Calculator,
+  X,
+  Edit3,
+  Eye,
+  ClipboardCheck,
 } from 'lucide-react';
 import { CHEMICAL_PARAMETERS, PLANT_CATEGORIES, LAB_SHIFTS } from '@/lib/laboratory/constants';
 import { LaboratoryRecord, UserProfile } from '@/types';
@@ -51,6 +55,14 @@ export const NewEntryForm: React.FC<NewEntryFormProps> = ({ user, onRecordSaved 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+
+  // Keyboard navigation & modal accessibility refs
+  const paramRefs = React.useRef<Record<string, HTMLInputElement | null>>({});
+  const reviewButtonRef = React.useRef<HTMLButtonElement | null>(null);
+  const confirmButtonRef = React.useRef<HTMLButtonElement | null>(null);
+  const editButtonRef = React.useRef<HTMLButtonElement | null>(null);
+  const modalRef = React.useRef<HTMLDivElement | null>(null);
 
   // XRF / Spectrometer Instrument Auto-Import State
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -183,8 +195,38 @@ export const NewEntryForm: React.FC<NewEntryFormProps> = ({ user, onRecordSaved 
     setSuccess(null);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Sequential Enter Key Navigation:
+  // LOI -> IR -> SO3 -> Lime -> Silica -> Alumina -> Iron -> Magnesia -> Chloride
+  const handleParamKeyDown = (
+    e: React.KeyboardEvent<HTMLInputElement>,
+    paramKey: string,
+    index: number
+  ) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (index < CHEMICAL_PARAMETERS.length - 1) {
+        const nextKey = CHEMICAL_PARAMETERS[index + 1].key;
+        const nextInput = paramRefs.current[nextKey];
+        if (nextInput) {
+          nextInput.focus();
+          nextInput.select();
+        }
+      } else {
+        // Final field (Chloride): move focus to Review / Submit action
+        reviewButtonRef.current?.focus();
+        handleOpenReview();
+      }
+    }
+  };
+
+  // Step 1: Open Confirmation Modal with Validation
+  const handleOpenReview = (e?: React.FormEvent) => {
+    if (e) {
+      e.preventDefault();
+    }
+    setError(null);
+    setSuccess(null);
+
     if (!user) {
       setError('You must be logged in to record laboratory tests.');
       return;
@@ -198,9 +240,42 @@ export const NewEntryForm: React.FC<NewEntryFormProps> = ({ user, onRecordSaved 
     // Check that at least one test parameter is filled
     const hasAnyValue = Object.values(values).some((v) => v.trim() !== '');
     if (!hasAnyValue) {
-      setError('Please enter at least one test result parameter.');
+      setError('Please enter at least one chemical parameter value before reviewing.');
       return;
     }
+
+    // Open the confirmation modal
+    setShowConfirmModal(true);
+  };
+
+  // Keyboard accessibility for Confirmation Modal:
+  // - Escape closes modal without submitting
+  // - Initial focus goes to Confirm & Submit button
+  React.useEffect(() => {
+    if (!showConfirmModal) return;
+
+    const timer = setTimeout(() => {
+      confirmButtonRef.current?.focus();
+    }, 60);
+
+    const handleModalKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setShowConfirmModal(false);
+        reviewButtonRef.current?.focus();
+      }
+    };
+
+    window.addEventListener('keydown', handleModalKeyDown);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('keydown', handleModalKeyDown);
+    };
+  }, [showConfirmModal]);
+
+  // Step 2: Final Submission only after user clicks "Confirm & Submit"
+  const handleConfirmSubmit = async () => {
+    if (!user || isSubmitting) return;
 
     setIsSubmitting(true);
     setError(null);
@@ -236,11 +311,15 @@ export const NewEntryForm: React.FC<NewEntryFormProps> = ({ user, onRecordSaved 
         throw new Error(data.error || 'Failed to save laboratory record.');
       }
 
+      // Close modal on successful submission
+      setShowConfirmModal(false);
+
       setSuccess(`Record for ${testDate} under "${category}" successfully logged into Supabase.`);
-      onRecordSaved(data.record);
+      
       // Auto increment sample ID for next quick entry
       const nextNum = parseInt(sampleId.replace(/\D/g, '') || '1', 10) + 1;
       setSampleId(`Sample-${nextNum}`);
+
       // Clear inputs for next entry
       setValues({
         loi: '',
@@ -254,8 +333,13 @@ export const NewEntryForm: React.FC<NewEntryFormProps> = ({ user, onRecordSaved 
         chloride: '',
       });
       setNotes('');
+
+      // Notify parent to refresh and navigate to Previous Records
+      onRecordSaved(data.record);
     } catch (err: any) {
       setError(err.message || 'An error occurred while saving.');
+      // Keep modal open or close depending on error preference; closing allows user to see main error banner
+      setShowConfirmModal(false);
     } finally {
       setIsSubmitting(false);
     }
@@ -307,7 +391,7 @@ export const NewEntryForm: React.FC<NewEntryFormProps> = ({ user, onRecordSaved 
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleOpenReview} className="space-y-6">
         {/* XRF / SPECTROMETER 1-CLICK INSTRUMENT AUTO-IMPORT DROPZONE */}
         <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-xs space-y-3">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -536,10 +620,14 @@ export const NewEntryForm: React.FC<NewEntryFormProps> = ({ user, onRecordSaved 
 
                 <div className="relative rounded-md shadow-subtle">
                   <input
+                    ref={(el) => {
+                      paramRefs.current[param.key] = el;
+                    }}
                     type="text"
                     inputMode="decimal"
                     value={values[param.key]}
                     onChange={(e) => handleFieldChange(param.key, e.target.value)}
+                    onKeyDown={(e) => handleParamKeyDown(e, param.key, index)}
                     placeholder={`e.g. ${param.key === 'chloride' ? '0.015' : '1.50'}`}
                     className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-semibold font-mono text-slate-900 placeholder:text-slate-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/15 focus:outline-none transition-colors"
                   />
@@ -913,16 +1001,200 @@ export const NewEntryForm: React.FC<NewEntryFormProps> = ({ user, onRecordSaved 
             </button>
 
             <button
+              ref={reviewButtonRef}
               type="submit"
               disabled={isSubmitting}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-md bg-blue-600 px-6 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-blue-700 transition-colors disabled:opacity-60"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-blue-700 transition-colors focus:ring-2 focus:ring-blue-600/30 focus:outline-none disabled:opacity-60"
             >
-              <Save className="h-4 w-4" />
-              <span>{isSubmitting ? 'Saving to Database...' : 'Save QA Test Record'}</span>
+              <Eye className="h-4 w-4" />
+              <span>Review & Confirm Data</span>
             </button>
           </div>
         </div>
       </form>
+
+      {/* ============================================================================== */}
+      {/* 4. CENTERED DATA CONFIRMATION MODAL BEFORE SAVING                              */}
+      {/* ============================================================================== */}
+      {showConfirmModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-xs overflow-y-auto animate-in fade-in duration-200"
+          onClick={(e) => {
+            // Close when clicking subtle backdrop outside modal box
+            if (e.target === e.currentTarget && !isSubmitting) {
+              setShowConfirmModal(false);
+              reviewButtonRef.current?.focus();
+            }
+          }}
+        >
+          <div
+            ref={modalRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="confirm-modal-title"
+            className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden my-auto animate-in zoom-in-95 duration-200"
+          >
+            {/* Modal Header */}
+            <div className="bg-slate-50 border-b border-slate-200 px-6 py-4 flex items-start justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white shadow-xs">
+                  <ClipboardCheck className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 id="confirm-modal-title" className="text-base font-bold text-slate-900">
+                    Confirm Chemical Analysis Data
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Please review your entered laboratory results before submitting. Check that all values are correct.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!isSubmitting) {
+                    setShowConfirmModal(false);
+                    reviewButtonRef.current?.focus();
+                  }
+                }}
+                disabled={isSubmitting}
+                className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-200/60 transition-colors"
+                title="Close modal"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Content: Complete Data Table */}
+            <div className="p-6 space-y-4 max-h-[65vh] overflow-y-auto">
+              <div className="rounded-xl border border-slate-200 overflow-hidden shadow-xs">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className="bg-slate-100/80 border-b border-slate-200 text-slate-700 font-bold uppercase text-[10px] tracking-wider">
+                      <th className="py-2.5 px-4">Parameter</th>
+                      <th className="py-2.5 px-4 text-right">Entered Value</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 bg-white">
+                    {/* Date */}
+                    <tr className="bg-slate-50/50">
+                      <td className="py-2.5 px-4 font-semibold text-slate-700 flex items-center gap-1.5">
+                        <Calendar className="w-3.5 h-3.5 text-blue-500" />
+                        <span>Date</span>
+                      </td>
+                      <td className="py-2.5 px-4 text-right font-mono font-bold text-slate-900">
+                        {testDate}
+                      </td>
+                    </tr>
+
+                    {/* Category */}
+                    <tr className="bg-slate-50/50">
+                      <td className="py-2.5 px-4 font-semibold text-slate-700 flex items-center gap-1.5">
+                        <Layers className="w-3.5 h-3.5 text-amber-500" />
+                        <span>Category</span>
+                      </td>
+                      <td className="py-2.5 px-4 text-right font-semibold text-slate-900">
+                        {category}
+                      </td>
+                    </tr>
+
+                    {/* The 9 Parameters in Exact Sequence */}
+                    {CHEMICAL_PARAMETERS.map((param) => {
+                      const rawVal = values[param.key];
+                      const hasVal = rawVal !== '' && !isNaN(Number(rawVal));
+                      return (
+                        <tr key={param.key} className="hover:bg-blue-50/30 transition-colors">
+                          <td className="py-2 px-4 font-medium text-slate-800">
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-slate-900">{param.symbol}</span>
+                              <span className="text-[11px] text-slate-400">({param.label})</span>
+                            </div>
+                          </td>
+                          <td className="py-2 px-4 text-right">
+                            {hasVal ? (
+                              <span className="font-mono font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200/60">
+                                {rawVal} {param.unit}
+                              </span>
+                            ) : (
+                              <span className="text-slate-400 italic font-mono">-</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+
+                    {/* Total Oxides (Σ) */}
+                    <tr className="bg-slate-50 border-t-2 border-slate-200">
+                      <td className="py-2.5 px-4 font-bold text-slate-900 flex items-center gap-1.5">
+                        <Calculator className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>Total Oxides (Σ)</span>
+                      </td>
+                      <td className="py-2.5 px-4 text-right font-mono font-extrabold text-slate-900">
+                        {currentSum.toFixed(2)}%
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Sample ID & Shift Info Pill */}
+              <div className="flex items-center justify-between text-xs text-slate-500 px-3 py-2 bg-slate-50 rounded-xl border border-slate-200">
+                <span className="flex items-center gap-1.5">
+                  <Tag className="w-3.5 h-3.5 text-slate-400" />
+                  <span>Sample Identifier: <strong>{sampleId || 'Sample-1'}</strong></span>
+                </span>
+                <span className="font-medium text-slate-600">Shift: {shift}</span>
+              </div>
+
+              {notes && (
+                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs">
+                  <span className="font-bold text-slate-700 block mb-0.5">Chemist Notes:</span>
+                  <p className="text-slate-600 italic">{notes}</p>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer with Two Buttons */}
+            <div className="bg-slate-50 border-t border-slate-200 px-6 py-4 flex flex-col-reverse sm:flex-row items-center justify-end gap-3">
+              {/* Button 1: Edit Data */}
+              <button
+                ref={editButtonRef}
+                type="button"
+                onClick={() => {
+                  setShowConfirmModal(false);
+                  reviewButtonRef.current?.focus();
+                }}
+                disabled={isSubmitting}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl border border-slate-300 bg-white text-xs font-bold text-slate-700 hover:bg-slate-100 hover:text-slate-900 transition-colors shadow-xs disabled:opacity-60"
+              >
+                <Edit3 className="w-4 h-4 text-slate-500" />
+                <span>Edit Data</span>
+              </button>
+
+              {/* Button 2: Confirm & Submit */}
+              <button
+                ref={confirmButtonRef}
+                type="button"
+                onClick={handleConfirmSubmit}
+                disabled={isSubmitting}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-xs font-bold text-white shadow-sm transition-colors focus:ring-2 focus:ring-blue-600/30 focus:outline-none disabled:opacity-60"
+              >
+                {isSubmitting ? (
+                  <>
+                    <RotateCcw className="w-4 h-4 animate-spin" />
+                    <span>Saving Record to Supabase...</span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Confirm & Submit</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
