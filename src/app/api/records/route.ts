@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { LaboratoryRecordPayload } from '@/types';
 import { extractNextSampleId } from '@/lib/laboratory/sampleIdHelper';
 import { computeRecordDiff, insertAuditLog } from '@/lib/laboratory/auditHelper';
+import { calculateEquivalentAlkali } from '@/lib/laboratory/exportService';
 
 function getSupabase() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -102,7 +103,20 @@ export async function GET(request: Request) {
       return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 
-    const activeRecords = (data || []).filter((r: any) => r.is_deleted !== true);
+    const activeRecords = (data || [])
+      .filter((r: any) => r.is_deleted !== true)
+      .map((r: any) => {
+        let k2o = r.k2o ?? null;
+        let na2o = r.na2o ?? null;
+        if ((k2o === null || na2o === null) && typeof r.notes === 'string' && r.notes.includes('[Alkalis:')) {
+          const kMatch = r.notes.match(/K2O=([0-9]+\.?[0-9]*)/);
+          const nMatch = r.notes.match(/Na2O=([0-9]+\.?[0-9]*)/);
+          if (k2o === null && kMatch) k2o = Number(kMatch[1]);
+          if (na2o === null && nMatch) na2o = Number(nMatch[1]);
+        }
+        const na2o_eq = r.na2o_eq ?? calculateEquivalentAlkali(na2o, k2o);
+        return { ...r, k2o, na2o, na2o_eq };
+      });
     const sampleIds = activeRecords.map((r: any) => r.sample_id);
     return NextResponse.json({
       success: true,
@@ -133,6 +147,8 @@ export async function POST(request: Request) {
       alumina = null,
       iron = null,
       magnesia = null,
+      k2o = null,
+      na2o = null,
       chloride = null,
       notes = null,
     }: LaboratoryRecordPayload = body;
@@ -164,29 +180,56 @@ export async function POST(request: Request) {
       );
     }
 
-    const { data, error } = await supabase
+    const k2oNum = k2o !== null && k2o !== undefined && !isNaN(Number(k2o)) ? Number(k2o) : null;
+    const na2oNum = na2o !== null && na2o !== undefined && !isNaN(Number(na2o)) ? Number(na2o) : null;
+    const na2oEqNum = calculateEquivalentAlkali(na2oNum, k2oNum);
+
+    const baseInsert = {
+      user_id,
+      test_date,
+      category,
+      sample_id: cleanSampleId,
+      shift,
+      loi: loi !== null && !isNaN(Number(loi)) ? Number(loi) : null,
+      ir: ir !== null && !isNaN(Number(ir)) ? Number(ir) : null,
+      so3: so3 !== null && !isNaN(Number(so3)) ? Number(so3) : null,
+      lime: lime !== null && !isNaN(Number(lime)) ? Number(lime) : null,
+      silica: silica !== null && !isNaN(Number(silica)) ? Number(silica) : null,
+      alumina: alumina !== null && !isNaN(Number(alumina)) ? Number(alumina) : null,
+      iron: iron !== null && !isNaN(Number(iron)) ? Number(iron) : null,
+      magnesia: magnesia !== null && !isNaN(Number(magnesia)) ? Number(magnesia) : null,
+      chloride: chloride !== null && !isNaN(Number(chloride)) ? Number(chloride) : null,
+      notes,
+    };
+
+    let { data, error } = await supabase
       .from('laboratory_records')
       .insert([
         {
-          user_id,
-          test_date,
-          category,
-          sample_id: cleanSampleId,
-          shift,
-          loi: loi !== null && !isNaN(Number(loi)) ? Number(loi) : null,
-          ir: ir !== null && !isNaN(Number(ir)) ? Number(ir) : null,
-          so3: so3 !== null && !isNaN(Number(so3)) ? Number(so3) : null,
-          lime: lime !== null && !isNaN(Number(lime)) ? Number(lime) : null,
-          silica: silica !== null && !isNaN(Number(silica)) ? Number(silica) : null,
-          alumina: alumina !== null && !isNaN(Number(alumina)) ? Number(alumina) : null,
-          iron: iron !== null && !isNaN(Number(iron)) ? Number(iron) : null,
-          magnesia: magnesia !== null && !isNaN(Number(magnesia)) ? Number(magnesia) : null,
-          chloride: chloride !== null && !isNaN(Number(chloride)) ? Number(chloride) : null,
-          notes,
+          ...baseInsert,
+          k2o: k2oNum,
+          na2o: na2oNum,
+          na2o_eq: na2oEqNum,
         },
       ])
       .select()
       .single();
+
+    // Fallback if alkalis_migration.sql hasn't been executed in Supabase yet
+    if (error && (error.code === '42703' || error.message?.includes('k2o') || error.message?.includes('na2o'))) {
+      const alkaliTag =
+        k2oNum !== null || na2oNum !== null
+          ? `[Alkalis: ${k2oNum !== null ? `K2O=${k2oNum}%` : ''}${k2oNum !== null && na2oNum !== null ? ', ' : ''}${na2oNum !== null ? `Na2O=${na2oNum}%` : ''}]`
+          : '';
+      const fallbackNotes = alkaliTag ? (notes ? `${alkaliTag} ${notes}` : alkaliTag) : notes;
+      const retry = await supabase
+        .from('laboratory_records')
+        .insert([{ ...baseInsert, notes: fallbackNotes }])
+        .select()
+        .single();
+      data = retry.data;
+      error = retry.error;
+    }
 
     if (error) {
       if (error.code === 'PGRST205' || error.message?.includes('schema cache')) {
@@ -271,7 +314,11 @@ export async function PUT(request: Request) {
       );
     }
 
-    const updatePayload = {
+    const k2oVal = updates.k2o !== null && updates.k2o !== undefined && String(updates.k2o) !== '' && !isNaN(Number(updates.k2o)) ? Number(updates.k2o) : null;
+    const na2oVal = updates.na2o !== null && updates.na2o !== undefined && String(updates.na2o) !== '' && !isNaN(Number(updates.na2o)) ? Number(updates.na2o) : null;
+    const na2oEqVal = calculateEquivalentAlkali(na2oVal, k2oVal);
+
+    const baseUpdate = {
       test_date: updates.test_date,
       category: updates.category,
       sample_id: updates.sample_id,
@@ -289,16 +336,35 @@ export async function PUT(request: Request) {
       updated_at: new Date().toISOString(),
     };
 
-    // Compute field-level diff
-    const changedFields = computeRecordDiff(existingRecord, updatePayload);
+    const fullUpdatePayload = {
+      ...baseUpdate,
+      k2o: k2oVal,
+      na2o: na2oVal,
+      na2o_eq: na2oEqVal,
+    };
 
-    const { data, error } = await supabase
+    // Compute field-level diff
+    const changedFields = computeRecordDiff(existingRecord, fullUpdatePayload);
+
+    let { data, error } = await supabase
       .from('laboratory_records')
-      .update(updatePayload)
+      .update(fullUpdatePayload)
       .eq('id', id)
       .eq('user_id', user_id)
       .select()
       .single();
+
+    if (error && (error.code === '42703' || error.message?.includes('k2o') || error.message?.includes('na2o'))) {
+      const retry = await supabase
+        .from('laboratory_records')
+        .update(baseUpdate)
+        .eq('id', id)
+        .eq('user_id', user_id)
+        .select()
+        .single();
+      data = retry.data;
+      error = retry.error;
+    }
 
     if (error) {
       console.error('Update record error:', error);

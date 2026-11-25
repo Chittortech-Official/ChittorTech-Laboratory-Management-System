@@ -59,6 +59,7 @@ export interface LaboratoryRecord {
   magnesia: number | null; // MgO (%)
   k2o?: number | null; // K2O (%)
   na2o?: number | null; // Na2O (%)
+  na2o_eq?: number | null; // Total Equivalent Alkalis = Na2O + 0.658 * K2O (%)
   chloride: number | null; // Cl (%)
   total_oxides?: number | null;
   notes?: string | null;

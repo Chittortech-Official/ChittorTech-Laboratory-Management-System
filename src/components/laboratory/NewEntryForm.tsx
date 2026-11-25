@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { CHEMICAL_PARAMETERS, PLANT_CATEGORIES, LAB_SHIFTS } from '@/lib/laboratory/constants';
 import { LaboratoryRecord, UserProfile } from '@/types';
-import { calculateOxideSum, formatDateDDMMYYYY } from '@/lib/laboratory/exportService';
+import { calculateOxideSum, calculateEquivalentAlkali, formatDateDDMMYYYY } from '@/lib/laboratory/exportService';
 import { calculateBoguePhases, BogueResult } from '@/lib/laboratory/bogueEngine';
 import { parseXrfInstrumentFile, generateDemoXrfCsv, ParsedSample } from '@/lib/laboratory/xrfParser';
 import { Sparkles, Award, TrendingUp, Info, Zap, Flame, AlertOctagon, CheckCheck, UploadCloud, FileSpreadsheet, Download, CheckCircle, FileText, RefreshCw } from 'lucide-react';
@@ -326,15 +326,8 @@ export const NewEntryForm: React.FC<NewEntryFormProps> = ({ user, onRecordSaved 
     setSuccess(null);
 
     try {
-      // Preserve alkalis in notes as well as payload for full backward and forward compatibility
-      let finalNotes = notes.trim();
-      const alkalis: string[] = [];
-      if (values.k2o !== '') alkalis.push(`K2O=${values.k2o}%`);
-      if (values.na2o !== '') alkalis.push(`Na2O=${values.na2o}%`);
-      if (alkalis.length > 0) {
-        const alkaliTag = `[Alkalis: ${alkalis.join(', ')}]`;
-        finalNotes = finalNotes ? `${alkaliTag} ${finalNotes}` : alkaliTag;
-      }
+      const k2oNum = values.k2o !== '' ? Number(values.k2o) : null;
+      const na2oNum = values.na2o !== '' ? Number(values.na2o) : null;
 
       const payload = {
         user_id: user.id,
@@ -352,10 +345,11 @@ export const NewEntryForm: React.FC<NewEntryFormProps> = ({ user, onRecordSaved 
         iron: values.iron !== '' ? Number(values.iron) : null,
         lime: values.lime !== '' ? Number(values.lime) : null,
         magnesia: values.magnesia !== '' ? Number(values.magnesia) : null,
-        k2o: values.k2o !== '' ? Number(values.k2o) : null,
-        na2o: values.na2o !== '' ? Number(values.na2o) : null,
+        k2o: k2oNum,
+        na2o: na2oNum,
+        na2o_eq: calculateEquivalentAlkali(na2oNum, k2oNum),
         chloride: values.chloride !== '' ? Number(values.chloride) : null,
-        notes: finalNotes || null,
+        notes: notes.trim() || null,
       };
 
       const res = await fetch('/api/records', {
@@ -834,15 +828,39 @@ export const NewEntryForm: React.FC<NewEntryFormProps> = ({ user, onRecordSaved 
               </div>
             </div>
 
-            {bogue.hasSufficientData && (
+            {(bogue.hasSufficientData || values.k2o !== '' || values.na2o !== '') && (
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                  <Award className="w-3 h-3" />
-                  {bogue.strengthProfile}
-                </span>
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
-                  {bogue.sulfateResistance}
-                </span>
+                {(() => {
+                  const na2oEq = calculateEquivalentAlkali(
+                    values.na2o !== '' ? Number(values.na2o) : null,
+                    values.k2o !== '' ? Number(values.k2o) : null
+                  );
+                  if (na2oEq === null) return null;
+                  const isLowAlkali = na2oEq <= 0.60;
+                  return (
+                    <span
+                      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold border ${
+                        isLowAlkali
+                          ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                          : 'bg-amber-50 text-amber-800 border-amber-200'
+                      }`}
+                      title="Na2Oeq = Na2O + 0.658 × K2O (Low-Alkali Cement Limit <= 0.60%)"
+                    >
+                      Na₂Oeq: {na2oEq.toFixed(3)}% ({isLowAlkali ? 'Low-Alkali OK' : '> 0.60% Limit'})
+                    </span>
+                  );
+                })()}
+                {bogue.hasSufficientData && (
+                  <>
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      <Award className="w-3 h-3" />
+                      {bogue.strengthProfile}
+                    </span>
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                      {bogue.sulfateResistance}
+                    </span>
+                  </>
+                )}
               </div>
             )}
           </div>

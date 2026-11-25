@@ -14,6 +14,9 @@ const TRACKED_FIELD_LABELS: Record<string, string> = {
   iron: 'Fe₂O₃ (%)',
   lime: 'CaO (%)',
   magnesia: 'MgO (%)',
+  k2o: 'K₂O (%)',
+  na2o: 'Na₂O (%)',
+  na2o_eq: 'Total Eq. Alkalis Na₂Oeq (%)',
   chloride: 'Cl⁻ (%)',
   notes: 'Observations / Notes',
 };
@@ -42,7 +45,7 @@ export function computeRecordDiff(
       normNew !== null &&
       !isNaN(Number(normOld)) &&
       !isNaN(Number(normNew)) &&
-      ['loi', 'ir', 'so3', 'silica', 'alumina', 'iron', 'lime', 'magnesia', 'chloride'].includes(field)
+      ['loi', 'ir', 'so3', 'silica', 'alumina', 'iron', 'lime', 'magnesia', 'k2o', 'na2o', 'na2o_eq', 'chloride'].includes(field)
     ) {
       if (Number(normOld) !== Number(normNew)) {
         diffs.push({
@@ -118,3 +121,4 @@ export async function insertAuditLog(params: LogAuditParams): Promise<{ logged: 
     return { logged: false };
   }
 }
+

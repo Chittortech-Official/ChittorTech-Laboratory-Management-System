@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { LaboratoryRecord, ChemicalParameterKey, AuditLogEntry } from '@/types';
 import { CHEMICAL_PARAMETERS, PLANT_CATEGORIES, LAB_SHIFTS } from '@/lib/laboratory/constants';
-import { generateSingleRecordPdf, exportToCsv, exportToExcel, buildExcelFilename, calculateOxideSum, formatDateDDMMYYYY } from '@/lib/laboratory/exportService';
+import { generateSingleRecordPdf, exportToCsv, exportToExcel, buildExcelFilename, calculateOxideSum, calculateEquivalentAlkali, formatDateDDMMYYYY } from '@/lib/laboratory/exportService';
 import { useConfirmationModal } from '@/contexts/ConfirmationModalContext';
 
 interface PreviousRecordsProps {
@@ -167,6 +167,8 @@ export const PreviousRecords: React.FC<PreviousRecordsProps> = ({
           alumina: editFormData.alumina !== undefined && editFormData.alumina !== null && String(editFormData.alumina) !== '' ? Number(editFormData.alumina) : null,
           iron: editFormData.iron !== undefined && editFormData.iron !== null && String(editFormData.iron) !== '' ? Number(editFormData.iron) : null,
           magnesia: editFormData.magnesia !== undefined && editFormData.magnesia !== null && String(editFormData.magnesia) !== '' ? Number(editFormData.magnesia) : null,
+          k2o: editFormData.k2o !== undefined && editFormData.k2o !== null && String(editFormData.k2o) !== '' ? Number(editFormData.k2o) : null,
+          na2o: editFormData.na2o !== undefined && editFormData.na2o !== null && String(editFormData.na2o) !== '' ? Number(editFormData.na2o) : null,
           chloride: editFormData.chloride !== undefined && editFormData.chloride !== null && String(editFormData.chloride) !== '' ? Number(editFormData.chloride) : null,
           notes: editFormData.notes || '',
         }),
@@ -454,6 +456,14 @@ export const PreviousRecords: React.FC<PreviousRecordsProps> = ({
                       <span className="block text-[9px] font-mono font-bold text-sky-300 uppercase tracking-wider">{p.formula}</span>
                     </th>
                   ))}
+                  {/* Equivalent Alkalis Column */}
+                  <th
+                    className="py-2.5 px-3 text-right whitespace-nowrap border-r border-slate-700 bg-indigo-950 text-indigo-100"
+                    title="Total Equivalent Alkalis = Na2O + 0.658 * K2O (Low-Alkali <= 0.60%)"
+                  >
+                    <span className="block text-[11px] font-black text-indigo-100">Na₂O eq</span>
+                    <span className="block text-[9px] font-mono font-bold text-indigo-300 uppercase">Alkalis</span>
+                  </th>
                   {/* Total Oxides Column */}
                   <th className="py-2.5 px-3.5 text-right whitespace-nowrap border-r border-slate-700 bg-emerald-950 text-emerald-100">
                     <span className="block text-[11px] font-black text-emerald-100">Total Σ</span>
@@ -514,6 +524,25 @@ export const PreviousRecords: React.FC<PreviousRecordsProps> = ({
                           </td>
                         );
                       })}
+
+                      {/* Equivalent Alkalis (Na2Oeq) */}
+                      <td className="py-3 px-3 text-right font-mono text-xs whitespace-nowrap border-r border-b border-slate-200 bg-indigo-50/40">
+                        {(() => {
+                          const eq = r.na2o_eq ?? calculateEquivalentAlkali(r.na2o, r.k2o);
+                          if (eq === null) return <span className="text-slate-300 italic">-</span>;
+                          const isLow = eq <= 0.60;
+                          return (
+                            <span
+                              className={`font-black px-1.5 py-0.5 rounded ${
+                                isLow ? 'text-emerald-800 bg-emerald-100/70' : 'text-amber-800 bg-amber-100/80'
+                              }`}
+                              title={isLow ? 'Low-Alkali Compliant (<= 0.60%)' : 'Exceeds Low-Alkali Limit (> 0.60%)'}
+                            >
+                              {Number(eq).toFixed(3)}
+                            </span>
+                          );
+                        })()}
+                      </td>
 
                       {/* Total Oxides (Σ) */}
                       <td className="py-3 px-3.5 text-right font-mono text-xs font-black whitespace-nowrap border-r border-b border-slate-200 bg-emerald-50 text-emerald-950">
@@ -733,11 +762,10 @@ export const PreviousRecords: React.FC<PreviousRecordsProps> = ({
                       key={preset}
                       type="button"
                       onClick={() => setEditReason(preset)}
-                      className={`px-2 py-1 text-[10px] font-semibold rounded-lg border transition-colors ${
-                        editReason === preset
+                      className={`px-2 py-1 text-[10px] font-semibold rounded-lg border transition-colors ${editReason === preset
                           ? 'bg-amber-600 text-white border-amber-600'
                           : 'bg-white text-amber-900 border-amber-200 hover:bg-amber-100'
-                      }`}
+                        }`}
                     >
                       {preset}
                     </button>
@@ -803,11 +831,10 @@ export const PreviousRecords: React.FC<PreviousRecordsProps> = ({
                     key={preset}
                     type="button"
                     onClick={() => setDeleteReason(preset)}
-                    className={`px-2 py-1 text-[10px] font-semibold rounded-lg border transition-colors ${
-                      deleteReason === preset
+                    className={`px-2 py-1 text-[10px] font-semibold rounded-lg border transition-colors ${deleteReason === preset
                         ? 'bg-rose-600 text-white border-rose-600'
                         : 'bg-rose-50 text-rose-800 border-rose-200 hover:bg-rose-100'
-                    }`}
+                      }`}
                   >
                     {preset}
                   </button>
@@ -906,8 +933,8 @@ export const PreviousRecords: React.FC<PreviousRecordsProps> = ({
                       log.action === 'CREATE'
                         ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
                         : log.action === 'UPDATE'
-                        ? 'bg-amber-100 text-amber-800 border-amber-200'
-                        : 'bg-rose-100 text-rose-800 border-rose-200';
+                          ? 'bg-amber-100 text-amber-800 border-amber-200'
+                          : 'bg-rose-100 text-rose-800 border-rose-200';
 
                     return (
                       <div key={log.id} className="bg-white rounded-xl border border-slate-200 p-4 shadow-2xs space-y-3">

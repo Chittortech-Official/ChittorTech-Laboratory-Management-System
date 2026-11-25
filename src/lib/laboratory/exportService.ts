@@ -37,6 +37,22 @@ export function calculateOxideSum(record: Partial<LaboratoryRecord>): number {
 }
 
 /**
+ * Calculates Total Equivalent Alkalis: Na2O_eq = Na2O + 0.658 * K2O
+ * Low-alkali cement limit (ASTM C150 / IS 269): <= 0.60%
+ */
+export function calculateEquivalentAlkali(
+  na2o?: number | null,
+  k2o?: number | null
+): number | null {
+  const hasNa = na2o !== null && na2o !== undefined && !isNaN(Number(na2o));
+  const hasK = k2o !== null && k2o !== undefined && !isNaN(Number(k2o));
+  if (!hasNa && !hasK) return null;
+  const na = hasNa ? Number(na2o) : 0;
+  const k = hasK ? Number(k2o) : 0;
+  return Number((na + 0.658 * k).toFixed(3));
+}
+
+/**
  * Generate Professional Industrial PDF Report
  */
 export function generatePdfDocument(records: LaboratoryRecord[], meta: ReportMeta = {}): jsPDF {
