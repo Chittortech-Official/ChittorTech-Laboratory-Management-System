@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { LaboratoryRecord, ChemicalParameterKey } from '@/types';
 import { CHEMICAL_PARAMETERS, PLANT_CATEGORIES, LAB_SHIFTS } from '@/lib/laboratory/constants';
-import { generateSingleRecordPdf, exportToCsv, exportToExcel, buildExcelFilename } from '@/lib/laboratory/exportService';
+import { generateSingleRecordPdf, exportToCsv, exportToExcel, buildExcelFilename, calculateOxideSum } from '@/lib/laboratory/exportService';
 import { useConfirmationModal } from '@/contexts/ConfirmationModalContext';
 
 interface PreviousRecordsProps {
@@ -368,89 +368,123 @@ export const PreviousRecords: React.FC<PreviousRecordsProps> = ({
             )}
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
+          <div className="overflow-x-auto border-t border-slate-200">
+            <table className="w-full text-left border-collapse border border-slate-300 text-xs">
               <thead>
-                <tr className="bg-slate-50/80 border-b border-slate-200 text-slate-600 font-bold tracking-wider uppercase text-[10px]">
-                  <th className="py-3.5 px-4 whitespace-nowrap">Date / Shift</th>
-                  <th className="py-3.5 px-3 whitespace-nowrap">Sample ID</th>
-                  <th className="py-3.5 px-3 whitespace-nowrap">Category</th>
-                  {/* Strict 9 parameters */}
+                <tr className="bg-slate-100/90 text-slate-800 font-extrabold uppercase text-[10px] tracking-wider border-b-2 border-slate-300">
+                  <th className="py-3 px-3.5 whitespace-nowrap border-r border-slate-300 bg-slate-100">
+                    Date &bull; Shift
+                  </th>
+                  <th className="py-3 px-3 whitespace-nowrap border-r border-slate-300 bg-slate-100">
+                    Sample ID
+                  </th>
+                  <th className="py-3 px-3 whitespace-nowrap border-r border-slate-300 bg-slate-100">
+                    Category
+                  </th>
+                  {/* The 11 Chemical Parameters in Exact Sequence */}
                   {CHEMICAL_PARAMETERS.map((p) => (
-                    <th key={p.key} className="py-3.5 px-2.5 text-right whitespace-nowrap" title={`${p.label} (${p.formula})`}>
-                      <span className="text-slate-800">{p.symbol}</span>
-                      <span className="block text-[8px] font-normal text-slate-400">{p.formula}</span>
+                    <th
+                      key={p.key}
+                      className="py-2.5 px-2.5 text-right whitespace-nowrap border-r border-slate-300 bg-slate-100/95"
+                      title={`${p.label} (${p.formula})`}
+                    >
+                      <span className="block text-[11px] font-extrabold text-slate-900">{p.symbol}</span>
+                      <span className="block text-[9px] font-mono font-medium text-slate-500 uppercase">{p.formula}</span>
                     </th>
                   ))}
-                  <th className="py-3.5 px-4 text-center whitespace-nowrap">Actions</th>
+                  {/* Total Oxides Column */}
+                  <th className="py-2.5 px-3 text-right whitespace-nowrap border-r border-slate-300 bg-emerald-50 text-emerald-950">
+                    <span className="block text-[11px] font-extrabold">Total Σ</span>
+                    <span className="block text-[9px] font-mono font-medium text-emerald-700">Oxides</span>
+                  </th>
+                  <th className="py-3 px-4 text-center whitespace-nowrap bg-slate-100">
+                    Actions
+                  </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 text-slate-700">
-                {filteredRecords.map((r) => (
-                  <tr key={r.id} className="hover:bg-slate-50/80 transition-colors group">
-                    <td className="py-3 px-4 whitespace-nowrap">
-                      <div className="font-semibold text-slate-900">{r.test_date}</div>
-                      <div className="text-[10px] text-slate-400">{r.shift}</div>
-                    </td>
-                    <td className="py-3 px-3 whitespace-nowrap font-mono text-[11px] font-medium text-blue-700">
-                      {r.sample_id}
-                    </td>
-                    <td className="py-3 px-3 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${
-                        r.category.includes('Ball Mill') 
-                          ? 'bg-blue-50 text-blue-700 border border-blue-200/60'
-                          : r.category.includes('Cement')
-                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60'
-                          : 'bg-slate-100 text-slate-700 border border-slate-200'
-                      }`}>
-                        {r.category}
-                      </span>
-                    </td>
+              <tbody className="text-slate-800">
+                {filteredRecords.map((r) => {
+                  const total = calculateOxideSum(r);
+                  return (
+                    <tr
+                      key={r.id}
+                      className="odd:bg-white even:bg-slate-50/70 hover:bg-blue-50/50 transition-colors group"
+                    >
+                      {/* Date & Shift */}
+                      <td className="py-2.5 px-3.5 whitespace-nowrap border-r border-b border-slate-200">
+                        <div className="font-bold text-slate-900 text-xs">{r.test_date}</div>
+                        <div className="text-[10px] text-slate-500 font-medium">{r.shift || 'General'}</div>
+                      </td>
 
-                    {/* 11 parameter values */}
-                    {CHEMICAL_PARAMETERS.map((p) => {
-                      const val = r[p.key as ChemicalParameterKey];
-                      return (
-                        <td key={p.key} className="py-3 px-2.5 text-right font-mono text-[11px] whitespace-nowrap">
-                          {val !== null && val !== undefined ? (
-                            <span className="text-slate-800 font-semibold">
-                              {Number(val).toFixed(p.decimals || (p.key === 'chloride' ? 4 : 2))}
-                            </span>
-                          ) : (
-                            <span className="text-slate-300">-</span>
-                          )}
-                        </td>
-                      );
-                    })}
+                      {/* Sample ID */}
+                      <td className="py-2.5 px-3 whitespace-nowrap border-r border-b border-slate-200 font-mono text-[11px] font-bold text-blue-700">
+                        <span className="bg-blue-50 px-2 py-0.5 rounded border border-blue-200/60 inline-block">
+                          {r.sample_id || 'Sample-1'}
+                        </span>
+                      </td>
 
-                    {/* Actions */}
-                    <td className="py-3 px-4 text-center whitespace-nowrap">
-                      <div className="flex items-center justify-center gap-1.5 opacity-90 group-hover:opacity-100">
-                        <button
-                          onClick={() => handleDownloadSinglePdf(r)}
-                          title="Download Single Test PDF Report"
-                          className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                        >
-                          <Download className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => handleOpenEdit(r)}
-                          title="Edit Test Record"
-                          className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
-                        >
-                          <Edit3 className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => setDeletingId(r.id)}
-                          title="Delete Record"
-                          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      {/* Plant Category */}
+                      <td className="py-2.5 px-3 whitespace-nowrap border-r border-b border-slate-200">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-800 border border-slate-300/80">
+                          {r.category}
+                        </span>
+                      </td>
+
+                      {/* 11 Chemical Parameter Values */}
+                      {CHEMICAL_PARAMETERS.map((p) => {
+                        const val = r[p.key as ChemicalParameterKey];
+                        const isFilled = val !== null && val !== undefined && !isNaN(Number(val));
+                        const decimals = p.decimals || (p.key === 'chloride' ? 4 : 2);
+                        return (
+                          <td
+                            key={p.key}
+                            className="py-2.5 px-2.5 text-right font-mono text-[11px] whitespace-nowrap border-r border-b border-slate-200"
+                          >
+                            {isFilled ? (
+                              <span className="font-bold text-slate-900">
+                                {Number(val).toFixed(decimals)}
+                              </span>
+                            ) : (
+                              <span className="text-slate-300 italic font-mono">-</span>
+                            )}
+                          </td>
+                        );
+                      })}
+
+                      {/* Total Oxides (Σ) */}
+                      <td className="py-2.5 px-3 text-right font-mono text-[11px] font-extrabold whitespace-nowrap border-r border-b border-slate-200 bg-emerald-50/40 text-emerald-900">
+                        {total > 0 ? `${total.toFixed(2)}%` : '-'}
+                      </td>
+
+                      {/* Actions */}
+                      <td className="py-2.5 px-4 text-center whitespace-nowrap border-b border-slate-200 bg-slate-50/20">
+                        <div className="flex items-center justify-center gap-1.5 opacity-90 group-hover:opacity-100">
+                          <button
+                            onClick={() => handleDownloadSinglePdf(r)}
+                            title="Download Single Test PDF Report"
+                            className="p-1.5 text-slate-500 hover:text-blue-700 hover:bg-blue-100/70 rounded-lg transition-colors"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleOpenEdit(r)}
+                            title="Edit Test Record"
+                            className="p-1.5 text-slate-500 hover:text-amber-700 hover:bg-amber-100/70 rounded-lg transition-colors"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => setDeletingId(r.id)}
+                            title="Delete Record"
+                            className="p-1.5 text-slate-500 hover:text-rose-700 hover:bg-rose-100/70 rounded-lg transition-colors"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

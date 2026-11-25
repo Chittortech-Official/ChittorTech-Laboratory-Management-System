@@ -232,35 +232,35 @@ export const LaboratoryDashboard: React.FC<LaboratoryDashboardProps> = ({
                   </button>
                 </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse text-xs">
+                <div className="overflow-x-auto border-t border-slate-200">
+                  <table className="w-full text-left border-collapse border border-slate-200 text-xs">
                     <thead>
-                      <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 uppercase text-[10px] font-bold">
-                        <th className="py-2.5 px-3">Date</th>
-                        <th className="py-2.5 px-2">Sample ID</th>
-                        <th className="py-2.5 px-2">Category</th>
-                        <th className="py-2.5 px-2 text-right">Lime (CaO)</th>
-                        <th className="py-2.5 px-2 text-right">Silica (SiO2)</th>
-                        <th className="py-2.5 px-2 text-right">SO3</th>
+                      <tr className="bg-slate-100 text-slate-800 uppercase text-[10px] font-extrabold border-b border-slate-300">
+                        <th className="py-2.5 px-3 border-r border-slate-300">Date</th>
+                        <th className="py-2.5 px-3 border-r border-slate-300">Sample ID</th>
+                        <th className="py-2.5 px-3 border-r border-slate-300">Category</th>
+                        <th className="py-2.5 px-3 text-right border-r border-slate-300">Lime (CaO)</th>
+                        <th className="py-2.5 px-3 text-right border-r border-slate-300">Silica (SiO₂)</th>
+                        <th className="py-2.5 px-3 text-right">SO₃</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {recentRecords.map((r) => (
-                        <tr key={r.id} className="hover:bg-slate-50/70">
-                          <td className="py-2.5 px-3 font-semibold text-slate-800">{r.test_date}</td>
-                          <td className="py-2.5 px-2 font-mono text-blue-600">{r.sample_id}</td>
-                          <td className="py-2.5 px-2">
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                        <tr key={r.id} className="odd:bg-white even:bg-slate-50/70 hover:bg-blue-50/50 transition-colors">
+                          <td className="py-2.5 px-3 font-semibold text-slate-900 border-r border-b border-slate-200">{r.test_date}</td>
+                          <td className="py-2.5 px-3 font-mono font-bold text-blue-700 border-r border-b border-slate-200">{r.sample_id}</td>
+                          <td className="py-2.5 px-3 border-r border-b border-slate-200">
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-800 border border-slate-300/80">
                               {r.category}
                             </span>
                           </td>
-                          <td className="py-2.5 px-2 text-right font-mono font-semibold">
+                          <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-900 border-r border-b border-slate-200">
                             {r.lime !== null ? `${r.lime.toFixed(2)}%` : '-'}
                           </td>
-                          <td className="py-2.5 px-2 text-right font-mono font-semibold">
+                          <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-900 border-r border-b border-slate-200">
                             {r.silica !== null ? `${r.silica.toFixed(2)}%` : '-'}
                           </td>
-                          <td className="py-2.5 px-2 text-right font-mono font-semibold">
+                          <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-900 border-b border-slate-200">
                             {r.so3 !== null ? `${r.so3.toFixed(2)}%` : '-'}
                           </td>
                         </tr>
