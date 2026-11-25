@@ -150,7 +150,7 @@ export function generatePdfDocument(records: LaboratoryRecord[], meta: ReportMet
       r.magnesia !== null ? Number(r.magnesia).toFixed(2) : '-',
       r.k2o !== null && r.k2o !== undefined ? Number(r.k2o).toFixed(2) : '-',
       r.na2o !== null && r.na2o !== undefined ? Number(r.na2o).toFixed(2) : '-',
-      r.chloride !== null ? Number(r.chloride).toFixed(3) : '-',
+      r.chloride !== null ? Number(r.chloride).toFixed(4) : '-',
       total > 0 ? `${total.toFixed(2)}%` : '-',
     ];
   });

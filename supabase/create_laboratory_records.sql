@@ -19,7 +19,7 @@ create table if not exists public.laboratory_records (
   alumina numeric(6, 2),
   iron numeric(6, 2),
   magnesia numeric(6, 2),
-  chloride numeric(6, 3),
+  chloride numeric(8, 4),
   total_oxides numeric(6, 2),
   notes text,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,

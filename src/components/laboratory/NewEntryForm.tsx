@@ -177,7 +177,10 @@ export const NewEntryForm: React.FC<NewEntryFormProps> = ({ user, onRecordSaved 
 
   const handleFieldChange = (key: string, val: string) => {
     // Only allow numbers and decimal point
-    if (val === '' || /^\d*\.?\d*$/.test(val)) {
+    // Chloride allows up to 4 decimals, all other parameters allow up to 2 decimals
+    const maxDecimals = key === 'chloride' ? 4 : 2;
+    const regex = new RegExp(`^\\d*(\\.\\d{0,${maxDecimals}})?$`);
+    if (val === '' || regex.test(val)) {
       setValues((prev) => ({ ...prev, [key]: val }));
       setError(null);
       setSuccess(null);
@@ -662,7 +665,7 @@ export const NewEntryForm: React.FC<NewEntryFormProps> = ({ user, onRecordSaved 
                     value={values[param.key]}
                     onChange={(e) => handleFieldChange(param.key, e.target.value)}
                     onKeyDown={(e) => handleParamKeyDown(e, param.key, index)}
-                    placeholder={`e.g. ${param.key === 'chloride' ? '0.015' : '1.50'}`}
+                    placeholder={param.key === 'chloride' ? 'e.g. 0.0150' : 'e.g. 1.50'}
                     className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-semibold font-mono text-slate-900 placeholder:text-slate-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/15 focus:outline-none transition-colors"
                   />
                   <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-xs font-semibold text-slate-400">

@@ -97,8 +97,8 @@ export const CHEMICAL_PARAMETERS: ParameterMetadata[] = [
     symbol: 'Cl⁻',
     formula: 'Cl⁻',
     unit: '%',
-    decimals: 3,
-    description: 'Trace halogen strictly restricted to prevent reinforcement corrosion',
+    decimals: 4,
+    description: 'Trace halogen strictly restricted to prevent reinforcement corrosion (up to 4 decimals)',
   },
 ];
 

@@ -407,13 +407,15 @@ export const PreviousRecords: React.FC<PreviousRecordsProps> = ({
                       </span>
                     </td>
 
-                    {/* 9 parameter values */}
+                    {/* 11 parameter values */}
                     {CHEMICAL_PARAMETERS.map((p) => {
                       const val = r[p.key as ChemicalParameterKey];
                       return (
                         <td key={p.key} className="py-3 px-2.5 text-right font-mono text-[11px] whitespace-nowrap">
                           {val !== null && val !== undefined ? (
-                            <span className="text-slate-800 font-semibold">{val.toFixed(2)}</span>
+                            <span className="text-slate-800 font-semibold">
+                              {Number(val).toFixed(p.decimals || (p.key === 'chloride' ? 4 : 2))}
+                            </span>
                           ) : (
                             <span className="text-slate-300">-</span>
                           )}
@@ -565,7 +567,7 @@ export const PreviousRecords: React.FC<PreviousRecordsProps> = ({
                         </div>
                         <input
                           type="number"
-                          step="0.01"
+                          step={p.key === 'chloride' ? '0.0001' : '0.01'}
                           min="0"
                           max="100"
                           value={val !== null && val !== undefined ? val : ''}
