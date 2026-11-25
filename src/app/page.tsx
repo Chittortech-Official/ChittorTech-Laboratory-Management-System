@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import Image from 'next/image';
+import { useSearchParams } from 'next/navigation';
 import { RefreshCw } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthLayout } from '@/components/auth/AuthLayout';
@@ -9,18 +10,194 @@ import { Header } from '@/components/common/Header';
 import { LaboratoryDashboard } from '@/components/laboratory/LaboratoryDashboard';
 import { DashboardTab } from '@/types';
 
-export default function HomePage() {
+const TAB_PARAM_MAP: Record<string, DashboardTab> = {
+  dashboard: 'dashboard',
+  new_entry: 'new_entry',
+  'new-entry': 'new_entry',
+  newentry: 'new_entry',
+  previous_records: 'previous_records',
+  'previous-records': 'previous_records',
+  previousrecords: 'previous_records',
+  analytics: 'analytics',
+  comparison: 'comparison',
+  'multi-line-comparison': 'comparison',
+  reports: 'reports',
+  'reports-downloads': 'reports',
+  email_reports: 'email_reports',
+  'email-reports': 'email_reports',
+  settings: 'settings',
+};
+
+const TAB_TO_PARAM_MAP: Record<DashboardTab, string> = {
+  dashboard: 'dashboard',
+  new_entry: 'new-entry',
+  previous_records: 'previous-records',
+  analytics: 'analytics',
+  comparison: 'comparison',
+  reports: 'reports',
+  email_reports: 'email-reports',
+  settings: 'settings',
+};
+
+const STORAGE_TAB_KEY = 'chittortech_active_tab';
+const STORAGE_SCROLL_PREFIX = 'chittortech_scroll_';
+
+function HomePageContent() {
+  const searchParams = useSearchParams();
   const { user, loading, logout } = useAuth();
   const [justAuthenticated, setJustAuthenticated] = useState(false);
-  const [activeTab, setActiveTab] = useState<DashboardTab>('dashboard');
   const [mounted, setMounted] = useState(false);
 
-  React.useEffect(() => {
+  // Helper to determine active tab from URL query params or sessionStorage fallback
+  const getInitialTab = useCallback((): DashboardTab => {
+    if (typeof window !== 'undefined') {
+      // 1. Try URL query parameter ?tab=...
+      const urlParams = new URLSearchParams(window.location.search);
+      const tabFromQuery = urlParams.get('tab') || searchParams?.get('tab');
+      if (tabFromQuery && TAB_PARAM_MAP[tabFromQuery.toLowerCase()]) {
+        return TAB_PARAM_MAP[tabFromQuery.toLowerCase()];
+      }
+
+      // 2. Fallback to sessionStorage
+      try {
+        const savedTab = sessionStorage.getItem(STORAGE_TAB_KEY);
+        if (savedTab && TAB_PARAM_MAP[savedTab.toLowerCase()]) {
+          return TAB_PARAM_MAP[savedTab.toLowerCase()];
+        }
+      } catch (e) {
+        console.warn('SessionStorage read error:', e);
+      }
+    }
+
+    return 'dashboard';
+  }, [searchParams]);
+
+  const [activeTab, setActiveTab] = useState<DashboardTab>('dashboard');
+
+  // Initialize and synchronize on mount
+  useEffect(() => {
     setMounted(true);
+    const initial = getInitialTab();
+    setActiveTab(initial);
+
+    // Save initial tab to sessionStorage and ensure URL matches
+    try {
+      sessionStorage.setItem(STORAGE_TAB_KEY, TAB_TO_PARAM_MAP[initial]);
+      const currentParam = new URLSearchParams(window.location.search).get('tab');
+      const expectedParam = TAB_TO_PARAM_MAP[initial];
+      if (currentParam !== expectedParam && expectedParam !== 'dashboard') {
+        const newUrl = `${window.location.pathname}?tab=${expectedParam}`;
+        window.history.replaceState({ tab: expectedParam }, '', newUrl);
+      }
+    } catch {}
+
+    // Restore scroll position for the initial tab once DOM is ready
+    const savedY = sessionStorage.getItem(`${STORAGE_SCROLL_PREFIX}${initial}`);
+    if (savedY) {
+      setTimeout(() => {
+        window.scrollTo({ top: Number(savedY), behavior: 'instant' });
+      }, 150);
+    }
+  }, [getInitialTab]);
+
+  // Handle browser Back / Forward navigation (popstate)
+  useEffect(() => {
+    const handlePopState = () => {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get('tab');
+      const resolvedTab: DashboardTab =
+        tabParam && TAB_PARAM_MAP[tabParam.toLowerCase()]
+          ? TAB_PARAM_MAP[tabParam.toLowerCase()]
+          : 'dashboard';
+
+      setActiveTab(resolvedTab);
+      try {
+        sessionStorage.setItem(STORAGE_TAB_KEY, TAB_TO_PARAM_MAP[resolvedTab]);
+      } catch {}
+
+      // Restore scroll position for this tab
+      const savedY = sessionStorage.getItem(`${STORAGE_SCROLL_PREFIX}${resolvedTab}`);
+      if (savedY) {
+        setTimeout(() => {
+          window.scrollTo({ top: Number(savedY), behavior: 'instant' });
+        }, 100);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
+  // Save scroll position continuously for the currently active tab
+  useEffect(() => {
+    if (!mounted) return;
+
+    let timeoutId: any;
+    const handleScroll = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        try {
+          sessionStorage.setItem(`${STORAGE_SCROLL_PREFIX}${activeTab}`, String(window.scrollY));
+        } catch {}
+      }, 100);
+    };
+
+    const handleBeforeUnload = () => {
+      try {
+        sessionStorage.setItem(`${STORAGE_SCROLL_PREFIX}${activeTab}`, String(window.scrollY));
+      } catch {}
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      clearTimeout(timeoutId);
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [mounted, activeTab]);
+
+  // Tab switch handler with URL update, sessionStorage sync, and scroll preservation
+  const handleTabChange = useCallback((newTab: DashboardTab) => {
+    // 1. Save scroll position of current tab before switching
+    try {
+      sessionStorage.setItem(`${STORAGE_SCROLL_PREFIX}${activeTab}`, String(window.scrollY));
+    } catch {}
+
+    // 2. Set new active tab
+    setActiveTab(newTab);
+
+    // 3. Sync to sessionStorage
+    const tabParam = TAB_TO_PARAM_MAP[newTab];
+    try {
+      sessionStorage.setItem(STORAGE_TAB_KEY, tabParam);
+    } catch {}
+
+    // 4. Sync URL query parameter without full page reload or breaking browser history
+    if (typeof window !== 'undefined') {
+      const url =
+        newTab === 'dashboard'
+          ? window.location.pathname
+          : `${window.location.pathname}?tab=${tabParam}`;
+
+      window.history.pushState({ tab: tabParam }, '', url);
+    }
+
+    // 5. Restore scroll position for the new tab (or top if unvisited)
+    try {
+      const savedY = sessionStorage.getItem(`${STORAGE_SCROLL_PREFIX}${newTab}`);
+      setTimeout(() => {
+        if (savedY) {
+          window.scrollTo({ top: Number(savedY), behavior: 'instant' });
+        } else {
+          window.scrollTo({ top: 0, behavior: 'instant' });
+        }
+      }, 80);
+    } catch {}
+  }, [activeTab]);
+
   // 1. While Supabase session is being checked and restored on reload, display professional centered loading screen
-  // (Also prevents React SSR / Client hydration mismatch)
   if (!mounted || (loading && !user && !justAuthenticated)) {
     return (
       <div className="min-h-[100dvh] bg-slate-50 flex flex-col items-center justify-center p-4">
@@ -74,7 +251,7 @@ export default function HomePage() {
   return (
     <div className="min-h-[100dvh] bg-slate-50 flex flex-col justify-between">
       <Header
-        onOpenSettings={() => setActiveTab('settings')}
+        onOpenSettings={() => handleTabChange('settings')}
         onLogout={async () => {
           setJustAuthenticated(false);
           await logout();
@@ -84,7 +261,7 @@ export default function HomePage() {
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <LaboratoryDashboard
           activeTab={activeTab}
-          onTabChange={setActiveTab}
+          onTabChange={handleTabChange}
         />
       </main>
 
@@ -107,5 +284,19 @@ export default function HomePage() {
         </div>
       </footer>
     </div>
+  );
+}
+
+export default function HomePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-[100dvh] bg-slate-50 flex flex-col items-center justify-center p-4">
+          <RefreshCw className="w-6 h-6 animate-spin text-blue-600" />
+        </div>
+      }
+    >
+      <HomePageContent />
+    </Suspense>
   );
 }
