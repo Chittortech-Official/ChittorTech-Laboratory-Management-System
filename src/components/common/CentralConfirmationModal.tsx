@@ -176,3 +176,4 @@ export const CentralConfirmationModal: React.FC<CentralConfirmationModalProps> =
     </div>
   );
 };
+

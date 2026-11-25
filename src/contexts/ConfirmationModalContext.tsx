@@ -210,3 +210,4 @@ export const useConfirmationModal = (): ConfirmationModalContextType => {
 
 // Aliased as useNotification for convenience
 export const useNotification = useConfirmationModal;
+
