@@ -16,6 +16,7 @@ import {
   Edit3,
   Eye,
   ClipboardCheck,
+  ChevronDown,
 } from 'lucide-react';
 import { CHEMICAL_PARAMETERS, PLANT_CATEGORIES, LAB_SHIFTS } from '@/lib/laboratory/constants';
 import { LaboratoryRecord, UserProfile } from '@/types';
@@ -609,18 +610,18 @@ export const NewEntryForm: React.FC<NewEntryFormProps> = ({ user, onRecordSaved 
             <span>1. Sample & Section Identification</span>
           </h3>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
             {/* Field 1: Date (Calendar Picker with strict DD-MM-YYYY indicator) */}
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600">
+            <div className="flex flex-col">
+              <div className="h-6 flex items-center justify-between mb-1.5">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-700">
                   Testing Date <span className="text-red-500">*</span>
                 </label>
-                <span className="text-[10px] font-mono font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">
-                  {formatDateDDMMYYYY(testDate)}
+                <span className="text-[10px] font-mono font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded-md border border-blue-200">
+                  DD-MM-YYYY
                 </span>
               </div>
-              <div className="relative rounded-md shadow-subtle">
+              <div className="relative h-10 w-full rounded-xl shadow-2xs">
                 <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
                   <Calendar className="h-4 w-4" />
                 </div>
@@ -628,25 +629,35 @@ export const NewEntryForm: React.FC<NewEntryFormProps> = ({ user, onRecordSaved 
                   type="date"
                   value={testDate}
                   onChange={(e) => setTestDate(e.target.value)}
-                  className="block w-full rounded-md border border-slate-300 bg-white pl-9 pr-3 py-2 text-xs font-semibold text-slate-800 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/15 focus:outline-none transition-colors"
+                  className="h-10 w-full rounded-xl border border-slate-300 bg-white pl-9 pr-3 text-xs font-semibold text-slate-800 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/15 focus:outline-none transition-all"
                   required
                 />
               </div>
-              <p className="text-[10px] text-slate-500 font-mono mt-1">
-                Format: <strong className="text-slate-800 font-bold">{formatDateDDMMYYYY(testDate)}</strong> (DD-MM-YYYY)
-              </p>
+              <div className="h-5 flex items-center mt-1">
+                <p className="text-[10px] text-slate-500 font-mono truncate">
+                  Date: <strong className="text-slate-800 font-bold">{formatDateDDMMYYYY(testDate)}</strong>
+                </p>
+              </div>
             </div>
 
             {/* Field 2: Category (Ball Mill first & default) */}
-            <div>
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">
-                Plant Category <span className="text-red-500">*</span>
-              </label>
-              <div className="relative rounded-md shadow-subtle">
+            <div className="flex flex-col">
+              <div className="h-6 flex items-center justify-between mb-1.5">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-700">
+                  Plant Category <span className="text-red-500">*</span>
+                </label>
+                <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded-md border border-slate-200">
+                  19 Circuits
+                </span>
+              </div>
+              <div className="relative h-10 w-full rounded-xl shadow-2xs">
+                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                  <Layers className="h-4 w-4" />
+                </div>
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                  className="block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-800 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/15 focus:outline-none transition-colors"
+                  className="h-10 w-full rounded-xl border border-slate-300 bg-white pl-9 pr-8 text-xs font-bold text-slate-800 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/15 focus:outline-none transition-all appearance-none cursor-pointer"
                 >
                   {PLANT_CATEGORIES.map((cat) => (
                     <option key={cat} value={cat}>
@@ -654,14 +665,20 @@ export const NewEntryForm: React.FC<NewEntryFormProps> = ({ user, onRecordSaved 
                     </option>
                   ))}
                 </select>
+                <ChevronDown className="h-4 w-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
+              <div className="h-5 flex items-center mt-1">
+                <p className="text-[10px] text-slate-500 truncate">
+                  Default: <strong className="text-slate-800">Ball mill</strong> &bull; ASTM standard
+                </p>
               </div>
             </div>
 
             {/* Field 3: Sample ID / Batch */}
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600">
-                  Sample Identification <span className="text-red-500">*</span>
+            <div className="flex flex-col">
+              <div className="h-6 flex items-center justify-between mb-1.5">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-700">
+                  Sample ID <span className="text-red-500">*</span>
                 </label>
                 {isManualOverride ? (
                   <button
@@ -671,22 +688,22 @@ export const NewEntryForm: React.FC<NewEntryFormProps> = ({ user, onRecordSaved 
                       setIsManualOverride(false);
                       setError(null);
                     }}
-                    className="text-[10px] text-blue-600 hover:text-blue-800 font-semibold flex items-center gap-1 hover:underline cursor-pointer"
+                    className="text-[10px] text-blue-600 hover:text-blue-800 font-bold flex items-center gap-1 hover:underline cursor-pointer"
                     title={`Reset to auto-incremented ${suggestedNextId}`}
                   >
                     <RotateCcw className="w-2.5 h-2.5" />
-                    Reset to auto ({suggestedNextId})
+                    Reset auto ({suggestedNextId})
                   </button>
                 ) : (
-                  <span className="text-[10px] text-emerald-700 font-bold flex items-center gap-1 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                  <span className="text-[10px] text-emerald-700 font-bold flex items-center gap-1 bg-emerald-50 px-1.5 py-0.5 rounded-md border border-emerald-200">
                     <Sparkles className="w-3 h-3 text-emerald-600" />
-                    Auto-incremented
+                    Auto-seq
                   </span>
                 )}
               </div>
-              <div className="relative rounded-md shadow-subtle">
+              <div className="relative h-10 w-full rounded-xl shadow-2xs">
                 <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
-                  <Tag className="h-3.5 w-3.5" />
+                  <Tag className="h-4 w-4" />
                 </div>
                 <input
                   type="text"
@@ -696,8 +713,8 @@ export const NewEntryForm: React.FC<NewEntryFormProps> = ({ user, onRecordSaved 
                     setIsManualOverride(true);
                     setError(null);
                   }}
-                  placeholder="e.g. Sample-1 / Batch-A"
-                  className={`block w-full rounded-md border pl-9 pr-9 py-2 text-xs font-mono font-bold focus:ring-2 focus:outline-none transition-colors ${
+                  placeholder="e.g. Sample-1"
+                  className={`h-10 w-full rounded-xl border pl-9 pr-9 text-xs font-mono font-bold focus:ring-2 focus:outline-none transition-all ${
                     isDuplicateSample
                       ? 'border-rose-400 bg-rose-50/40 text-rose-900 focus:border-rose-500 focus:ring-rose-500/20'
                       : 'border-slate-300 bg-white text-slate-900 focus:border-blue-600 focus:ring-blue-600/15'
@@ -709,39 +726,43 @@ export const NewEntryForm: React.FC<NewEntryFormProps> = ({ user, onRecordSaved 
                   </div>
                 )}
               </div>
-              {/* Feedback Helper Note */}
-              {isDuplicateSample ? (
-                <p className="text-[11px] text-rose-600 font-semibold mt-1 flex items-center gap-1 animate-in fade-in">
-                  <AlertCircle className="w-3.5 h-3.5 text-rose-500 shrink-0" />
-                  <span>
-                    Duplicate warning: <strong>{sampleId}</strong> already exists for {category} on {formatDateDDMMYYYY(testDate)}.
-                  </span>
-                </p>
-              ) : isManualOverride ? (
-                <p className="text-[10px] text-amber-600 font-medium mt-1 flex items-center gap-1">
-                  <Edit3 className="w-3 h-3 text-amber-500 shrink-0" />
-                  <span>Manual override active. Click &ldquo;Reset to auto&rdquo; anytime to restore sequence.</span>
-                </p>
-              ) : (
-                <p className="text-[10px] text-slate-400 font-medium mt-1 flex items-center gap-1">
-                  <span>Auto-sequenced from Supabase database. Fully editable anytime.</span>
-                </p>
-              )}
+              <div className="h-5 flex items-center mt-1">
+                {isDuplicateSample ? (
+                  <p className="text-[10px] text-rose-600 font-bold flex items-center gap-1 truncate animate-in fade-in">
+                    <AlertCircle className="w-3 h-3 text-rose-500 shrink-0" />
+                    <span>Duplicate: already used on this date!</span>
+                  </p>
+                ) : isManualOverride ? (
+                  <p className="text-[10px] text-amber-600 font-medium truncate flex items-center gap-1">
+                    <Edit3 className="w-3 h-3 text-amber-500 shrink-0" />
+                    <span>Manual override active</span>
+                  </p>
+                ) : (
+                  <p className="text-[10px] text-slate-500 font-medium truncate">
+                    Sequenced from database &bull; Editable
+                  </p>
+                )}
+              </div>
             </div>
 
             {/* Field 4: Shift */}
-            <div>
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">
-                Plant Shift
-              </label>
-              <div className="relative rounded-md shadow-subtle">
+            <div className="flex flex-col">
+              <div className="h-6 flex items-center justify-between mb-1.5">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-700">
+                  Plant Shift <span className="text-red-500">*</span>
+                </label>
+                <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded-md border border-slate-200">
+                  4 Shifts
+                </span>
+              </div>
+              <div className="relative h-10 w-full rounded-xl shadow-2xs">
                 <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
-                  <Clock className="h-3.5 w-3.5" />
+                  <Clock className="h-4 w-4" />
                 </div>
                 <select
                   value={shift}
                   onChange={(e) => setShift(e.target.value as any)}
-                  className="block w-full rounded-md border border-slate-300 bg-white pl-9 pr-3 py-2 text-xs text-slate-800 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/15 focus:outline-none transition-colors"
+                  className="h-10 w-full rounded-xl border border-slate-300 bg-white pl-9 pr-8 text-xs font-bold text-slate-800 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/15 focus:outline-none transition-all appearance-none cursor-pointer"
                 >
                   {LAB_SHIFTS.map((s) => (
                     <option key={s} value={s}>
@@ -749,6 +770,12 @@ export const NewEntryForm: React.FC<NewEntryFormProps> = ({ user, onRecordSaved 
                     </option>
                   ))}
                 </select>
+                <ChevronDown className="h-4 w-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
+              <div className="h-5 flex items-center mt-1">
+                <p className="text-[10px] text-slate-500 truncate">
+                  Current: <strong className="text-slate-800">{shift}</strong>
+                </p>
               </div>
             </div>
           </div>
