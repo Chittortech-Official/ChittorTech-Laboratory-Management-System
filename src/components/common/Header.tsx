@@ -198,10 +198,10 @@ export const Header: React.FC<HeaderProps> = ({ onLogout, onOpenSettings }) => {
 
                 {/* Name & Plant snippet (desktop) */}
                 <div className="hidden md:block text-left">
-                  <p className="text-xs font-bold text-slate-900 leading-tight truncate max-w-[140px]">
+                  <p className="text-xs font-bold text-slate-900 leading-tight truncate max-w-[220px]">
                     {displayName}
                   </p>
-                  <p className="text-[10px] text-slate-500 leading-tight flex items-center gap-1 truncate max-w-[140px]">
+                  <p className="text-[10px] text-slate-500 leading-tight flex items-center gap-1 truncate max-w-[220px]">
                     <Building2 className="h-2.5 w-2.5 text-blue-500 shrink-0" />
                     <span className="truncate">{plantName}</span>
                   </p>

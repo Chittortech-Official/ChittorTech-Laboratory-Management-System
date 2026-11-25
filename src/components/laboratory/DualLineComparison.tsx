@@ -61,18 +61,18 @@ export const DualLineComparison: React.FC<DualLineComparisonProps> = ({ userId }
     fetchRecords();
   }, [userId, selectedMonth]);
 
-  // Quick Presets
-  const applyPreset = (preset: 'mill1_vs_mill2' | 'raw_vs_clinker' | 'clinker_vs_cement') => {
-    if (preset === 'mill1_vs_mill2') {
+  // Quick Presets (Mapped to exact 19 Plant Circuits)
+  const applyPreset = (preset: 'mill_vs_vrm' | 'kf_vs_nkf' | 'clk_vs_g53') => {
+    if (preset === 'mill_vs_vrm') {
       setLineA('Ball mill');
       setLineB('VRM');
       setSelectedParam('so3');
-    } else if (preset === 'raw_vs_clinker') {
-      setLineA('CLK');
-      setLineB('NCLK');
+    } else if (preset === 'kf_vs_nkf') {
+      setLineA('KF');
+      setLineB('NKF');
       setSelectedParam('lime');
-    } else if (preset === 'clinker_vs_cement') {
-      setLineA('G43');
+    } else if (preset === 'clk_vs_g53') {
+      setLineA('CLK');
       setLineB('G53');
       setSelectedParam('so3');
     }
@@ -114,13 +114,12 @@ export const DualLineComparison: React.FC<DualLineComparisonProps> = ({ userId }
   const statsA = useMemo(() => computeStats(recordsA, selectedParam), [recordsA, selectedParam]);
   const statsB = useMemo(() => computeStats(recordsB, selectedParam), [recordsB, selectedParam]);
 
-  // Consistency winner calculation (lower CV = higher stability)
+  // Consistency winner calculation (lower CV = higher stability; requires >= 2 samples on BOTH lines)
   const stabilityWinner = useMemo(() => {
-    if (statsA.cv === null && statsB.cv === null) return null;
-    if (statsA.cv !== null && statsB.cv === null) return 'A';
-    if (statsA.cv === null && statsB.cv !== null) return 'B';
-    if (statsA.cv! < statsB.cv!) return 'A';
-    if (statsB.cv! < statsA.cv!) return 'B';
+    if (statsA.count < 2 || statsB.count < 2) return null;
+    if (statsA.cv === null || statsB.cv === null) return null;
+    if (statsA.cv < statsB.cv) return 'A';
+    if (statsB.cv < statsA.cv) return 'B';
     return 'Tie';
   }, [statsA, statsB]);
 
@@ -182,7 +181,7 @@ export const DualLineComparison: React.FC<DualLineComparisonProps> = ({ userId }
             <h2 className="text-xl font-bold text-slate-900">Dual-Circuit Multi-Line Split Comparison</h2>
           </div>
           <p className="text-xs text-slate-500 mt-1">
-            Side-by-side consistency benchmarking (Ball Mill 1 vs Ball Mill 2, Raw Mix vs Clinker).
+            Side-by-side consistency benchmarking (Ball mill vs VRM, KF vs NKF, CLK vs G53).
           </p>
         </div>
 
@@ -221,41 +220,41 @@ export const DualLineComparison: React.FC<DualLineComparisonProps> = ({ userId }
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
           <button
             type="button"
-            onClick={() => applyPreset('mill1_vs_mill2')}
+            onClick={() => applyPreset('mill_vs_vrm')}
             className={`p-3 rounded-xl border text-xs font-semibold text-left transition-all ${
-              lineA === 'Ball Mill - Line 1' && lineB === 'Ball Mill - Line 2'
+              lineA === 'Ball mill' && lineB === 'VRM'
                 ? 'bg-blue-50 border-blue-400 text-blue-900 shadow-xs'
                 : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
             }`}
           >
-            <div className="font-bold">Ball Mill 1 vs Ball Mill 2</div>
+            <div className="font-bold">Ball mill vs VRM</div>
             <div className="text-[10px] text-slate-500 mt-0.5">Grinding consistency & gypsum dosage</div>
           </button>
 
           <button
             type="button"
-            onClick={() => applyPreset('raw_vs_clinker')}
+            onClick={() => applyPreset('kf_vs_nkf')}
             className={`p-3 rounded-xl border text-xs font-semibold text-left transition-all ${
-              lineA === 'Raw Mill Feed' && lineB === 'Kiln Clinker'
+              lineA === 'KF' && lineB === 'NKF'
                 ? 'bg-blue-50 border-blue-400 text-blue-900 shadow-xs'
                 : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
             }`}
           >
-            <div className="font-bold">Raw Mix vs Kiln Clinker</div>
-            <div className="text-[10px] text-slate-500 mt-0.5">Calcination burning transformation</div>
+            <div className="font-bold">KF vs NKF (Kiln Feed)</div>
+            <div className="text-[10px] text-slate-500 mt-0.5">Raw meal & kiln feed uniformity</div>
           </button>
 
           <button
             type="button"
-            onClick={() => applyPreset('clinker_vs_cement')}
+            onClick={() => applyPreset('clk_vs_g53')}
             className={`p-3 rounded-xl border text-xs font-semibold text-left transition-all ${
-              lineA === 'Kiln Clinker' && lineB === 'Finished Cement (OPC)'
+              lineA === 'CLK' && lineB === 'G53'
                 ? 'bg-blue-50 border-blue-400 text-blue-900 shadow-xs'
                 : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
             }`}
           >
-            <div className="font-bold">Clinker vs Finished Cement</div>
-            <div className="text-[10px] text-slate-500 mt-0.5">Gypsum regulatory absorption</div>
+            <div className="font-bold">CLK vs G53 (Clinker vs Cement)</div>
+            <div className="text-[10px] text-slate-500 mt-0.5">Clinker to finished grade conversion</div>
           </button>
         </div>
 
@@ -309,14 +308,15 @@ export const DualLineComparison: React.FC<DualLineComparisonProps> = ({ userId }
               <button
                 key={p.key}
                 type="button"
+                title={p.label}
                 onClick={() => setSelectedParam(key)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
                   isSel
                     ? 'bg-blue-600 text-white shadow-xs'
                     : 'bg-slate-50 text-slate-700 hover:bg-slate-100'
                 }`}
               >
-                {p.symbol} ({p.formula})
+                {p.symbol}
               </button>
             );
           })}
@@ -367,6 +367,12 @@ export const DualLineComparison: React.FC<DualLineComparisonProps> = ({ userId }
               </span>
             </div>
           </div>
+
+          {statsA.count === 0 && (
+            <div className="p-2.5 rounded-xl bg-slate-50 border border-dashed border-slate-200 text-[11px] text-slate-500 text-center">
+              No records logged for <strong className="text-slate-700">{lineA}</strong> in {selectedMonth}.
+            </div>
+          )}
         </div>
 
         {/* Line B Card */}
@@ -411,6 +417,12 @@ export const DualLineComparison: React.FC<DualLineComparisonProps> = ({ userId }
               </span>
             </div>
           </div>
+
+          {statsB.count === 0 && (
+            <div className="p-2.5 rounded-xl bg-slate-50 border border-dashed border-slate-200 text-[11px] text-slate-500 text-center">
+              No records logged for <strong className="text-slate-700">{lineB}</strong> in {selectedMonth}.
+            </div>
+          )}
         </div>
       </div>
 
