@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Plus_Jakarta_Sans } from 'next/font/google';
 import './globals.css';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { ConfirmationModalProvider } from '@/contexts/ConfirmationModalContext';
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],
@@ -32,7 +33,9 @@ export default function RootLayout({
       </head>
       <body className="min-h-[100dvh] bg-slate-50 text-slate-900 antialiased">
         <AuthProvider>
-          {children}
+          <ConfirmationModalProvider>
+            {children}
+          </ConfirmationModalProvider>
         </AuthProvider>
       </body>
     </html>

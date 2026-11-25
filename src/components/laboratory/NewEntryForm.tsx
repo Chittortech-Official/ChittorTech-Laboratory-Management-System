@@ -24,6 +24,7 @@ import { calculateBoguePhases, BogueResult } from '@/lib/laboratory/bogueEngine'
 import { generateProcessAdvisory, CopilotAnalysisResult, ProcessAdvisory } from '@/lib/laboratory/aiCopilotEngine';
 import { parseXrfInstrumentFile, generateDemoXrfCsv, ParsedSample } from '@/lib/laboratory/xrfParser';
 import { Sparkles, Award, TrendingUp, Info, Bot, Zap, Coins, Flame, AlertOctagon, CheckCheck, UploadCloud, FileSpreadsheet, Download, CheckCircle, FileText } from 'lucide-react';
+import { useConfirmationModal } from '@/contexts/ConfirmationModalContext';
 
 interface NewEntryFormProps {
   user: UserProfile | null;
@@ -31,6 +32,7 @@ interface NewEntryFormProps {
 }
 
 export const NewEntryForm: React.FC<NewEntryFormProps> = ({ user, onRecordSaved }) => {
+  const { showSuccess, showError: showGlobalError } = useConfirmationModal();
   const today = new Date().toISOString().split('T')[0];
 
   const [testDate, setTestDate] = useState<string>(today);
@@ -39,16 +41,19 @@ export const NewEntryForm: React.FC<NewEntryFormProps> = ({ user, onRecordSaved 
   const [shift, setShift] = useState<'General' | 'Shift A' | 'Shift B' | 'Shift C'>('General');
   const [notes, setNotes] = useState<string>('');
 
-  // The 9 Chemical Parameters
+  // The 11 Chemical Parameters in Exact Sequence:
+  // 1. LOI -> 2. IR -> 3. SO3 -> 4. SiO2 -> 5. Al2O3 -> 6. Fe2O3 -> 7. CaO -> 8. MgO -> 9. K2O -> 10. Na2O -> 11. Chloride
   const [values, setValues] = useState<Record<string, string>>({
     loi: '',
     ir: '',
     so3: '',
-    lime: '',
     silica: '',
     alumina: '',
     iron: '',
+    lime: '',
     magnesia: '',
+    k2o: '',
+    na2o: '',
     chloride: '',
   });
 
@@ -125,16 +130,18 @@ export const NewEntryForm: React.FC<NewEntryFormProps> = ({ user, onRecordSaved 
     }
   };
 
-  // Live sum calculation
+  // Live sum calculation (All 11 oxides in sequence)
   const currentSum = calculateOxideSum({
     loi: values.loi ? Number(values.loi) : null,
     ir: values.ir ? Number(values.ir) : null,
     so3: values.so3 ? Number(values.so3) : null,
-    lime: values.lime ? Number(values.lime) : null,
     silica: values.silica ? Number(values.silica) : null,
     alumina: values.alumina ? Number(values.alumina) : null,
     iron: values.iron ? Number(values.iron) : null,
+    lime: values.lime ? Number(values.lime) : null,
     magnesia: values.magnesia ? Number(values.magnesia) : null,
+    k2o: values.k2o ? Number(values.k2o) : null,
+    na2o: values.na2o ? Number(values.na2o) : null,
     chloride: values.chloride ? Number(values.chloride) : null,
   });
 
@@ -182,11 +189,13 @@ export const NewEntryForm: React.FC<NewEntryFormProps> = ({ user, onRecordSaved 
       loi: '',
       ir: '',
       so3: '',
-      lime: '',
       silica: '',
       alumina: '',
       iron: '',
+      lime: '',
       magnesia: '',
+      k2o: '',
+      na2o: '',
       chloride: '',
     });
     setNotes('');
@@ -195,8 +204,8 @@ export const NewEntryForm: React.FC<NewEntryFormProps> = ({ user, onRecordSaved 
     setSuccess(null);
   };
 
-  // Sequential Enter Key Navigation:
-  // LOI -> IR -> SO3 -> Lime -> Silica -> Alumina -> Iron -> Magnesia -> Chloride
+  // Sequential Enter Key Navigation in Exact Order:
+  // 1. LOI -> 2. IR -> 3. SO3 -> 4. SiO2 -> 5. Al2O3 -> 6. Fe2O3 -> 7. CaO -> 8. MgO -> 9. K2O -> 10. Na2O -> 11. Chloride
   const handleParamKeyDown = (
     e: React.KeyboardEvent<HTMLInputElement>,
     paramKey: string,
@@ -212,7 +221,7 @@ export const NewEntryForm: React.FC<NewEntryFormProps> = ({ user, onRecordSaved 
           nextInput.select();
         }
       } else {
-        // Final field (Chloride): move focus to Review / Submit action
+        // Final field (Chloride): move focus to Review / Submit action (does NOT save directly)
         reviewButtonRef.current?.focus();
         handleOpenReview();
       }
@@ -282,6 +291,16 @@ export const NewEntryForm: React.FC<NewEntryFormProps> = ({ user, onRecordSaved 
     setSuccess(null);
 
     try {
+      // Preserve alkalis in notes as well as payload for full backward and forward compatibility
+      let finalNotes = notes.trim();
+      const alkalis: string[] = [];
+      if (values.k2o !== '') alkalis.push(`K2O=${values.k2o}%`);
+      if (values.na2o !== '') alkalis.push(`Na2O=${values.na2o}%`);
+      if (alkalis.length > 0) {
+        const alkaliTag = `[Alkalis: ${alkalis.join(', ')}]`;
+        finalNotes = finalNotes ? `${alkaliTag} ${finalNotes}` : alkaliTag;
+      }
+
       const payload = {
         user_id: user.id,
         test_date: testDate,
@@ -291,13 +310,15 @@ export const NewEntryForm: React.FC<NewEntryFormProps> = ({ user, onRecordSaved 
         loi: values.loi !== '' ? Number(values.loi) : null,
         ir: values.ir !== '' ? Number(values.ir) : null,
         so3: values.so3 !== '' ? Number(values.so3) : null,
-        lime: values.lime !== '' ? Number(values.lime) : null,
         silica: values.silica !== '' ? Number(values.silica) : null,
         alumina: values.alumina !== '' ? Number(values.alumina) : null,
         iron: values.iron !== '' ? Number(values.iron) : null,
+        lime: values.lime !== '' ? Number(values.lime) : null,
         magnesia: values.magnesia !== '' ? Number(values.magnesia) : null,
+        k2o: values.k2o !== '' ? Number(values.k2o) : null,
+        na2o: values.na2o !== '' ? Number(values.na2o) : null,
         chloride: values.chloride !== '' ? Number(values.chloride) : null,
-        notes: notes.trim() || null,
+        notes: finalNotes || null,
       };
 
       const res = await fetch('/api/records', {
@@ -314,6 +335,14 @@ export const NewEntryForm: React.FC<NewEntryFormProps> = ({ user, onRecordSaved 
       // Close modal on successful submission
       setShowConfirmModal(false);
 
+      // Enterprise central animated success popup
+      showSuccess({
+        type: 'create',
+        title: 'Record Saved to Database',
+        message: 'Your record has been successfully saved to the database.',
+        description: `${category} • ${sampleId} (${testDate})`,
+      });
+
       setSuccess(`Record for ${testDate} under "${category}" successfully logged into Supabase.`);
       
       // Auto increment sample ID for next quick entry
@@ -325,11 +354,13 @@ export const NewEntryForm: React.FC<NewEntryFormProps> = ({ user, onRecordSaved 
         loi: '',
         ir: '',
         so3: '',
-        lime: '',
         silica: '',
         alumina: '',
         iron: '',
+        lime: '',
         magnesia: '',
+        k2o: '',
+        na2o: '',
         chloride: '',
       });
       setNotes('');
@@ -338,7 +369,10 @@ export const NewEntryForm: React.FC<NewEntryFormProps> = ({ user, onRecordSaved 
       onRecordSaved(data.record);
     } catch (err: any) {
       setError(err.message || 'An error occurred while saving.');
-      // Keep modal open or close depending on error preference; closing allows user to see main error banner
+      showGlobalError({
+        title: 'Submission Failed',
+        message: err.message || 'Failed to save laboratory record to the database.',
+      });
       setShowConfirmModal(false);
     } finally {
       setIsSubmitting(false);

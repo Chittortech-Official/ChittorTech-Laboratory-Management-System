@@ -132,3 +132,65 @@ body {
   }
 }
 
+/* Central Enterprise Success Checkmark Animation */
+@keyframes strokeCircle {
+  from {
+    stroke-dashoffset: 140;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes strokeCheck {
+  from {
+    stroke-dashoffset: 40;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes successGlow {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.2;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 0.45;
+  }
+  100% {
+    transform: scale(1.25);
+    opacity: 0;
+  }
+}
+
+.success-circle-draw {
+  stroke-dasharray: 140;
+  stroke-dashoffset: 140;
+  animation: strokeCircle 0.45s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+}
+
+.success-check-draw {
+  stroke-dasharray: 40;
+  stroke-dashoffset: 40;
+  animation: strokeCheck 0.35s cubic-bezier(0.65, 0, 0.45, 1) 0.22s forwards;
+}
+
+.success-glow-ring {
+  animation: successGlow 1.8s ease-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .success-circle-draw,
+  .success-check-draw {
+    animation: none !important;
+    stroke-dashoffset: 0 !important;
+  }
+  .success-glow-ring {
+    animation: none !important;
+    opacity: 0.2 !important;
+  }
+}
+

@@ -8,6 +8,7 @@ import {
   Sparkles, Award, Shield, X, RefreshCw, CheckCircle2
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useConfirmationModal } from '@/contexts/ConfirmationModalContext';
 
 interface HeaderProps {
   onLogout?: () => void;
@@ -16,6 +17,7 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ onLogout, onOpenSettings }) => {
   const { user, logout, isConfigured, updateProfile } = useAuth();
+  const { showSuccess, showError } = useConfirmationModal();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [copiedEmail, setCopiedEmail] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
@@ -44,18 +46,32 @@ export const Header: React.FC<HeaderProps> = ({ onLogout, onOpenSettings }) => {
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
-    await updateProfile({
-      fullName: editFullName.trim(),
-      designation: editDesignation.trim(),
-      plantName: editPlantName.trim(),
-      companyName: editCompanyName.trim(),
-    });
-    setIsSaving(false);
-    setSaveSuccess(true);
-    setTimeout(() => {
-      setIsEditingProfile(false);
-      setSaveSuccess(false);
-    }, 1200);
+    try {
+      await updateProfile({
+        fullName: editFullName.trim(),
+        designation: editDesignation.trim(),
+        plantName: editPlantName.trim(),
+        companyName: editCompanyName.trim(),
+      });
+      setIsSaving(false);
+      setSaveSuccess(true);
+      showSuccess({
+        type: 'profile',
+        title: 'Profile Updated',
+        message: 'Your profile has been successfully updated.',
+        description: `${editFullName.trim()} • ${editPlantName.trim()}`,
+      });
+      setTimeout(() => {
+        setIsEditingProfile(false);
+        setSaveSuccess(false);
+      }, 900);
+    } catch (err: any) {
+      setIsSaving(false);
+      showError({
+        title: 'Profile Update Failed',
+        message: err?.message || 'Failed to update profile details.',
+      });
+    }
   };
 
   const handleSignOut = async () => {
@@ -162,18 +178,7 @@ export const Header: React.FC<HeaderProps> = ({ onLogout, onOpenSettings }) => {
               </span>
             </div>
 
-            {/* Account Settings Header Button right next to Profile */}
-            <button
-              type="button"
-              onClick={onOpenSettings}
-              title="Open Account & Laboratory Settings"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-slate-700 hover:text-blue-600 hover:bg-slate-50 hover:border-slate-300 transition-all text-xs font-semibold shadow-xs"
-            >
-              <Settings className="w-4 h-4 text-slate-500" />
-              <span className="hidden sm:inline">Settings</span>
-            </button>
-
-            {/* ENTERPRISE PROFILE TRIGGER & DROPDOWN */}
+            {/* ENTERPRISE PROFILE TRIGGER & DROPDOWN (Settings is accessible inside) */}
             <div className="relative" ref={profileRef}>
               <button
                 type="button"

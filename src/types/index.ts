@@ -52,12 +52,15 @@ export interface LaboratoryRecord {
   loi: number | null; // Loss on Ignition (%)
   ir: number | null; // Insoluble Residue (%)
   so3: number | null; // Sulphur Trioxide (%)
-  lime: number | null; // CaO (%)
   silica: number | null; // SiO2 (%)
   alumina: number | null; // Al2O3 (%)
   iron: number | null; // Fe2O3 (%)
+  lime: number | null; // CaO (%)
   magnesia: number | null; // MgO (%)
+  k2o?: number | null; // K2O (%)
+  na2o?: number | null; // Na2O (%)
   chloride: number | null; // Cl (%)
+  total_oxides?: number | null;
   notes?: string | null;
   created_at: string;
   updated_at: string;
@@ -69,11 +72,13 @@ export type ChemicalParameterKey =
   | 'loi'
   | 'ir'
   | 'so3'
-  | 'lime'
   | 'silica'
   | 'alumina'
   | 'iron'
+  | 'lime'
   | 'magnesia'
+  | 'k2o'
+  | 'na2o'
   | 'chloride';
 
 export interface ParameterMetadata {

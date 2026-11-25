@@ -18,8 +18,23 @@ const LOCAL_STORAGE_USER_KEY = 'chittortech_qa_lms_user';
 const LOCAL_STORAGE_REQUESTS_KEY = 'chittortech_qa_account_requests';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState<boolean>(false);
+  // 1. Initial State: Read cached user from localStorage immediately if available
+  const [user, setUser] = useState<UserProfile | null>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem(LOCAL_STORAGE_USER_KEY);
+        if (cached) {
+          return JSON.parse(cached);
+        }
+      } catch (err) {
+        console.warn('Could not read cached auth session:', err);
+      }
+    }
+    return null;
+  });
+
+  // Explicit initialization flag: TRUE while checking session with Supabase
+  const [loading, setLoading] = useState<boolean>(true);
   const [isConfigured, setIsConfigured] = useState<boolean>(false);
 
   useEffect(() => {
@@ -27,12 +42,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const configured = isSupabaseConfigured();
     setIsConfigured(configured);
 
-    // Failsafe timeout: never keep user stuck on loading spinner for more than 1.2s
+    // Failsafe timeout: never leave user hanging on loader indefinitely
     const timer = setTimeout(() => {
       if (isMounted) {
         setLoading(false);
       }
-    }, 1200);
+    }, 2000);
 
     if (configured) {
       const supabase = getSupabaseClient();
@@ -44,9 +59,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (error) {
               console.warn('Session check notice:', error.message);
               setUser(null);
+              try { localStorage.removeItem(LOCAL_STORAGE_USER_KEY); } catch {}
             } else if (data?.session?.user) {
               const u = data.session.user;
-              setUser({
+              const profile: UserProfile = {
                 id: u.id,
                 email: u.email || '',
                 fullName: u.user_metadata?.full_name || u.email?.split('@')[0] || 'QA Engineer',
@@ -55,14 +71,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 plantName: u.user_metadata?.plant_name || 'Main QA Lab',
                 designation: u.user_metadata?.designation || 'Quality Engineer',
                 createdAt: u.created_at,
-              });
+              };
+              setUser(profile);
+              try {
+                localStorage.setItem(LOCAL_STORAGE_USER_KEY, JSON.stringify(profile));
+              } catch {}
             } else {
               setUser(null);
+              try { localStorage.removeItem(LOCAL_STORAGE_USER_KEY); } catch {}
             }
           })
           .catch((err) => {
             console.warn('Session getSession catch:', err);
-            if (isMounted) setUser(null);
+            if (isMounted) {
+              setUser(null);
+              try { localStorage.removeItem(LOCAL_STORAGE_USER_KEY); } catch {}
+            }
           })
           .finally(() => {
             if (isMounted) setLoading(false);
@@ -73,7 +97,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (!isMounted) return;
           if (session?.user) {
             const u = session.user;
-            setUser({
+            const profile: UserProfile = {
               id: u.id,
               email: u.email || '',
               fullName: u.user_metadata?.full_name || u.email?.split('@')[0] || 'QA Engineer',
@@ -82,9 +106,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               plantName: u.user_metadata?.plant_name || 'Main QA Lab',
               designation: u.user_metadata?.designation || 'Quality Engineer',
               createdAt: u.created_at,
-            });
+            };
+            setUser(profile);
+            try {
+              localStorage.setItem(LOCAL_STORAGE_USER_KEY, JSON.stringify(profile));
+            } catch {}
           } else {
             setUser(null);
+            try { localStorage.removeItem(LOCAL_STORAGE_USER_KEY); } catch {}
           }
           setLoading(false);
         });
@@ -124,7 +153,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       if (data.user) {
         const u = data.user;
-        setUser({
+        const profile: UserProfile = {
           id: u.id,
           email: u.email || email,
           fullName: u.user_metadata?.full_name || email.split('@')[0],
@@ -133,8 +162,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           plantName: u.user_metadata?.plant_name || 'Main QA Lab',
           designation: u.user_metadata?.designation || 'Quality Engineer',
           createdAt: u.created_at,
-        });
+        };
+        setUser(profile);
+        try {
+          localStorage.setItem(LOCAL_STORAGE_USER_KEY, JSON.stringify(profile));
+        } catch {}
       }
+      setLoading(false);
       return { success: true };
     } else {
       // Local development simulation for test credentials
@@ -152,22 +186,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         localStorage.setItem(LOCAL_STORAGE_USER_KEY, JSON.stringify(mockUser));
       } catch {}
+      setLoading(false);
       return { success: true };
     }
   };
 
   const logout = async (): Promise<void> => {
+    try {
+      localStorage.removeItem(LOCAL_STORAGE_USER_KEY);
+    } catch {}
     if (isSupabaseConfigured()) {
       const supabase = getSupabaseClient();
       if (supabase) {
         await supabase.auth.signOut();
       }
-    } else {
-      try {
-        localStorage.removeItem(LOCAL_STORAGE_USER_KEY);
-      } catch {}
     }
     setUser(null);
+    setLoading(false);
   };
 
   const resetPassword = async (email: string): Promise<{ success: boolean; error?: string }> => {

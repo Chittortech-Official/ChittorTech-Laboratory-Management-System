@@ -9,6 +9,7 @@ import {
 import { LaboratoryRecord, EmailDispatchHistory } from '@/types';
 import { PLANT_CATEGORIES } from '@/lib/laboratory/constants';
 import { generateLaboratoryPdfBase64 } from '@/lib/laboratory/exportService';
+import { useConfirmationModal } from '@/contexts/ConfirmationModalContext';
 
 interface EmailReportsViewProps {
   userId: string;
@@ -25,6 +26,7 @@ export const EmailReportsView: React.FC<EmailReportsViewProps> = ({
   userEmail = 'chemist@plant.chittortech.in',
   plantName = 'ChittorTech Materials QA Laboratory',
 }) => {
+  const { showSuccess, showError } = useConfirmationModal();
   // Email Form State
   const [recipientEmail, setRecipientEmail] = useState('');
   const [subject, setSubject] = useState('');
@@ -195,12 +197,23 @@ export const EmailReportsView: React.FC<EmailReportsViewProps> = ({
       }
 
       setSendSuccess(`Laboratory report successfully emailed to ${recipientEmail} with PDF attachment!`);
+      showSuccess({
+        type: 'email',
+        title: 'Report Email Sent',
+        message: 'Your report has been successfully sent.',
+        description: `Dispatched to ${recipientEmail} (${records.length} records)`,
+      });
+
       setRecipientEmail('');
       setSubject('');
       setMessage('');
     } catch (err: any) {
       console.error('Email send error:', err);
       setSendError(err.message || 'Error dispatching email report.');
+      showError({
+        title: 'Email Dispatch Failed',
+        message: err.message || 'Error dispatching email report.',
+      });
     } finally {
       setIsSending(false);
     }

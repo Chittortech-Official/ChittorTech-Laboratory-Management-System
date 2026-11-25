@@ -39,6 +39,8 @@ const PARAMETER_ALIASES: Record<ChemicalParameterKey, string[]> = {
   alumina: ['al2o3', 'alumina', 'aluminium oxide', 'aluminum oxide', 'al2o3%', 'al'],
   iron: ['fe2o3', 'iron oxide', 'ferric oxide', 'iron', 'fe2o3%', 'fe'],
   magnesia: ['mgo', 'magnesia', 'magnesium oxide', 'mgo%', 'mg'],
+  k2o: ['k2o', 'potassium oxide', 'k2o%', 'potassium', 'k'],
+  na2o: ['na2o', 'sodium oxide', 'na2o%', 'sodium', 'na'],
   chloride: ['cl', 'chloride', 'cl-', 'cl %', 'chlorine', 'chloride cl', 'cl_ppm'],
 };
 
@@ -197,6 +199,8 @@ export async function parseXrfInstrumentFile(file: File): Promise<ParseResult> {
           alumina: '',
           iron: '',
           magnesia: '',
+          k2o: '',
+          na2o: '',
           chloride: '',
         };
         const rawValues: Record<ChemicalParameterKey, number | null> = {
@@ -208,6 +212,8 @@ export async function parseXrfInstrumentFile(file: File): Promise<ParseResult> {
           alumina: null,
           iron: null,
           magnesia: null,
+          k2o: null,
+          na2o: null,
           chloride: null,
         };
 
@@ -266,6 +272,8 @@ export async function parseXrfInstrumentFile(file: File): Promise<ParseResult> {
       alumina: '',
       iron: '',
       magnesia: '',
+      k2o: '',
+      na2o: '',
       chloride: '',
     };
     const rawValues: Record<ChemicalParameterKey, number | null> = {
@@ -277,6 +285,8 @@ export async function parseXrfInstrumentFile(file: File): Promise<ParseResult> {
       alumina: null,
       iron: null,
       magnesia: null,
+      k2o: null,
+      na2o: null,
       chloride: null,
     };
 

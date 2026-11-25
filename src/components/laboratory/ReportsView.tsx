@@ -10,8 +10,10 @@ import { PLANT_CATEGORIES } from '@/lib/laboratory/constants';
 import { 
   generateLaboratoryPdf, 
   exportToCsv, 
-  exportToExcel 
+  exportToExcel,
+  buildExcelFilename
 } from '@/lib/laboratory/exportService';
+import { useConfirmationModal } from '@/contexts/ConfirmationModalContext';
 
 interface ReportsViewProps {
   userId: string;
@@ -28,6 +30,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
   userEmail = 'chemist@plant.chittortech.in',
   plantName = 'ChittorTech Materials QA Laboratory',
 }) => {
+  const { showSuccess, showError } = useConfirmationModal();
   const [periodType, setPeriodType] = useState<PeriodType>('current_month');
   const [selectedDate, setSelectedDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
   const [startDate, setStartDate] = useState<string>(() => {
@@ -117,9 +120,18 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
         userEmail,
         plantName,
       });
-    } catch (err) {
+      showSuccess({
+        type: 'export',
+        title: 'PDF Report Generated',
+        message: 'Your file has been successfully generated.',
+        description: `${getReportingPeriodLabel()} QA Compliance Report`,
+      });
+    } catch (err: any) {
       console.error('PDF generation error:', err);
-      alert('Error generating PDF report.');
+      showError({
+        title: 'PDF Generation Failed',
+        message: err?.message || 'Error generating PDF report.',
+      });
     } finally {
       setIsGeneratingPdf(false);
     }
@@ -130,13 +142,29 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
     if (records.length === 0) return;
     const filename = `ChittorTech_QA_Report_${getReportingPeriodLabel().replace(/[^a-zA-Z0-9]/g, '_')}`;
     exportToCsv(records, filename);
+    showSuccess({
+      type: 'export',
+      title: 'CSV Data Exported',
+      message: 'Your file has been successfully generated.',
+      description: `${filename}.csv (${records.length} records)`,
+    });
   };
 
-  // Handle Excel Export
+  // Handle Excel Export: Format: OperatorName_DD_MM_YYYY.xlsx
   const handleDownloadExcel = () => {
     if (records.length === 0) return;
-    const filename = `ChittorTech_QA_Report_${getReportingPeriodLabel().replace(/[^a-zA-Z0-9]/g, '_')}`;
+    const reportDate =
+      periodType === 'single_date'
+        ? selectedDate
+        : records[0]?.test_date || new Date();
+    const filename = buildExcelFilename(userName, reportDate);
     exportToExcel(records, filename);
+    showSuccess({
+      type: 'export',
+      title: 'Excel Report Generated',
+      message: 'Your file has been successfully generated.',
+      description: `${filename}.xlsx (${records.length} records)`,
+    });
   };
 
   return (

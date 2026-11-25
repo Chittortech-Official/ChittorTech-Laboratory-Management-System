@@ -164,8 +164,8 @@ export const LaboratoryDashboard: React.FC<LaboratoryDashboardProps> = ({
             <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
               <div>
                 <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Monitored Oxides</span>
-                <div className="text-2xl font-bold text-slate-900 mt-1">9</div>
-                <span className="text-[11px] text-slate-500">LOI, IR, SO3, Lime, Silica...</span>
+                <div className="text-2xl font-bold text-slate-900 mt-1">{CHEMICAL_PARAMETERS.length}</div>
+                <span className="text-[11px] text-slate-500">LOI, IR, SO3, SiO2, Al2O3...</span>
               </div>
               <div className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
                 <Beaker className="w-5 h-5" />

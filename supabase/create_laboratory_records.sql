@@ -40,3 +40,4 @@ grant all on public.laboratory_records to anon, authenticated, service_role;
 
 -- Notify PostgREST to reload schema cache
 notify pgrst, 'reload schema';
+

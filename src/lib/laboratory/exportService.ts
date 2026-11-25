@@ -14,18 +14,20 @@ export interface ReportMeta {
 }
 
 /**
- * Calculates sum of the 9 chemical oxides for a record
+ * Calculates sum of the chemical oxides for a record
  */
 export function calculateOxideSum(record: Partial<LaboratoryRecord>): number {
   const values = [
     record.loi,
     record.ir,
     record.so3,
-    record.lime,
     record.silica,
     record.alumina,
     record.iron,
+    record.lime,
     record.magnesia,
+    record.k2o,
+    record.na2o,
     record.chloride,
   ];
   const sum = values.reduce<number>((acc, v) => {
@@ -110,7 +112,8 @@ export function generatePdfDocument(records: LaboratoryRecord[], meta: ReportMet
   doc.setFont('helvetica', 'normal');
   doc.text('ISO / ASTM / BIS QA Protocol', 240, 42);
 
-  // 3. Structured Data Table
+  // 3. Structured Data Table in exact standard parameter sequence:
+  // LOI -> IR -> SO3 -> SiO2 -> Al2O3 -> Fe2O3 -> CaO -> MgO -> K2O -> Na2O -> Chloride
   const tableHeaders = [
     'Date',
     'Category',
@@ -119,11 +122,13 @@ export function generatePdfDocument(records: LaboratoryRecord[], meta: ReportMet
     'LOI %',
     'IR %',
     'SO₃ %',
-    'CaO %',
     'SiO₂ %',
     'Al₂O₃ %',
     'Fe₂O₃ %',
+    'CaO %',
     'MgO %',
+    'K₂O %',
+    'Na₂O %',
     'Cl⁻ %',
     'Total %',
   ];
@@ -138,11 +143,13 @@ export function generatePdfDocument(records: LaboratoryRecord[], meta: ReportMet
       r.loi !== null ? Number(r.loi).toFixed(2) : '-',
       r.ir !== null ? Number(r.ir).toFixed(2) : '-',
       r.so3 !== null ? Number(r.so3).toFixed(2) : '-',
-      r.lime !== null ? Number(r.lime).toFixed(2) : '-',
       r.silica !== null ? Number(r.silica).toFixed(2) : '-',
       r.alumina !== null ? Number(r.alumina).toFixed(2) : '-',
       r.iron !== null ? Number(r.iron).toFixed(2) : '-',
+      r.lime !== null ? Number(r.lime).toFixed(2) : '-',
       r.magnesia !== null ? Number(r.magnesia).toFixed(2) : '-',
+      r.k2o !== null && r.k2o !== undefined ? Number(r.k2o).toFixed(2) : '-',
+      r.na2o !== null && r.na2o !== undefined ? Number(r.na2o).toFixed(2) : '-',
       r.chloride !== null ? Number(r.chloride).toFixed(3) : '-',
       total > 0 ? `${total.toFixed(2)}%` : '-',
     ];
@@ -248,7 +255,7 @@ export function generateLaboratoryPdfBase64(records: LaboratoryRecord[], options
 
 export function exportToCsv(records: LaboratoryRecord[], filename: string = 'ChittorTech_Lab_Records') {
   // Use a descriptive header with format indicator so Excel automatically opens Column A with sufficient width (>18 chars)
-  // preventing Excel's narrow-column "#######" display glitch.
+  // Sequence: 1. LOI, 2. IR, 3. SO3, 4. SiO2, 5. Al2O3, 6. Fe2O3, 7. CaO, 8. MgO, 9. K2O, 10. Na2O, 11. Chloride
   const headers = [
     'Testing Date (YYYY-MM-DD)',
     'Plant Category',
@@ -257,11 +264,13 @@ export function exportToCsv(records: LaboratoryRecord[], filename: string = 'Chi
     'LOI (%)',
     'Insoluble Residue IR (%)',
     'Sulphur Trioxide SO3 (%)',
-    'Calcium Oxide Lime CaO (%)',
     'Silica SiO2 (%)',
     'Alumina Al2O3 (%)',
     'Iron Oxide Fe2O3 (%)',
-    'Magnesia MgO (%)',
+    'Calcium Oxide Lime CaO (%)',
+    'Magnesium Oxide MgO (%)',
+    'Potassium Oxide K2O (%)',
+    'Sodium Oxide Na2O (%)',
     'Chloride Cl (%)',
     'Total Oxides (%)',
     'Notes',
@@ -278,11 +287,13 @@ export function exportToCsv(records: LaboratoryRecord[], filename: string = 'Chi
       r.loi !== null && r.loi !== undefined ? r.loi : '',
       r.ir !== null && r.ir !== undefined ? r.ir : '',
       r.so3 !== null && r.so3 !== undefined ? r.so3 : '',
-      r.lime !== null && r.lime !== undefined ? r.lime : '',
       r.silica !== null && r.silica !== undefined ? r.silica : '',
       r.alumina !== null && r.alumina !== undefined ? r.alumina : '',
       r.iron !== null && r.iron !== undefined ? r.iron : '',
+      r.lime !== null && r.lime !== undefined ? r.lime : '',
       r.magnesia !== null && r.magnesia !== undefined ? r.magnesia : '',
+      r.k2o !== null && r.k2o !== undefined ? r.k2o : '',
+      r.na2o !== null && r.na2o !== undefined ? r.na2o : '',
       r.chloride !== null && r.chloride !== undefined ? r.chloride : '',
       calculateOxideSum(r),
       `"${(r.notes || '').replace(/"/g, '""')}"`,
@@ -300,7 +311,100 @@ export function exportToCsv(records: LaboratoryRecord[], filename: string = 'Chi
   document.body.removeChild(link);
 }
 
-export function exportToExcel(records: LaboratoryRecord[], filename: string = 'ChittorTech_Lab_Records') {
+/**
+ * Formats a valid date object or string into DD_MM_YYYY format.
+ * Examples: '2026-11-19' -> '19_11_2026', '2026-11-25' -> '25_11_2026'
+ */
+export function formatReportDateDDMMYYYY(dateInput?: string | Date | null): string {
+  if (!dateInput) {
+    const now = new Date();
+    return `${String(now.getDate()).padStart(2, '0')}_${String(now.getMonth() + 1).padStart(2, '0')}_${now.getFullYear()}`;
+  }
+
+  if (typeof dateInput === 'string') {
+    const clean = dateInput.split('T')[0].trim();
+    const parts = clean.split('-');
+    if (parts.length === 3) {
+      // YYYY-MM-DD
+      const [year, month, day] = parts;
+      return `${day.padStart(2, '0')}_${month.padStart(2, '0')}_${year}`;
+    }
+    if (parts.length === 2) {
+      // YYYY-MM
+      const [year, month] = parts;
+      return `01_${month.padStart(2, '0')}_${year}`;
+    }
+  }
+
+  const d = new Date(dateInput);
+  if (!isNaN(d.getTime())) {
+    return `${String(d.getDate()).padStart(2, '0')}_${String(d.getMonth() + 1).padStart(2, '0')}_${d.getFullYear()}`;
+  }
+
+  const fallback = new Date();
+  return `${String(fallback.getDate()).padStart(2, '0')}_${String(fallback.getMonth() + 1).padStart(2, '0')}_${fallback.getFullYear()}`;
+}
+
+/**
+ * Generates the standardized Excel filename: OperatorName_DD_MM_YYYY.xlsx
+ * Requirements:
+ * - Format: OperatorName_DD_MM_YYYY.xlsx
+ * - Examples: Rahul_Sharma_19_11_2026.xlsx, Amit_Kumar_25_11_2026.xlsx
+ * - Replaces spaces with underscores.
+ * - Strips invalid filename characters.
+ * - Safe fallback: Operator_DD_MM_YYYY.xlsx. Never displays undefined, null or empty.
+ */
+export function buildExcelFilename(operatorName?: string | null, reportDate?: string | Date | null): string {
+  let rawName = (operatorName || '').trim();
+
+  // Strip company prefixes or default placeholders if present
+  if (rawName.toLowerCase().startsWith('chittortech')) {
+    rawName = rawName.replace(/chittortech/i, '').trim();
+  }
+
+  let cleanName = rawName
+    .replace(/\s+/g, '_')
+    .replace(/[^a-zA-Z0-9_-]/g, '')
+    .trim();
+
+  if (
+    !cleanName ||
+    cleanName.toLowerCase() === 'undefined' ||
+    cleanName.toLowerCase() === 'null' ||
+    cleanName.toLowerCase() === 'chittortech' ||
+    cleanName.toLowerCase() === 'user'
+  ) {
+    cleanName = 'Operator';
+  }
+
+  const dateStr = formatReportDateDDMMYYYY(reportDate);
+  return `${cleanName}_${dateStr}.xlsx`;
+}
+
+export function exportToExcel(
+  records: LaboratoryRecord[],
+  filenameOrOptions?: string | { operatorName?: string; reportDate?: string | Date },
+  fallbackDate?: string | Date
+) {
+  let targetFilename: string;
+
+  if (typeof filenameOrOptions === 'object' && filenameOrOptions !== null) {
+    targetFilename = buildExcelFilename(filenameOrOptions.operatorName, filenameOrOptions.reportDate);
+  } else if (typeof filenameOrOptions === 'string' && filenameOrOptions.trim().length > 0) {
+    if (filenameOrOptions.endsWith('.xlsx')) {
+      targetFilename = filenameOrOptions;
+    } else if (filenameOrOptions.includes('_') && !filenameOrOptions.toLowerCase().includes('chittortech')) {
+      targetFilename = `${filenameOrOptions}.xlsx`;
+    } else {
+      // Legacy or company prefix string passed: extract clean date and convert to standard format
+      const dateSource = records[0]?.test_date || fallbackDate || new Date();
+      targetFilename = buildExcelFilename(undefined, dateSource);
+    }
+  } else {
+    const dateSource = records[0]?.test_date || fallbackDate || new Date();
+    targetFilename = buildExcelFilename(undefined, dateSource);
+  }
+
   const data = records.map((r) => {
     const bogue = calculateBoguePhases({
       lime: r.lime,
@@ -320,11 +424,13 @@ export function exportToExcel(records: LaboratoryRecord[], filename: string = 'C
       'LOI (%)': r.loi,
       'IR (%)': r.ir,
       'SO3 (%)': r.so3,
-      'CaO / Lime (%)': r.lime,
       'SiO2 / Silica (%)': r.silica,
       'Al2O3 / Alumina (%)': r.alumina,
       'Fe2O3 / Iron (%)': r.iron,
+      'CaO / Lime (%)': r.lime,
       'MgO / Magnesia (%)': r.magnesia,
+      'K2O / Potassium (%)': r.k2o !== undefined && r.k2o !== null ? r.k2o : '',
+      'Na2O / Sodium (%)': r.na2o !== undefined && r.na2o !== null ? r.na2o : '',
       'Cl / Chloride (%)': r.chloride,
       'Total Oxides (%)': calculateOxideSum(r),
       'LSF (Lime Saturation)': bogue.lsf !== null ? bogue.lsf : '',
@@ -350,11 +456,13 @@ export function exportToExcel(records: LaboratoryRecord[], filename: string = 'C
     { wch: 12 }, // LOI
     { wch: 14 }, // IR
     { wch: 12 }, // SO3
-    { wch: 16 }, // CaO
     { wch: 16 }, // SiO2
     { wch: 16 }, // Al2O3
     { wch: 16 }, // Fe2O3
+    { wch: 16 }, // CaO
     { wch: 16 }, // MgO
+    { wch: 16 }, // K2O
+    { wch: 16 }, // Na2O
     { wch: 14 }, // Cl
     { wch: 16 }, // Total Oxides
     { wch: 16 }, // LSF
@@ -371,7 +479,7 @@ export function exportToExcel(records: LaboratoryRecord[], filename: string = 'C
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, 'QA Chemical Tests');
 
-  XLSX.writeFile(workbook, `${filename}.xlsx`);
+  XLSX.writeFile(workbook, targetFilename);
 }
 
 /**
@@ -386,11 +494,13 @@ export function downloadCsvReport(records: LaboratoryRecord[], meta: ReportMeta 
     'LOI (%)',
     'Insoluble Residue IR (%)',
     'Sulphur Trioxide SO3 (%)',
-    'Calcium Oxide Lime CaO (%)',
     'Silica SiO2 (%)',
     'Alumina Al2O3 (%)',
     'Iron Oxide Fe2O3 (%)',
-    'Magnesia MgO (%)',
+    'Calcium Oxide Lime CaO (%)',
+    'Magnesium Oxide MgO (%)',
+    'Potassium Oxide K2O (%)',
+    'Sodium Oxide Na2O (%)',
     'Chloride Cl (%)',
     'Total Oxides (%)',
     'Notes',
@@ -406,11 +516,13 @@ export function downloadCsvReport(records: LaboratoryRecord[], meta: ReportMeta 
       r.loi !== null ? r.loi : '',
       r.ir !== null ? r.ir : '',
       r.so3 !== null ? r.so3 : '',
-      r.lime !== null ? r.lime : '',
       r.silica !== null ? r.silica : '',
       r.alumina !== null ? r.alumina : '',
       r.iron !== null ? r.iron : '',
+      r.lime !== null ? r.lime : '',
       r.magnesia !== null ? r.magnesia : '',
+      r.k2o !== null && r.k2o !== undefined ? r.k2o : '',
+      r.na2o !== null && r.na2o !== undefined ? r.na2o : '',
       r.chloride !== null ? r.chloride : '',
       calculateOxideSum(r),
       `"${(r.notes || '').replace(/"/g, '""')}"`,
@@ -442,11 +554,13 @@ export function downloadExcelReport(records: LaboratoryRecord[], meta: ReportMet
       'LOI (%)': r.loi,
       'IR (%)': r.ir,
       'SO3 (%)': r.so3,
-      'CaO / Lime (%)': r.lime,
       'SiO2 / Silica (%)': r.silica,
       'Al2O3 / Alumina (%)': r.alumina,
       'Fe2O3 / Iron (%)': r.iron,
+      'CaO / Lime (%)': r.lime,
       'MgO / Magnesia (%)': r.magnesia,
+      'K2O / Potassium (%)': r.k2o !== undefined && r.k2o !== null ? r.k2o : '',
+      'Na2O / Sodium (%)': r.na2o !== undefined && r.na2o !== null ? r.na2o : '',
       'Cl / Chloride (%)': r.chloride,
       'Total Oxides (%)': calculateOxideSum(r),
       Notes: r.notes || '',
@@ -462,11 +576,13 @@ export function downloadExcelReport(records: LaboratoryRecord[], meta: ReportMet
     { wch: 12 }, // LOI
     { wch: 14 }, // IR
     { wch: 12 }, // SO3
-    { wch: 16 }, // CaO
     { wch: 16 }, // SiO2
     { wch: 16 }, // Al2O3
     { wch: 16 }, // Fe2O3
+    { wch: 16 }, // CaO
     { wch: 16 }, // MgO
+    { wch: 16 }, // K2O
+    { wch: 16 }, // Na2O
     { wch: 14 }, // Cl
     { wch: 16 }, // Total Oxides
     { wch: 30 }, // Notes
@@ -475,6 +591,10 @@ export function downloadExcelReport(records: LaboratoryRecord[], meta: ReportMet
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, 'QA Chemical Tests');
 
-  XLSX.writeFile(workbook, `ChittorTech_QA_Data_${Date.now()}.xlsx`);
+  const operatorName = meta.userName || 'Operator';
+  const reportDate = records[0]?.test_date || new Date();
+  const filename = buildExcelFilename(operatorName, reportDate);
+
+  XLSX.writeFile(workbook, filename);
 }
 

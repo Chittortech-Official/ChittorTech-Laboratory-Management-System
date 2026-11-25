@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
+import Image from 'next/image';
+import { RefreshCw } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthLayout } from '@/components/auth/AuthLayout';
 import { Header } from '@/components/common/Header';
@@ -8,11 +10,50 @@ import { LaboratoryDashboard } from '@/components/laboratory/LaboratoryDashboard
 import { DashboardTab } from '@/types';
 
 export default function HomePage() {
-  const { user, logout } = useAuth();
+  const { user, loading, logout } = useAuth();
   const [justAuthenticated, setJustAuthenticated] = useState(false);
   const [activeTab, setActiveTab] = useState<DashboardTab>('dashboard');
 
-  // If not logged in, render the official Authentication experience immediately (zero blocking loader)
+  // 1. While Supabase session is being checked and restored on reload, display professional centered loading screen
+  if (loading && !user && !justAuthenticated) {
+    return (
+      <div className="min-h-[100dvh] bg-slate-50 flex flex-col items-center justify-center p-4">
+        <div className="flex flex-col items-center max-w-sm text-center space-y-4 animate-in fade-in duration-200">
+          {/* ChittorTech Logo Card */}
+          <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl border border-slate-200 bg-white p-2.5 shadow-md">
+            <Image
+              src="/assets/images/ct-logo.png"
+              alt="ChittorTech Logo"
+              width={52}
+              height={52}
+              className="object-contain"
+              priority
+            />
+          </div>
+
+          <div>
+            <h3 className="font-heading text-lg font-extrabold text-slate-900 tracking-tight">
+              Chittor<span className="text-blue-600">Tech</span>{' '}
+              <span className="text-[10px] font-bold text-slate-500 uppercase px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 ml-1">
+                QA LMS
+              </span>
+            </h3>
+            <p className="text-xs text-slate-500 mt-1 font-medium">
+              Restoring your session...
+            </p>
+          </div>
+
+          {/* Subtle loading spinner */}
+          <div className="inline-flex items-center gap-2 text-xs font-semibold text-blue-600 bg-blue-50/80 px-4 py-2 rounded-full border border-blue-200/60 shadow-xs">
+            <RefreshCw className="w-3.5 h-3.5 animate-spin text-blue-600" />
+            <span>Loading your laboratory dashboard...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 2. If authentication check is complete and no valid session exists, render Login / Request Account
   if (!user && !justAuthenticated) {
     return (
       <AuthLayout
@@ -23,7 +64,7 @@ export default function HomePage() {
     );
   }
 
-  // Once authenticated, render protected landing state
+  // 3. Authenticated: render protected laboratory dashboard directly without any login flash
   return (
     <div className="min-h-[100dvh] bg-slate-50 flex flex-col justify-between">
       <Header

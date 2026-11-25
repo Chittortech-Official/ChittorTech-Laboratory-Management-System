@@ -8,7 +8,8 @@ import {
 } from 'lucide-react';
 import { LaboratoryRecord, ChemicalParameterKey } from '@/types';
 import { CHEMICAL_PARAMETERS, PLANT_CATEGORIES } from '@/lib/laboratory/constants';
-import { generateSingleRecordPdf, exportToCsv, exportToExcel } from '@/lib/laboratory/exportService';
+import { generateSingleRecordPdf, exportToCsv, exportToExcel, buildExcelFilename } from '@/lib/laboratory/exportService';
+import { useConfirmationModal } from '@/contexts/ConfirmationModalContext';
 
 interface PreviousRecordsProps {
   userId: string;
@@ -25,6 +26,7 @@ export const PreviousRecords: React.FC<PreviousRecordsProps> = ({
   plantName = 'ChittorTech Materials QA Laboratory',
   onNavigateToNewEntry,
 }) => {
+  const { showSuccess, showError } = useConfirmationModal();
   const [records, setRecords] = useState<LaboratoryRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -137,12 +139,21 @@ export const PreviousRecords: React.FC<PreviousRecordsProps> = ({
       }
 
       setEditSuccess('Record updated successfully.');
-      setTimeout(() => {
-        setEditingRecord(null);
-        fetchRecords();
-      }, 1000);
+      showSuccess({
+        type: 'update',
+        title: 'Changes Saved',
+        message: 'Your changes have been successfully saved to the database.',
+        description: `${editFormData.category || 'Lab Record'} • ${editFormData.sample_id || 'Sample'} (${editFormData.test_date || ''})`,
+      });
+
+      setEditingRecord(null);
+      fetchRecords();
     } catch (err: any) {
       setEditError(err.message || 'Error updating record.');
+      showError({
+        title: 'Update Failed',
+        message: err.message || 'Error updating record in database.',
+      });
     } finally {
       setIsSavingEdit(false);
     }
@@ -160,9 +171,17 @@ export const PreviousRecords: React.FC<PreviousRecordsProps> = ({
         throw new Error(data.error || 'Failed to delete record.');
       }
       setDeletingId(null);
+      showSuccess({
+        type: 'delete',
+        title: 'Record Removed',
+        message: 'Your record has been successfully deleted from the database.',
+      });
       fetchRecords();
     } catch (err: any) {
-      alert(err.message || 'Error deleting record.');
+      showError({
+        title: 'Deletion Failed',
+        message: err.message || 'Error deleting record from database.',
+      });
     } finally {
       setIsDeleting(false);
     }
@@ -175,15 +194,37 @@ export const PreviousRecords: React.FC<PreviousRecordsProps> = ({
       userEmail,
       plantName,
     });
+    showSuccess({
+      type: 'export',
+      title: 'PDF Certificate Generated',
+      message: 'Your file has been successfully generated.',
+      description: `${rec.sample_id} Quality Report PDF`,
+    });
   };
 
   // Quick Export
   const handleQuickCsv = () => {
+    if (filteredRecords.length === 0) return;
     exportToCsv(filteredRecords, `ChittorTech_Lab_Records_${selectedMonth}`);
+    showSuccess({
+      type: 'export',
+      title: 'CSV File Generated',
+      message: 'Your file has been successfully generated.',
+      description: `ChittorTech_Lab_Records_${selectedMonth}.csv (${filteredRecords.length} records)`,
+    });
   };
 
   const handleQuickExcel = () => {
-    exportToExcel(filteredRecords, `ChittorTech_Lab_Records_${selectedMonth}`);
+    if (filteredRecords.length === 0) return;
+    const reportDate = filteredRecords[0]?.test_date || selectedMonth || new Date();
+    const filename = buildExcelFilename(userName, reportDate);
+    exportToExcel(filteredRecords, filename);
+    showSuccess({
+      type: 'export',
+      title: 'Excel File Generated',
+      message: 'Your file has been successfully generated.',
+      description: `${filename}.xlsx (${filteredRecords.length} records)`,
+    });
   };
 
   return (
