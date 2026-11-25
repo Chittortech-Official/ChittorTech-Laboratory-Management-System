@@ -59,6 +59,16 @@ export async function GET(request: Request) {
     const { data, error } = await query;
 
     if (error) {
+      if (error.code === 'PGRST205' || error.message?.includes('schema cache')) {
+        // Table not created yet - return empty list gracefully so UI displays clean zero state instead of crashing
+        console.warn('laboratory_records table not yet created in Supabase schema cache.');
+        return NextResponse.json({
+          success: true,
+          records: [],
+          tableMissing: true,
+          message: 'Table public.laboratory_records does not exist in Supabase yet.',
+        });
+      }
       console.error('Supabase query error:', error);
       return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
@@ -143,6 +153,16 @@ export async function POST(request: Request) {
       .single();
 
     if (error) {
+      if (error.code === 'PGRST205' || error.message?.includes('schema cache')) {
+        return NextResponse.json(
+          {
+            success: false,
+            error:
+              "Supabase table 'public.laboratory_records' is not created yet. Please execute supabase/create_laboratory_records.sql in the Supabase SQL Editor.",
+          },
+          { status: 500 }
+        );
+      }
       console.error('Insert record error:', error);
       return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }

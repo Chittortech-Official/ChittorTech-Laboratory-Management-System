@@ -62,12 +62,15 @@ export const PreviousRecords: React.FC<PreviousRecordsProps> = ({
       const res = await fetch(url);
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || 'Failed to fetch laboratory records.');
+        setRecords([]);
+        setError(data.error || 'Failed to fetch laboratory records.');
+        return;
       }
       setRecords(data.records || []);
     } catch (err: any) {
-      console.error('Error fetching records:', err);
-      setError(err.message || 'Error loading records.');
+      console.warn('Notice fetching records:', err?.message || err);
+      setRecords([]);
+      setError(err?.message || 'Error loading records.');
     } finally {
       setLoading(false);
     }

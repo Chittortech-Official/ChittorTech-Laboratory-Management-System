@@ -41,11 +41,16 @@ export const DualLineComparison: React.FC<DualLineComparisonProps> = ({ userId }
       }
       const res = await fetch(url);
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to fetch comparison records.');
+      if (!res.ok) {
+        setRecords([]);
+        setError(data.error || 'Failed to fetch comparison records.');
+        return;
+      }
       setRecords(data.records || []);
     } catch (err: any) {
-      console.error('Comparison fetch error:', err);
-      setError(err.message || 'Error loading records.');
+      console.warn('Comparison fetch notice:', err?.message || err);
+      setRecords([]);
+      setError(err?.message || 'Notice loading records.');
     } finally {
       setLoading(false);
     }

@@ -86,11 +86,16 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
 
       const res = await fetch(url);
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to fetch report data.');
+      if (!res.ok) {
+        setRecords([]);
+        setError(data.error || 'Failed to fetch report data.');
+        return;
+      }
       setRecords(data.records || []);
     } catch (err: any) {
-      console.error('Report fetch error:', err);
-      setError(err.message || 'Error fetching records for report.');
+      console.warn('Report fetch notice:', err?.message || err);
+      setRecords([]);
+      setError(err?.message || 'Notice fetching records for report.');
     } finally {
       setLoading(false);
     }

@@ -41,11 +41,16 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ userId }) => {
 
       const res = await fetch(url);
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to fetch analytics data.');
+      if (!res.ok) {
+        setRecords([]);
+        setError(data.error || 'Failed to fetch analytics data.');
+        return;
+      }
       setRecords(data.records || []);
     } catch (err: any) {
-      console.error('Analytics fetch error:', err);
-      setError(err.message || 'Error loading analytics.');
+      console.warn('Analytics fetch notice:', err?.message || err);
+      setRecords([]);
+      setError(err?.message || 'Notice loading analytics.');
     } finally {
       setLoading(false);
     }

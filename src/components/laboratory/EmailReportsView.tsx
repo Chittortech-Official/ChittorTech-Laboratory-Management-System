@@ -109,8 +109,9 @@ export const EmailReportsView: React.FC<EmailReportsViewProps> = ({
       if (res.ok) {
         setRecords(data.records || []);
       }
-    } catch (err) {
-      console.error('Error fetching records for email report:', err);
+    } catch (err: any) {
+      console.warn('Notice fetching records for email report:', err?.message || err);
+      setRecords([]);
     } finally {
       setLoadingRecords(false);
     }
