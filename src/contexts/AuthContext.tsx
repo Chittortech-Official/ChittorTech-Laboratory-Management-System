@@ -56,7 +56,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             if (error) {
               console.warn('Session check notice:', error.message);
               setUser(null);
-              try { localStorage.removeItem(LOCAL_STORAGE_USER_KEY); } catch {}
+              try { localStorage.removeItem(LOCAL_STORAGE_USER_KEY); } catch { }
             } else if (data?.session?.user) {
               const u = data.session.user;
               const profile: UserProfile = {
@@ -72,17 +72,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               setUser(profile);
               try {
                 localStorage.setItem(LOCAL_STORAGE_USER_KEY, JSON.stringify(profile));
-              } catch {}
+              } catch { }
             } else {
               setUser(null);
-              try { localStorage.removeItem(LOCAL_STORAGE_USER_KEY); } catch {}
+              try { localStorage.removeItem(LOCAL_STORAGE_USER_KEY); } catch { }
             }
           })
           .catch((err) => {
             console.warn('Session getSession catch:', err);
             if (isMounted) {
               setUser(null);
-              try { localStorage.removeItem(LOCAL_STORAGE_USER_KEY); } catch {}
+              try { localStorage.removeItem(LOCAL_STORAGE_USER_KEY); } catch { }
             }
           })
           .finally(() => {
@@ -107,10 +107,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setUser(profile);
             try {
               localStorage.setItem(LOCAL_STORAGE_USER_KEY, JSON.stringify(profile));
-            } catch {}
+            } catch { }
           } else {
             setUser(null);
-            try { localStorage.removeItem(LOCAL_STORAGE_USER_KEY); } catch {}
+            try { localStorage.removeItem(LOCAL_STORAGE_USER_KEY); } catch { }
           }
           setLoading(false);
         });
@@ -130,7 +130,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (cached) {
           setUser(JSON.parse(cached));
         }
-      } catch {}
+      } catch { }
       setLoading(false);
     }
 
@@ -163,7 +163,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(profile);
         try {
           localStorage.setItem(LOCAL_STORAGE_USER_KEY, JSON.stringify(profile));
-        } catch {}
+        } catch { }
       }
       setLoading(false);
       return { success: true };
@@ -182,7 +182,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(mockUser);
       try {
         localStorage.setItem(LOCAL_STORAGE_USER_KEY, JSON.stringify(mockUser));
-      } catch {}
+      } catch { }
       setLoading(false);
       return { success: true };
     }
@@ -191,7 +191,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = async (): Promise<void> => {
     try {
       localStorage.removeItem(LOCAL_STORAGE_USER_KEY);
-    } catch {}
+    } catch { }
     if (isSupabaseConfigured()) {
       const supabase = getSupabaseClient();
       if (supabase) {

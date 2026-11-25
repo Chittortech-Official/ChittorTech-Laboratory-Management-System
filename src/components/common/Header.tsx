@@ -348,9 +348,9 @@ export const Header: React.FC<HeaderProps> = ({ onLogout, onOpenSettings }) => {
       {/* EDIT PROFILE MODAL */}
       {isEditingProfile && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4 overflow-y-auto">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-md my-8 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col my-auto overflow-hidden animate-in fade-in zoom-in-95 duration-150">
             {/* Modal Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/60">
+            <div className="shrink-0 flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/60">
               <div className="flex items-center gap-2">
                 <span className="p-1.5 rounded-lg bg-blue-50 text-blue-600">
                   <Edit3 className="w-4 h-4" />
@@ -367,7 +367,7 @@ export const Header: React.FC<HeaderProps> = ({ onLogout, onOpenSettings }) => {
             </div>
 
             {/* Modal Form */}
-            <form onSubmit={handleSaveProfile} className="p-6 space-y-4">
+            <form onSubmit={handleSaveProfile} className="flex-1 overflow-y-auto p-6 space-y-4">
               {saveSuccess && (
                 <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-xl flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />

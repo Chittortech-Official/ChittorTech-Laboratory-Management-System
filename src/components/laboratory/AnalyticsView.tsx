@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { LaboratoryRecord, ParameterAnalysis, ChemicalParameterKey } from '@/types';
 import { CHEMICAL_PARAMETERS, PLANT_CATEGORIES } from '@/lib/laboratory/constants';
+import { formatDateDDMMYYYY } from '@/lib/laboratory/exportService';
 
 interface AnalyticsViewProps {
   userId: string;
@@ -503,7 +504,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ userId }) => {
                     />
                     {/* Tooltip on hover */}
                     <title>
-                      {`${pt.date} [${pt.sampleId}]: ${pt.val.toFixed(2)}%`}
+                      {`${formatDateDDMMYYYY(pt.date)} [${pt.sampleId}]: ${pt.val.toFixed(2)}%`}
                     </title>
                     {/* Date label at bottom for selected points */}
                     {(i === 0 || i === svgChart.points.length - 1 || i === Math.floor(svgChart.points.length / 2)) && (
@@ -514,7 +515,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ userId }) => {
                         fontSize="9"
                         textAnchor="middle"
                       >
-                        {pt.date.slice(5)}
+                        {formatDateDDMMYYYY(pt.date).slice(0, 5)}
                       </text>
                     )}
                   </g>

@@ -1,14 +1,14 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { 
-  Search, Filter, Calendar, Edit3, Trash2, Download, Eye, 
-  RefreshCw, CheckCircle2, AlertTriangle, X, ChevronDown, 
+import {
+  Search, Filter, Calendar, Edit3, Trash2, Download, Eye,
+  RefreshCw, CheckCircle2, AlertTriangle, X, ChevronDown,
   ChevronLeft, ChevronRight, FileSpreadsheet, Beaker
 } from 'lucide-react';
 import { LaboratoryRecord, ChemicalParameterKey } from '@/types';
 import { CHEMICAL_PARAMETERS, PLANT_CATEGORIES, LAB_SHIFTS } from '@/lib/laboratory/constants';
-import { generateSingleRecordPdf, exportToCsv, exportToExcel, buildExcelFilename, calculateOxideSum } from '@/lib/laboratory/exportService';
+import { generateSingleRecordPdf, exportToCsv, exportToExcel, buildExcelFilename, calculateOxideSum, formatDateDDMMYYYY } from '@/lib/laboratory/exportService';
 import { useConfirmationModal } from '@/contexts/ConfirmationModalContext';
 
 interface PreviousRecordsProps {
@@ -86,7 +86,7 @@ export const PreviousRecords: React.FC<PreviousRecordsProps> = ({
   const filteredRecords = useMemo(() => {
     if (!searchQuery.trim()) return records;
     const q = searchQuery.toLowerCase().trim();
-    return records.filter((r) => 
+    return records.filter((r) =>
       (r.sample_id || '').toLowerCase().includes(q) ||
       r.category.toLowerCase().includes(q) ||
       r.test_date.includes(q) ||
@@ -143,7 +143,7 @@ export const PreviousRecords: React.FC<PreviousRecordsProps> = ({
         type: 'update',
         title: 'Changes Saved',
         message: 'Your changes have been successfully saved to the database.',
-        description: `${editFormData.category || 'Lab Record'} • ${editFormData.sample_id || 'Sample'} (${editFormData.test_date || ''})`,
+        description: `${editFormData.category || 'Lab Record'} • ${editFormData.sample_id || 'Sample'} (${formatDateDDMMYYYY(editFormData.test_date)})`,
       });
 
       setEditingRecord(null);
@@ -368,64 +368,66 @@ export const PreviousRecords: React.FC<PreviousRecordsProps> = ({
             )}
           </div>
         ) : (
-          <div className="overflow-x-auto border-t border-slate-200">
-            <table className="w-full text-left border-collapse border border-slate-300 text-xs">
+          <div className="overflow-x-auto border-t border-slate-300">
+            <table className="w-full min-w-[1150px] text-left border-collapse border border-slate-300 text-xs shadow-xs">
               <thead>
-                <tr className="bg-slate-100/90 text-slate-800 font-extrabold uppercase text-[10px] tracking-wider border-b-2 border-slate-300">
-                  <th className="py-3 px-3.5 whitespace-nowrap border-r border-slate-300 bg-slate-100">
+                <tr className="bg-slate-900 text-white font-extrabold uppercase text-[10px] tracking-wider border-b-2 border-slate-800">
+                  <th className="py-3.5 px-3.5 whitespace-nowrap border-r border-slate-700 bg-slate-900 text-slate-100 font-bold">
                     Date &bull; Shift
                   </th>
-                  <th className="py-3 px-3 whitespace-nowrap border-r border-slate-300 bg-slate-100">
+                  <th className="py-3.5 px-3 whitespace-nowrap border-r border-slate-700 bg-slate-900 text-slate-100 font-bold">
                     Sample ID
                   </th>
-                  <th className="py-3 px-3 whitespace-nowrap border-r border-slate-300 bg-slate-100">
+                  <th className="py-3.5 px-3 whitespace-nowrap border-r border-slate-700 bg-slate-900 text-slate-100 font-bold">
                     Category
                   </th>
                   {/* The 11 Chemical Parameters in Exact Sequence */}
                   {CHEMICAL_PARAMETERS.map((p) => (
                     <th
                       key={p.key}
-                      className="py-2.5 px-2.5 text-right whitespace-nowrap border-r border-slate-300 bg-slate-100/95"
+                      className="py-2.5 px-3 text-right whitespace-nowrap border-r border-slate-700 bg-slate-900"
                       title={`${p.label} (${p.formula})`}
                     >
-                      <span className="block text-[11px] font-extrabold text-slate-900">{p.symbol}</span>
-                      <span className="block text-[9px] font-mono font-medium text-slate-500 uppercase">{p.formula}</span>
+                      <span className="block text-[11px] font-black text-white tracking-wide">{p.symbol}</span>
+                      <span className="block text-[9px] font-mono font-bold text-sky-300 uppercase tracking-wider">{p.formula}</span>
                     </th>
                   ))}
                   {/* Total Oxides Column */}
-                  <th className="py-2.5 px-3 text-right whitespace-nowrap border-r border-slate-300 bg-emerald-50 text-emerald-950">
-                    <span className="block text-[11px] font-extrabold">Total Σ</span>
-                    <span className="block text-[9px] font-mono font-medium text-emerald-700">Oxides</span>
+                  <th className="py-2.5 px-3.5 text-right whitespace-nowrap border-r border-slate-700 bg-emerald-950 text-emerald-100">
+                    <span className="block text-[11px] font-black text-emerald-100">Total Σ</span>
+                    <span className="block text-[9px] font-mono font-bold text-emerald-300 uppercase">Oxides</span>
                   </th>
-                  <th className="py-3 px-4 text-center whitespace-nowrap bg-slate-100">
+                  <th className="py-3.5 px-4 text-center whitespace-nowrap bg-slate-900 text-slate-100 font-bold">
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="text-slate-800">
+              <tbody className="text-slate-900">
                 {filteredRecords.map((r) => {
                   const total = calculateOxideSum(r);
                   return (
                     <tr
                       key={r.id}
-                      className="odd:bg-white even:bg-slate-50/70 hover:bg-blue-50/50 transition-colors group"
+                      className="odd:bg-white even:bg-slate-50 hover:bg-amber-50/50 transition-colors group"
                     >
                       {/* Date & Shift */}
-                      <td className="py-2.5 px-3.5 whitespace-nowrap border-r border-b border-slate-200">
-                        <div className="font-bold text-slate-900 text-xs">{r.test_date}</div>
-                        <div className="text-[10px] text-slate-500 font-medium">{r.shift || 'General'}</div>
+                      <td className="py-3 px-3.5 whitespace-nowrap border-r border-b border-slate-200">
+                        <div className="font-extrabold text-slate-950 text-xs font-mono">{formatDateDDMMYYYY(r.test_date)}</div>
+                        <div className="text-[10px] text-slate-600 font-semibold bg-slate-100 border border-slate-300 px-1.5 py-0.2 rounded inline-block mt-0.5">
+                          {r.shift || 'General'}
+                        </div>
                       </td>
 
                       {/* Sample ID */}
-                      <td className="py-2.5 px-3 whitespace-nowrap border-r border-b border-slate-200 font-mono text-[11px] font-bold text-blue-700">
-                        <span className="bg-blue-50 px-2 py-0.5 rounded border border-blue-200/60 inline-block">
+                      <td className="py-3 px-3 whitespace-nowrap border-r border-b border-slate-200 font-mono text-xs font-bold text-blue-900">
+                        <span className="bg-blue-50/90 text-blue-900 border border-blue-300/80 px-2 py-0.5 rounded-md inline-block font-mono font-bold">
                           {r.sample_id || 'Sample-1'}
                         </span>
                       </td>
 
                       {/* Plant Category */}
-                      <td className="py-2.5 px-3 whitespace-nowrap border-r border-b border-slate-200">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-100 text-slate-800 border border-slate-300/80">
+                      <td className="py-3 px-3 whitespace-nowrap border-r border-b border-slate-200">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-bold bg-slate-800 text-white shadow-2xs">
                           {r.category}
                         </span>
                       </td>
@@ -438,10 +440,10 @@ export const PreviousRecords: React.FC<PreviousRecordsProps> = ({
                         return (
                           <td
                             key={p.key}
-                            className="py-2.5 px-2.5 text-right font-mono text-[11px] whitespace-nowrap border-r border-b border-slate-200"
+                            className="py-3 px-3 text-right font-mono text-xs whitespace-nowrap border-r border-b border-slate-200"
                           >
                             {isFilled ? (
-                              <span className="font-bold text-slate-900">
+                              <span className="font-black text-slate-950 font-mono">
                                 {Number(val).toFixed(decimals)}
                               </span>
                             ) : (
@@ -452,31 +454,31 @@ export const PreviousRecords: React.FC<PreviousRecordsProps> = ({
                       })}
 
                       {/* Total Oxides (Σ) */}
-                      <td className="py-2.5 px-3 text-right font-mono text-[11px] font-extrabold whitespace-nowrap border-r border-b border-slate-200 bg-emerald-50/40 text-emerald-900">
+                      <td className="py-3 px-3.5 text-right font-mono text-xs font-black whitespace-nowrap border-r border-b border-slate-200 bg-emerald-50 text-emerald-950">
                         {total > 0 ? `${total.toFixed(2)}%` : '-'}
                       </td>
 
                       {/* Actions */}
-                      <td className="py-2.5 px-4 text-center whitespace-nowrap border-b border-slate-200 bg-slate-50/20">
-                        <div className="flex items-center justify-center gap-1.5 opacity-90 group-hover:opacity-100">
+                      <td className="py-3 px-4 text-center whitespace-nowrap border-b border-slate-200 bg-slate-50/30">
+                        <div className="flex items-center justify-center gap-2 opacity-90 group-hover:opacity-100">
                           <button
                             onClick={() => handleDownloadSinglePdf(r)}
                             title="Download Single Test PDF Report"
-                            className="p-1.5 text-slate-500 hover:text-blue-700 hover:bg-blue-100/70 rounded-lg transition-colors"
+                            className="p-1.5 text-blue-700 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors"
                           >
                             <Download className="w-3.5 h-3.5" />
                           </button>
                           <button
                             onClick={() => handleOpenEdit(r)}
                             title="Edit Test Record"
-                            className="p-1.5 text-slate-500 hover:text-amber-700 hover:bg-amber-100/70 rounded-lg transition-colors"
+                            className="p-1.5 text-amber-700 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg transition-colors"
                           >
                             <Edit3 className="w-3.5 h-3.5" />
                           </button>
                           <button
                             onClick={() => setDeletingId(r.id)}
                             title="Delete Record"
-                            className="p-1.5 text-slate-500 hover:text-rose-700 hover:bg-rose-100/70 rounded-lg transition-colors"
+                            className="p-1.5 text-rose-700 hover:text-rose-900 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg transition-colors"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -492,12 +494,12 @@ export const PreviousRecords: React.FC<PreviousRecordsProps> = ({
 
         {/* Footer info bar */}
         {!loading && filteredRecords.length > 0 && (
-          <div className="px-4 py-3 bg-slate-50/50 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+          <div className="px-5 py-3 bg-slate-100/90 border-t border-slate-200 flex items-center justify-between text-xs text-slate-700 font-medium">
             <span>
-              Showing <strong className="text-slate-700">{filteredRecords.length}</strong> record{filteredRecords.length === 1 ? '' : 's'}
+              Showing <strong className="text-slate-900 font-extrabold">{filteredRecords.length}</strong> record{filteredRecords.length === 1 ? '' : 's'}
             </span>
-            <span className="text-[11px] text-slate-400">
-              ChittorTech QA &bull; Parameter Values in % (wt/wt)
+            <span className="text-[11px] text-slate-500 font-semibold">
+              ChittorTech QA &bull; Parameter Values in % (wt/wt) &bull; ASTM C150 / IS 269 Standard
             </span>
           </div>
         )}
@@ -505,13 +507,13 @@ export const PreviousRecords: React.FC<PreviousRecordsProps> = ({
 
       {/* EDIT MODAL */}
       {editingRecord && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-2xl my-8 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col my-auto overflow-hidden animate-in fade-in zoom-in-95 duration-150">
             {/* Modal Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/60">
+            <div className="shrink-0 flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/60">
               <div>
                 <h3 className="text-base font-bold text-slate-900">Edit Chemical Test Record</h3>
-                <p className="text-xs text-slate-500 font-mono">Sample ID: {editingRecord.sample_id}</p>
+                <p className="text-xs text-slate-500 font-mono">Sample ID: {editingRecord.sample_id} &bull; Date: {formatDateDDMMYYYY(editingRecord.test_date)}</p>
               </div>
               <button
                 onClick={() => setEditingRecord(null)}
@@ -522,7 +524,7 @@ export const PreviousRecords: React.FC<PreviousRecordsProps> = ({
             </div>
 
             {/* Modal Form */}
-            <form onSubmit={handleSaveEdit} className="p-6 space-y-5">
+            <form onSubmit={handleSaveEdit} className="flex-1 overflow-y-auto p-6 space-y-5">
               {editError && (
                 <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl flex items-center gap-2">
                   <AlertTriangle className="w-4 h-4 shrink-0" />
@@ -632,8 +634,8 @@ export const PreviousRecords: React.FC<PreviousRecordsProps> = ({
                 />
               </div>
 
-              {/* Modal Actions */}
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+              {/* Modal Actions - Sticky Bottom Footer */}
+              <div className="sticky bottom-0 -mx-6 -mb-6 p-4 bg-white/95 backdrop-blur-xs border-t border-slate-200 flex items-center justify-end gap-2 shadow-xs">
                 <button
                   type="button"
                   onClick={() => setEditingRecord(null)}

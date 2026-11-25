@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { CHEMICAL_PARAMETERS, PLANT_CATEGORIES, LAB_SHIFTS } from '@/lib/laboratory/constants';
 import { LaboratoryRecord, UserProfile } from '@/types';
-import { calculateOxideSum } from '@/lib/laboratory/exportService';
+import { calculateOxideSum, formatDateDDMMYYYY } from '@/lib/laboratory/exportService';
 import { calculateBoguePhases, BogueResult } from '@/lib/laboratory/bogueEngine';
 import { generateProcessAdvisory, CopilotAnalysisResult, ProcessAdvisory } from '@/lib/laboratory/aiCopilotEngine';
 import { parseXrfInstrumentFile, generateDemoXrfCsv, ParsedSample } from '@/lib/laboratory/xrfParser';
@@ -343,10 +343,10 @@ export const NewEntryForm: React.FC<NewEntryFormProps> = ({ user, onRecordSaved 
         type: 'create',
         title: 'Record Saved to Database',
         message: 'Your record has been successfully saved to the database.',
-        description: `${category} • ${sampleId} (${testDate})`,
+        description: `${category} • ${sampleId} (${formatDateDDMMYYYY(testDate)})`,
       });
 
-      setSuccess(`Record for ${testDate} under "${category}" successfully logged into Supabase.`);
+      setSuccess(`Record for ${formatDateDDMMYYYY(testDate)} under "${category}" successfully logged into Supabase.`);
       
       // Auto increment sample ID for next quick entry
       const nextNum = parseInt(sampleId.replace(/\D/g, '') || '1', 10) + 1;
@@ -1069,10 +1069,10 @@ export const NewEntryForm: React.FC<NewEntryFormProps> = ({ user, onRecordSaved 
             role="dialog"
             aria-modal="true"
             aria-labelledby="confirm-modal-title"
-            className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden my-auto animate-in zoom-in-95 duration-200"
+            className="relative w-full max-w-lg max-h-[90vh] flex flex-col bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden my-auto animate-in zoom-in-95 duration-200"
           >
             {/* Modal Header */}
-            <div className="bg-slate-50 border-b border-slate-200 px-6 py-4 flex items-start justify-between gap-3">
+            <div className="shrink-0 bg-slate-50 border-b border-slate-200 px-6 py-4 flex items-start justify-between gap-3">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white shadow-xs">
                   <ClipboardCheck className="h-5 w-5" />
@@ -1103,7 +1103,7 @@ export const NewEntryForm: React.FC<NewEntryFormProps> = ({ user, onRecordSaved 
             </div>
 
             {/* Modal Content: Complete Data Table */}
-            <div className="p-6 space-y-4 max-h-[65vh] overflow-y-auto">
+            <div className="flex-1 p-6 space-y-4 overflow-y-auto">
               <div className="rounded-xl border border-slate-200 overflow-hidden shadow-xs">
                 <table className="w-full text-left border-collapse text-xs">
                   <thead>
@@ -1120,7 +1120,7 @@ export const NewEntryForm: React.FC<NewEntryFormProps> = ({ user, onRecordSaved 
                         <span>Date</span>
                       </td>
                       <td className="py-2.5 px-4 text-right font-mono font-bold text-slate-900">
-                        {testDate}
+                        {formatDateDDMMYYYY(testDate)}
                       </td>
                     </tr>
 
@@ -1192,7 +1192,7 @@ export const NewEntryForm: React.FC<NewEntryFormProps> = ({ user, onRecordSaved 
             </div>
 
             {/* Modal Footer with Two Buttons */}
-            <div className="bg-slate-50 border-t border-slate-200 px-6 py-4 flex flex-col-reverse sm:flex-row items-center justify-end gap-3">
+            <div className="shrink-0 bg-slate-50 border-t border-slate-200 px-6 py-4 flex flex-col-reverse sm:flex-row items-center justify-end gap-3">
               {/* Button 1: Edit Data */}
               <button
                 ref={editButtonRef}

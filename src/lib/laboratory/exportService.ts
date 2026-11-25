@@ -136,7 +136,7 @@ export function generatePdfDocument(records: LaboratoryRecord[], meta: ReportMet
   const tableRows = records.map((r) => {
     const total = calculateOxideSum(r);
     return [
-      r.test_date,
+      formatDateDDMMYYYY(r.test_date),
       r.category,
       r.sample_id || '-',
       r.shift || '-',
@@ -277,25 +277,25 @@ export function exportToCsv(records: LaboratoryRecord[], filename: string = 'Chi
   ];
 
   const rows = records.map((r) => {
-    // Ensure clean YYYY-MM-DD date without timestamps
-    const cleanDate = r.test_date ? String(r.test_date).split('T')[0] : '';
+    // Format strictly as DD-MM-YYYY
+    const cleanDate = formatDateDDMMYYYY(r.test_date);
     return [
       cleanDate,
       `"${r.category}"`,
       `"${r.sample_id || ''}"`,
       `"${r.shift || ''}"`,
-      r.loi !== null && r.loi !== undefined ? r.loi : '',
-      r.ir !== null && r.ir !== undefined ? r.ir : '',
-      r.so3 !== null && r.so3 !== undefined ? r.so3 : '',
-      r.silica !== null && r.silica !== undefined ? r.silica : '',
-      r.alumina !== null && r.alumina !== undefined ? r.alumina : '',
-      r.iron !== null && r.iron !== undefined ? r.iron : '',
-      r.lime !== null && r.lime !== undefined ? r.lime : '',
-      r.magnesia !== null && r.magnesia !== undefined ? r.magnesia : '',
-      r.k2o !== null && r.k2o !== undefined ? r.k2o : '',
-      r.na2o !== null && r.na2o !== undefined ? r.na2o : '',
-      r.chloride !== null && r.chloride !== undefined ? r.chloride : '',
-      calculateOxideSum(r),
+      r.loi !== null && r.loi !== undefined ? Number(r.loi).toFixed(2) : '',
+      r.ir !== null && r.ir !== undefined ? Number(r.ir).toFixed(2) : '',
+      r.so3 !== null && r.so3 !== undefined ? Number(r.so3).toFixed(2) : '',
+      r.silica !== null && r.silica !== undefined ? Number(r.silica).toFixed(2) : '',
+      r.alumina !== null && r.alumina !== undefined ? Number(r.alumina).toFixed(2) : '',
+      r.iron !== null && r.iron !== undefined ? Number(r.iron).toFixed(2) : '',
+      r.lime !== null && r.lime !== undefined ? Number(r.lime).toFixed(2) : '',
+      r.magnesia !== null && r.magnesia !== undefined ? Number(r.magnesia).toFixed(2) : '',
+      r.k2o !== null && r.k2o !== undefined ? Number(r.k2o).toFixed(2) : '',
+      r.na2o !== null && r.na2o !== undefined ? Number(r.na2o).toFixed(2) : '',
+      r.chloride !== null && r.chloride !== undefined ? Number(r.chloride).toFixed(4) : '',
+      calculateOxideSum(r).toFixed(2),
       `"${(r.notes || '').replace(/"/g, '""')}"`,
     ];
   });
@@ -309,6 +309,30 @@ export function exportToCsv(records: LaboratoryRecord[], filename: string = 'Chi
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+}
+
+/**
+ * Formats a valid date object or string strictly into DD-MM-YYYY format.
+ * Examples: '2026-11-25' -> '25-11-2026', '2026-11-09' -> '09-11-2026'
+ */
+export function formatDateDDMMYYYY(dateInput?: string | Date | null): string {
+  if (!dateInput) return '';
+  if (typeof dateInput === 'string') {
+    const clean = dateInput.split('T')[0].trim();
+    const parts = clean.split('-');
+    if (parts.length === 3) {
+      const [year, month, day] = parts;
+      return `${day.padStart(2, '0')}-${month.padStart(2, '0')}-${year}`;
+    }
+  }
+  const d = new Date(dateInput);
+  if (!isNaN(d.getTime())) {
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    return `${day}-${month}-${year}`;
+  }
+  return String(dateInput);
 }
 
 /**
@@ -414,25 +438,25 @@ export function exportToExcel(
       so3: r.so3,
     });
 
-    const cleanDate = r.test_date ? String(r.test_date).split('T')[0] : '';
+    const cleanDate = formatDateDDMMYYYY(r.test_date);
 
     return {
-      'Testing Date (YYYY-MM-DD)': cleanDate,
+      'Testing Date (DD-MM-YYYY)': cleanDate,
       Category: r.category,
       'Sample ID': r.sample_id || '',
       Shift: r.shift || '',
-      'LOI (%)': r.loi,
-      'IR (%)': r.ir,
-      'SO3 (%)': r.so3,
-      'SiO2 / Silica (%)': r.silica,
-      'Al2O3 / Alumina (%)': r.alumina,
-      'Fe2O3 / Iron (%)': r.iron,
-      'CaO / Lime (%)': r.lime,
-      'MgO / Magnesia (%)': r.magnesia,
-      'K2O / Potassium (%)': r.k2o !== undefined && r.k2o !== null ? r.k2o : '',
-      'Na2O / Sodium (%)': r.na2o !== undefined && r.na2o !== null ? r.na2o : '',
-      'Cl / Chloride (%)': r.chloride,
-      'Total Oxides (%)': calculateOxideSum(r),
+      'LOI (%)': r.loi !== null && r.loi !== undefined ? Number(r.loi).toFixed(2) : '',
+      'IR (%)': r.ir !== null && r.ir !== undefined ? Number(r.ir).toFixed(2) : '',
+      'SO3 (%)': r.so3 !== null && r.so3 !== undefined ? Number(r.so3).toFixed(2) : '',
+      'SiO2 / Silica (%)': r.silica !== null && r.silica !== undefined ? Number(r.silica).toFixed(2) : '',
+      'Al2O3 / Alumina (%)': r.alumina !== null && r.alumina !== undefined ? Number(r.alumina).toFixed(2) : '',
+      'Fe2O3 / Iron (%)': r.iron !== null && r.iron !== undefined ? Number(r.iron).toFixed(2) : '',
+      'CaO / Lime (%)': r.lime !== null && r.lime !== undefined ? Number(r.lime).toFixed(2) : '',
+      'MgO / Magnesia (%)': r.magnesia !== null && r.magnesia !== undefined ? Number(r.magnesia).toFixed(2) : '',
+      'K2O / Potassium (%)': r.k2o !== undefined && r.k2o !== null ? Number(r.k2o).toFixed(2) : '',
+      'Na2O / Sodium (%)': r.na2o !== undefined && r.na2o !== null ? Number(r.na2o).toFixed(2) : '',
+      'Cl / Chloride (%)': r.chloride !== null && r.chloride !== undefined ? Number(r.chloride).toFixed(4) : '',
+      'Total Oxides (%)': calculateOxideSum(r).toFixed(2),
       'LSF (Lime Saturation)': bogue.lsf !== null ? bogue.lsf : '',
       'SM (Silica Ratio)': bogue.sm !== null ? bogue.sm : '',
       'AM (Alumina Ratio)': bogue.am !== null ? bogue.am : '',
@@ -507,24 +531,24 @@ export function downloadCsvReport(records: LaboratoryRecord[], meta: ReportMeta 
   ];
 
   const rows = records.map((r) => {
-    const cleanDate = r.test_date ? String(r.test_date).split('T')[0] : '';
+    const cleanDate = formatDateDDMMYYYY(r.test_date);
     return [
       cleanDate,
       `"${r.category}"`,
       `"${r.sample_id || ''}"`,
       `"${r.shift || ''}"`,
-      r.loi !== null ? r.loi : '',
-      r.ir !== null ? r.ir : '',
-      r.so3 !== null ? r.so3 : '',
-      r.silica !== null ? r.silica : '',
-      r.alumina !== null ? r.alumina : '',
-      r.iron !== null ? r.iron : '',
-      r.lime !== null ? r.lime : '',
-      r.magnesia !== null ? r.magnesia : '',
-      r.k2o !== null && r.k2o !== undefined ? r.k2o : '',
-      r.na2o !== null && r.na2o !== undefined ? r.na2o : '',
-      r.chloride !== null ? r.chloride : '',
-      calculateOxideSum(r),
+      r.loi !== null && r.loi !== undefined ? Number(r.loi).toFixed(2) : '',
+      r.ir !== null && r.ir !== undefined ? Number(r.ir).toFixed(2) : '',
+      r.so3 !== null && r.so3 !== undefined ? Number(r.so3).toFixed(2) : '',
+      r.silica !== null && r.silica !== undefined ? Number(r.silica).toFixed(2) : '',
+      r.alumina !== null && r.alumina !== undefined ? Number(r.alumina).toFixed(2) : '',
+      r.iron !== null && r.iron !== undefined ? Number(r.iron).toFixed(2) : '',
+      r.lime !== null && r.lime !== undefined ? Number(r.lime).toFixed(2) : '',
+      r.magnesia !== null && r.magnesia !== undefined ? Number(r.magnesia).toFixed(2) : '',
+      r.k2o !== null && r.k2o !== undefined ? Number(r.k2o).toFixed(2) : '',
+      r.na2o !== null && r.na2o !== undefined ? Number(r.na2o).toFixed(2) : '',
+      r.chloride !== null && r.chloride !== undefined ? Number(r.chloride).toFixed(4) : '',
+      calculateOxideSum(r).toFixed(2),
       `"${(r.notes || '').replace(/"/g, '""')}"`,
     ];
   });
@@ -545,24 +569,24 @@ export function downloadCsvReport(records: LaboratoryRecord[], meta: ReportMeta 
  */
 export function downloadExcelReport(records: LaboratoryRecord[], meta: ReportMeta = {}) {
   const data = records.map((r) => {
-    const cleanDate = r.test_date ? String(r.test_date).split('T')[0] : '';
+    const cleanDate = formatDateDDMMYYYY(r.test_date);
     return {
-      'Testing Date (YYYY-MM-DD)': cleanDate,
+      'Testing Date (DD-MM-YYYY)': cleanDate,
       Category: r.category,
       'Sample ID': r.sample_id || '',
       Shift: r.shift || '',
-      'LOI (%)': r.loi,
-      'IR (%)': r.ir,
-      'SO3 (%)': r.so3,
-      'SiO2 / Silica (%)': r.silica,
-      'Al2O3 / Alumina (%)': r.alumina,
-      'Fe2O3 / Iron (%)': r.iron,
-      'CaO / Lime (%)': r.lime,
-      'MgO / Magnesia (%)': r.magnesia,
-      'K2O / Potassium (%)': r.k2o !== undefined && r.k2o !== null ? r.k2o : '',
-      'Na2O / Sodium (%)': r.na2o !== undefined && r.na2o !== null ? r.na2o : '',
-      'Cl / Chloride (%)': r.chloride,
-      'Total Oxides (%)': calculateOxideSum(r),
+      'LOI (%)': r.loi !== null && r.loi !== undefined ? Number(r.loi).toFixed(2) : '',
+      'IR (%)': r.ir !== null && r.ir !== undefined ? Number(r.ir).toFixed(2) : '',
+      'SO3 (%)': r.so3 !== null && r.so3 !== undefined ? Number(r.so3).toFixed(2) : '',
+      'SiO2 / Silica (%)': r.silica !== null && r.silica !== undefined ? Number(r.silica).toFixed(2) : '',
+      'Al2O3 / Alumina (%)': r.alumina !== null && r.alumina !== undefined ? Number(r.alumina).toFixed(2) : '',
+      'Fe2O3 / Iron (%)': r.iron !== null && r.iron !== undefined ? Number(r.iron).toFixed(2) : '',
+      'CaO / Lime (%)': r.lime !== null && r.lime !== undefined ? Number(r.lime).toFixed(2) : '',
+      'MgO / Magnesia (%)': r.magnesia !== null && r.magnesia !== undefined ? Number(r.magnesia).toFixed(2) : '',
+      'K2O / Potassium (%)': r.k2o !== undefined && r.k2o !== null ? Number(r.k2o).toFixed(2) : '',
+      'Na2O / Sodium (%)': r.na2o !== undefined && r.na2o !== null ? Number(r.na2o).toFixed(2) : '',
+      'Cl / Chloride (%)': r.chloride !== null && r.chloride !== undefined ? Number(r.chloride).toFixed(4) : '',
+      'Total Oxides (%)': calculateOxideSum(r).toFixed(2),
       Notes: r.notes || '',
     };
   });

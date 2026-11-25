@@ -9,6 +9,7 @@ import {
 import { LaboratoryRecord, ChemicalParameterKey } from '@/types';
 import { CHEMICAL_PARAMETERS, PLANT_CATEGORIES } from '@/lib/laboratory/constants';
 import { calculateBoguePhases } from '@/lib/laboratory/bogueEngine';
+import { formatDateDDMMYYYY } from '@/lib/laboratory/exportService';
 
 interface DualLineComparisonProps {
   userId: string;
@@ -477,14 +478,14 @@ export const DualLineComparison: React.FC<DualLineComparisonProps> = ({ userId }
                 {/* Points A */}
                 {svgChart.pointsA.map((pt, i) => (
                   <circle key={`A-${i}`} cx={pt.x} cy={pt.y} r="4" fill="#ffffff" stroke="#2563eb" strokeWidth="2">
-                    <title>{`${lineA} [${pt.date}]: ${pt.val.toFixed(2)}%`}</title>
+                    <title>{`${lineA} [${formatDateDDMMYYYY(pt.date)}]: ${pt.val.toFixed(2)}%`}</title>
                   </circle>
                 ))}
 
                 {/* Points B */}
                 {svgChart.pointsB.map((pt, i) => (
                   <circle key={`B-${i}`} cx={pt.x} cy={pt.y} r="4" fill="#ffffff" stroke="#059669" strokeWidth="2">
-                    <title>{`${lineB} [${pt.date}]: ${pt.val.toFixed(2)}%`}</title>
+                    <title>{`${lineB} [${formatDateDDMMYYYY(pt.date)}]: ${pt.val.toFixed(2)}%`}</title>
                   </circle>
                 ))}
               </svg>

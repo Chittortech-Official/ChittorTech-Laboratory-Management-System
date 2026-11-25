@@ -16,6 +16,7 @@ import { DualLineComparison } from './DualLineComparison';
 import { ReportsView } from './ReportsView';
 import { EmailReportsView } from './EmailReportsView';
 import { CHEMICAL_PARAMETERS } from '@/lib/laboratory/constants';
+import { formatDateDDMMYYYY } from '@/lib/laboratory/exportService';
 import { Scale } from 'lucide-react';
 
 interface LaboratoryDashboardProps {
@@ -232,22 +233,22 @@ export const LaboratoryDashboard: React.FC<LaboratoryDashboardProps> = ({
                   </button>
                 </div>
               ) : (
-                <div className="overflow-x-auto border-t border-slate-200">
-                  <table className="w-full text-left border-collapse border border-slate-200 text-xs">
+                <div className="overflow-x-auto border-t border-slate-300">
+                  <table className="w-full min-w-[550px] text-left border-collapse border border-slate-300 text-xs shadow-xs">
                     <thead>
-                      <tr className="bg-slate-100 text-slate-800 uppercase text-[10px] font-extrabold border-b border-slate-300">
-                        <th className="py-2.5 px-3 border-r border-slate-300">Date</th>
-                        <th className="py-2.5 px-3 border-r border-slate-300">Sample ID</th>
-                        <th className="py-2.5 px-3 border-r border-slate-300">Category</th>
-                        <th className="py-2.5 px-3 text-right border-r border-slate-300">Lime (CaO)</th>
-                        <th className="py-2.5 px-3 text-right border-r border-slate-300">Silica (SiO₂)</th>
-                        <th className="py-2.5 px-3 text-right">SO₃</th>
+                      <tr className="bg-slate-900 text-white uppercase text-[10px] font-extrabold tracking-wider border-b-2 border-slate-800">
+                        <th className="py-3 px-3.5 border-r border-slate-700 font-bold">Date</th>
+                        <th className="py-3 px-3 border-r border-slate-700 font-bold">Sample ID</th>
+                        <th className="py-3 px-3 border-r border-slate-700 font-bold">Category</th>
+                        <th className="py-3 px-3 text-right border-r border-slate-700 font-bold">Lime (CaO)</th>
+                        <th className="py-3 px-3 text-right border-r border-slate-700 font-bold">Silica (SiO₂)</th>
+                        <th className="py-3 px-3 text-right font-bold">SO₃</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {recentRecords.map((r) => (
                         <tr key={r.id} className="odd:bg-white even:bg-slate-50/70 hover:bg-blue-50/50 transition-colors">
-                          <td className="py-2.5 px-3 font-semibold text-slate-900 border-r border-b border-slate-200">{r.test_date}</td>
+                          <td className="py-2.5 px-3 font-semibold font-mono text-slate-900 border-r border-b border-slate-200 whitespace-nowrap">{formatDateDDMMYYYY(r.test_date)}</td>
                           <td className="py-2.5 px-3 font-mono font-bold text-blue-700 border-r border-b border-slate-200">{r.sample_id}</td>
                           <td className="py-2.5 px-3 border-r border-b border-slate-200">
                             <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-800 border border-slate-300/80">
