@@ -6,7 +6,7 @@ import {
   LayoutDashboard, PlusCircle, Database, BarChart3, 
   FileText, Mail, Settings, ShieldCheck, Beaker, 
   Layers, Calendar, Clock, ArrowRight, CheckCircle2, 
-  Factory, User, AlertCircle, RefreshCw, Download, Bot, Sparkles, Zap
+  Factory, User, AlertCircle, RefreshCw, Download, Sparkles, Zap
 } from 'lucide-react';
 import { DashboardTab, LaboratoryRecord } from '@/types';
 import { NewEntryForm } from './NewEntryForm';
@@ -272,28 +272,6 @@ export const LaboratoryDashboard: React.FC<LaboratoryDashboardProps> = ({
 
             {/* Right: Laboratory Navigation Shortcut Tiles (4 cols) */}
             <div className="lg:col-span-4 space-y-3">
-              {/* AI Copilot Highlight Card */}
-              <div
-                onClick={() => setActiveTab('new_entry')}
-                className="p-4 bg-gradient-to-br from-indigo-50/90 to-purple-50/80 rounded-2xl border border-indigo-200/90 shadow-sm hover:border-indigo-400 cursor-pointer transition-all flex items-center justify-between"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 rounded-xl bg-gradient-to-br from-indigo-600 to-purple-600 text-white shadow-xs">
-                    <Bot className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-1.5">
-                      <h4 className="text-xs font-bold text-slate-900">AI Plant Copilot</h4>
-                      <span className="text-[9px] font-bold bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded-full border border-emerald-200">
-                        ACTIVE
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-slate-600 mt-0.5">Kiln & Ball Mill Process Advisory</p>
-                  </div>
-                </div>
-                <ArrowRight className="w-4 h-4 text-indigo-500" />
-              </div>
-
               <div
                 onClick={() => setActiveTab('new_entry')}
                 className="p-4 bg-white rounded-2xl border border-slate-200 shadow-sm hover:border-blue-400 cursor-pointer transition-all flex items-center justify-between"
