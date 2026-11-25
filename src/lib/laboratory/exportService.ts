@@ -247,9 +247,11 @@ export function generateLaboratoryPdfBase64(records: LaboratoryRecord[], options
 }
 
 export function exportToCsv(records: LaboratoryRecord[], filename: string = 'ChittorTech_Lab_Records') {
+  // Use a descriptive header with format indicator so Excel automatically opens Column A with sufficient width (>18 chars)
+  // preventing Excel's narrow-column "#######" display glitch.
   const headers = [
-    'Date',
-    'Category',
+    'Testing Date (YYYY-MM-DD)',
+    'Plant Category',
     'Sample ID',
     'Shift',
     'LOI (%)',
@@ -265,23 +267,27 @@ export function exportToCsv(records: LaboratoryRecord[], filename: string = 'Chi
     'Notes',
   ];
 
-  const rows = records.map((r) => [
-    r.test_date,
-    `"${r.category}"`,
-    `"${r.sample_id || ''}"`,
-    `"${r.shift || ''}"`,
-    r.loi !== null && r.loi !== undefined ? r.loi : '',
-    r.ir !== null && r.ir !== undefined ? r.ir : '',
-    r.so3 !== null && r.so3 !== undefined ? r.so3 : '',
-    r.lime !== null && r.lime !== undefined ? r.lime : '',
-    r.silica !== null && r.silica !== undefined ? r.silica : '',
-    r.alumina !== null && r.alumina !== undefined ? r.alumina : '',
-    r.iron !== null && r.iron !== undefined ? r.iron : '',
-    r.magnesia !== null && r.magnesia !== undefined ? r.magnesia : '',
-    r.chloride !== null && r.chloride !== undefined ? r.chloride : '',
-    calculateOxideSum(r),
-    `"${(r.notes || '').replace(/"/g, '""')}"`,
-  ]);
+  const rows = records.map((r) => {
+    // Ensure clean YYYY-MM-DD date without timestamps
+    const cleanDate = r.test_date ? String(r.test_date).split('T')[0] : '';
+    return [
+      cleanDate,
+      `"${r.category}"`,
+      `"${r.sample_id || ''}"`,
+      `"${r.shift || ''}"`,
+      r.loi !== null && r.loi !== undefined ? r.loi : '',
+      r.ir !== null && r.ir !== undefined ? r.ir : '',
+      r.so3 !== null && r.so3 !== undefined ? r.so3 : '',
+      r.lime !== null && r.lime !== undefined ? r.lime : '',
+      r.silica !== null && r.silica !== undefined ? r.silica : '',
+      r.alumina !== null && r.alumina !== undefined ? r.alumina : '',
+      r.iron !== null && r.iron !== undefined ? r.iron : '',
+      r.magnesia !== null && r.magnesia !== undefined ? r.magnesia : '',
+      r.chloride !== null && r.chloride !== undefined ? r.chloride : '',
+      calculateOxideSum(r),
+      `"${(r.notes || '').replace(/"/g, '""')}"`,
+    ];
+  });
 
   const csvContent = '\uFEFF' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -304,8 +310,10 @@ export function exportToExcel(records: LaboratoryRecord[], filename: string = 'C
       so3: r.so3,
     });
 
+    const cleanDate = r.test_date ? String(r.test_date).split('T')[0] : '';
+
     return {
-      'Test Date': r.test_date,
+      'Testing Date (YYYY-MM-DD)': cleanDate,
       Category: r.category,
       'Sample ID': r.sample_id || '',
       Shift: r.shift || '',
@@ -332,6 +340,34 @@ export function exportToExcel(records: LaboratoryRecord[], filename: string = 'C
   });
 
   const worksheet = XLSX.utils.json_to_sheet(data);
+
+  // Set explicit column widths to prevent Excel "#######" narrow column bug
+  worksheet['!cols'] = [
+    { wch: 24 }, // Testing Date
+    { wch: 22 }, // Category
+    { wch: 14 }, // Sample ID
+    { wch: 12 }, // Shift
+    { wch: 12 }, // LOI
+    { wch: 14 }, // IR
+    { wch: 12 }, // SO3
+    { wch: 16 }, // CaO
+    { wch: 16 }, // SiO2
+    { wch: 16 }, // Al2O3
+    { wch: 16 }, // Fe2O3
+    { wch: 16 }, // MgO
+    { wch: 14 }, // Cl
+    { wch: 16 }, // Total Oxides
+    { wch: 16 }, // LSF
+    { wch: 12 }, // SM
+    { wch: 12 }, // AM
+    { wch: 14 }, // C3S
+    { wch: 14 }, // C2S
+    { wch: 12 }, // C3A
+    { wch: 12 }, // C4AF
+    { wch: 18 }, // Strength Profile
+    { wch: 30 }, // Notes
+  ];
+
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, 'QA Chemical Tests');
 
@@ -343,8 +379,8 @@ export function exportToExcel(records: LaboratoryRecord[], filename: string = 'C
  */
 export function downloadCsvReport(records: LaboratoryRecord[], meta: ReportMeta = {}) {
   const headers = [
-    'Date',
-    'Category',
+    'Testing Date (YYYY-MM-DD)',
+    'Plant Category',
     'Sample ID',
     'Shift',
     'LOI (%)',
@@ -360,23 +396,26 @@ export function downloadCsvReport(records: LaboratoryRecord[], meta: ReportMeta 
     'Notes',
   ];
 
-  const rows = records.map((r) => [
-    r.test_date,
-    `"${r.category}"`,
-    `"${r.sample_id || ''}"`,
-    `"${r.shift || ''}"`,
-    r.loi !== null ? r.loi : '',
-    r.ir !== null ? r.ir : '',
-    r.so3 !== null ? r.so3 : '',
-    r.lime !== null ? r.lime : '',
-    r.silica !== null ? r.silica : '',
-    r.alumina !== null ? r.alumina : '',
-    r.iron !== null ? r.iron : '',
-    r.magnesia !== null ? r.magnesia : '',
-    r.chloride !== null ? r.chloride : '',
-    calculateOxideSum(r),
-    `"${(r.notes || '').replace(/"/g, '""')}"`,
-  ]);
+  const rows = records.map((r) => {
+    const cleanDate = r.test_date ? String(r.test_date).split('T')[0] : '';
+    return [
+      cleanDate,
+      `"${r.category}"`,
+      `"${r.sample_id || ''}"`,
+      `"${r.shift || ''}"`,
+      r.loi !== null ? r.loi : '',
+      r.ir !== null ? r.ir : '',
+      r.so3 !== null ? r.so3 : '',
+      r.lime !== null ? r.lime : '',
+      r.silica !== null ? r.silica : '',
+      r.alumina !== null ? r.alumina : '',
+      r.iron !== null ? r.iron : '',
+      r.magnesia !== null ? r.magnesia : '',
+      r.chloride !== null ? r.chloride : '',
+      calculateOxideSum(r),
+      `"${(r.notes || '').replace(/"/g, '""')}"`,
+    ];
+  });
 
   const csvContent = '\uFEFF' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -393,25 +432,46 @@ export function downloadCsvReport(records: LaboratoryRecord[], meta: ReportMeta 
  * Trigger browser download of Excel (XLSX)
  */
 export function downloadExcelReport(records: LaboratoryRecord[], meta: ReportMeta = {}) {
-  const data = records.map((r) => ({
-    'Test Date': r.test_date,
-    Category: r.category,
-    'Sample ID': r.sample_id || '',
-    Shift: r.shift || '',
-    'LOI (%)': r.loi,
-    'IR (%)': r.ir,
-    'SO3 (%)': r.so3,
-    'CaO / Lime (%)': r.lime,
-    'SiO2 / Silica (%)': r.silica,
-    'Al2O3 / Alumina (%)': r.alumina,
-    'Fe2O3 / Iron (%)': r.iron,
-    'MgO / Magnesia (%)': r.magnesia,
-    'Cl / Chloride (%)': r.chloride,
-    'Total Oxides (%)': calculateOxideSum(r),
-    Notes: r.notes || '',
-  }));
+  const data = records.map((r) => {
+    const cleanDate = r.test_date ? String(r.test_date).split('T')[0] : '';
+    return {
+      'Testing Date (YYYY-MM-DD)': cleanDate,
+      Category: r.category,
+      'Sample ID': r.sample_id || '',
+      Shift: r.shift || '',
+      'LOI (%)': r.loi,
+      'IR (%)': r.ir,
+      'SO3 (%)': r.so3,
+      'CaO / Lime (%)': r.lime,
+      'SiO2 / Silica (%)': r.silica,
+      'Al2O3 / Alumina (%)': r.alumina,
+      'Fe2O3 / Iron (%)': r.iron,
+      'MgO / Magnesia (%)': r.magnesia,
+      'Cl / Chloride (%)': r.chloride,
+      'Total Oxides (%)': calculateOxideSum(r),
+      Notes: r.notes || '',
+    };
+  });
 
   const worksheet = XLSX.utils.json_to_sheet(data);
+  worksheet['!cols'] = [
+    { wch: 24 }, // Testing Date
+    { wch: 22 }, // Category
+    { wch: 14 }, // Sample ID
+    { wch: 12 }, // Shift
+    { wch: 12 }, // LOI
+    { wch: 14 }, // IR
+    { wch: 12 }, // SO3
+    { wch: 16 }, // CaO
+    { wch: 16 }, // SiO2
+    { wch: 16 }, // Al2O3
+    { wch: 16 }, // Fe2O3
+    { wch: 16 }, // MgO
+    { wch: 14 }, // Cl
+    { wch: 16 }, // Total Oxides
+    { wch: 30 }, // Notes
+  ];
+
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, 'QA Chemical Tests');
 
