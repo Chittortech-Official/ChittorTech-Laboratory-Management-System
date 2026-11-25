@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { LaboratoryRecordPayload } from '@/types';
 import { extractNextSampleId } from '@/lib/laboratory/sampleIdHelper';
+import { computeRecordDiff, insertAuditLog } from '@/lib/laboratory/auditHelper';
 
 function getSupabase() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -101,10 +102,11 @@ export async function GET(request: Request) {
       return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 
-    const sampleIds = (data || []).map((r: any) => r.sample_id);
+    const activeRecords = (data || []).filter((r: any) => r.is_deleted !== true);
+    const sampleIds = activeRecords.map((r: any) => r.sample_id);
     return NextResponse.json({
       success: true,
-      records: data || [],
+      records: activeRecords,
       nextSampleId: extractNextSampleId(sampleIds),
     });
   } catch (err: any) {
@@ -201,6 +203,23 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 
+    // Log CREATE event to immutable NABL audit trail
+    if (data?.id) {
+      await insertAuditLog({
+        supabase,
+        recordId: data.id,
+        sampleId: data.sample_id,
+        action: 'CREATE',
+        changedById: user_id,
+        changedByName: body.changed_by_name || 'QA Chemist',
+        changedByEmail: body.changed_by_email || null,
+        oldValues: null,
+        newValues: data,
+        changedFields: null,
+        reason: 'Initial laboratory test entry recorded',
+      });
+    }
+
     return NextResponse.json({ success: true, record: data });
   } catch (err: any) {
     console.error('POST /api/records error:', err);
@@ -208,36 +227,74 @@ export async function POST(request: Request) {
   }
 }
 
-// PUT /api/records - Update an existing laboratory record
+// PUT /api/records - Update an existing laboratory record (Requires Reason for Change under NABL Clause 7.5)
 export async function PUT(request: Request) {
   try {
     const body = await request.json();
-    const { id, user_id, ...updates } = body;
+    const {
+      id,
+      user_id,
+      reason,
+      changed_by_name,
+      changed_by_email,
+      ...updates
+    } = body;
 
     if (!id || !user_id) {
       return NextResponse.json({ success: false, error: 'Record ID and User ID are required' }, { status: 400 });
     }
 
+    if (!reason || typeof reason !== 'string' || reason.trim().length < 3) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'NABL ISO/IEC 17025 Clause 7.5: A valid "Reason for Change" (min 3 characters) is mandatory for modifying laboratory test data.',
+        },
+        { status: 400 }
+      );
+    }
+
     const supabase = getSupabase();
+
+    // 1. Fetch existing record BEFORE updating to preserve Old Values for audit trail
+    const { data: existingRecord, error: fetchError } = await supabase
+      .from('laboratory_records')
+      .select('*')
+      .eq('id', id)
+      .eq('user_id', user_id)
+      .single();
+
+    if (fetchError || !existingRecord) {
+      return NextResponse.json(
+        { success: false, error: 'Original laboratory record not found or unauthorized.' },
+        { status: 404 }
+      );
+    }
+
+    const updatePayload = {
+      test_date: updates.test_date,
+      category: updates.category,
+      sample_id: updates.sample_id,
+      shift: updates.shift,
+      loi: updates.loi !== null && updates.loi !== undefined && String(updates.loi) !== '' && !isNaN(Number(updates.loi)) ? Number(updates.loi) : null,
+      ir: updates.ir !== null && updates.ir !== undefined && String(updates.ir) !== '' && !isNaN(Number(updates.ir)) ? Number(updates.ir) : null,
+      so3: updates.so3 !== null && updates.so3 !== undefined && String(updates.so3) !== '' && !isNaN(Number(updates.so3)) ? Number(updates.so3) : null,
+      lime: updates.lime !== null && updates.lime !== undefined && String(updates.lime) !== '' && !isNaN(Number(updates.lime)) ? Number(updates.lime) : null,
+      silica: updates.silica !== null && updates.silica !== undefined && String(updates.silica) !== '' && !isNaN(Number(updates.silica)) ? Number(updates.silica) : null,
+      alumina: updates.alumina !== null && updates.alumina !== undefined && String(updates.alumina) !== '' && !isNaN(Number(updates.alumina)) ? Number(updates.alumina) : null,
+      iron: updates.iron !== null && updates.iron !== undefined && String(updates.iron) !== '' && !isNaN(Number(updates.iron)) ? Number(updates.iron) : null,
+      magnesia: updates.magnesia !== null && updates.magnesia !== undefined && String(updates.magnesia) !== '' && !isNaN(Number(updates.magnesia)) ? Number(updates.magnesia) : null,
+      chloride: updates.chloride !== null && updates.chloride !== undefined && String(updates.chloride) !== '' && !isNaN(Number(updates.chloride)) ? Number(updates.chloride) : null,
+      notes: updates.notes,
+      updated_at: new Date().toISOString(),
+    };
+
+    // Compute field-level diff
+    const changedFields = computeRecordDiff(existingRecord, updatePayload);
+
     const { data, error } = await supabase
       .from('laboratory_records')
-      .update({
-        test_date: updates.test_date,
-        category: updates.category,
-        sample_id: updates.sample_id,
-        shift: updates.shift,
-        loi: updates.loi !== null && !isNaN(Number(updates.loi)) ? Number(updates.loi) : null,
-        ir: updates.ir !== null && !isNaN(Number(updates.ir)) ? Number(updates.ir) : null,
-        so3: updates.so3 !== null && !isNaN(Number(updates.so3)) ? Number(updates.so3) : null,
-        lime: updates.lime !== null && !isNaN(Number(updates.lime)) ? Number(updates.lime) : null,
-        silica: updates.silica !== null && !isNaN(Number(updates.silica)) ? Number(updates.silica) : null,
-        alumina: updates.alumina !== null && !isNaN(Number(updates.alumina)) ? Number(updates.alumina) : null,
-        iron: updates.iron !== null && !isNaN(Number(updates.iron)) ? Number(updates.iron) : null,
-        magnesia: updates.magnesia !== null && !isNaN(Number(updates.magnesia)) ? Number(updates.magnesia) : null,
-        chloride: updates.chloride !== null && !isNaN(Number(updates.chloride)) ? Number(updates.chloride) : null,
-        notes: updates.notes,
-        updated_at: new Date().toISOString(),
-      })
+      .update(updatePayload)
       .eq('id', id)
       .eq('user_id', user_id)
       .select()
@@ -248,37 +305,127 @@ export async function PUT(request: Request) {
       return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true, record: data });
+    // 2. Write immutable UPDATE audit log
+    await insertAuditLog({
+      supabase,
+      recordId: id,
+      sampleId: data?.sample_id || existingRecord.sample_id,
+      action: 'UPDATE',
+      changedById: user_id,
+      changedByName: changed_by_name || 'QA Chemist',
+      changedByEmail: changed_by_email || null,
+      oldValues: existingRecord,
+      newValues: data,
+      changedFields,
+      reason: reason.trim(),
+    });
+
+    return NextResponse.json({ success: true, record: data, changedFieldsCount: changedFields.length });
   } catch (err: any) {
     console.error('PUT /api/records error:', err);
     return NextResponse.json({ success: false, error: err.message || 'Internal server error' }, { status: 500 });
   }
 }
 
-// DELETE /api/records - Delete an existing record
+// DELETE /api/records - Soft-delete / archive an existing record (Requires Reason under NABL Clause 7.5)
 export async function DELETE(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
     const userId = searchParams.get('userId');
+    let reason = searchParams.get('reason') || '';
+    let changedByName = searchParams.get('changedByName') || 'QA Chemist';
+    let changedByEmail = searchParams.get('changedByEmail') || null;
+
+    // Also allow JSON body parameters for DELETE
+    try {
+      const bodyText = await request.text();
+      if (bodyText) {
+        const body = JSON.parse(bodyText);
+        if (body.reason) reason = body.reason;
+        if (body.changedByName) changedByName = body.changedByName;
+        if (body.changedByEmail) changedByEmail = body.changedByEmail;
+      }
+    } catch {}
 
     if (!id || !userId) {
       return NextResponse.json({ success: false, error: 'Record ID and User ID are required' }, { status: 400 });
     }
 
+    if (!reason || reason.trim().length < 3) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'NABL ISO/IEC 17025 Clause 7.5: A valid "Reason for Deletion" (min 3 characters) is mandatory.',
+        },
+        { status: 400 }
+      );
+    }
+
     const supabase = getSupabase();
-    const { error } = await supabase
+
+    // 1. Fetch existing record BEFORE deletion to preserve complete snapshot in audit logs
+    const { data: existingRecord, error: fetchError } = await supabase
       .from('laboratory_records')
-      .delete()
+      .select('*')
+      .eq('id', id)
+      .eq('user_id', userId)
+      .single();
+
+    if (fetchError || !existingRecord) {
+      return NextResponse.json(
+        { success: false, error: 'Laboratory record not found or unauthorized.' },
+        { status: 404 }
+      );
+    }
+
+    // 2. Write immutable DELETE audit log first
+    await insertAuditLog({
+      supabase,
+      recordId: id,
+      sampleId: existingRecord.sample_id,
+      action: 'DELETE',
+      changedById: userId,
+      changedByName,
+      changedByEmail,
+      oldValues: existingRecord,
+      newValues: null,
+      changedFields: null,
+      reason: reason.trim(),
+    });
+
+    // 3. Perform Soft Delete if is_deleted column exists, otherwise fall back cleanly
+    const { error: softDeleteError } = await supabase
+      .from('laboratory_records')
+      .update({
+        is_deleted: true,
+        deleted_at: new Date().toISOString(),
+        deleted_by: changedByName,
+        delete_reason: reason.trim(),
+      })
       .eq('id', id)
       .eq('user_id', userId);
 
-    if (error) {
-      console.error('Delete record error:', error);
-      return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    if (softDeleteError) {
+      // Fallback if soft-delete columns haven't been added via SQL migration yet
+      if (softDeleteError.message?.includes('is_deleted') || softDeleteError.code === '42703') {
+        const { error: hardDeleteError } = await supabase
+          .from('laboratory_records')
+          .delete()
+          .eq('id', id)
+          .eq('user_id', userId);
+
+        if (hardDeleteError) {
+          console.error('Delete record error:', hardDeleteError);
+          return NextResponse.json({ success: false, error: hardDeleteError.message }, { status: 500 });
+        }
+      } else {
+        console.error('Soft delete error:', softDeleteError);
+        return NextResponse.json({ success: false, error: softDeleteError.message }, { status: 500 });
+      }
     }
 
-    return NextResponse.json({ success: true, message: 'Record deleted successfully' });
+    return NextResponse.json({ success: true, message: 'Record archived and logged in NABL audit trail.' });
   } catch (err: any) {
     console.error('DELETE /api/records error:', err);
     return NextResponse.json({ success: false, error: err.message || 'Internal server error' }, { status: 500 });

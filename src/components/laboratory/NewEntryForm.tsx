@@ -338,6 +338,8 @@ export const NewEntryForm: React.FC<NewEntryFormProps> = ({ user, onRecordSaved 
 
       const payload = {
         user_id: user.id,
+        changed_by_name: user.fullName || 'QA Chemist',
+        changed_by_email: user.email || null,
         test_date: testDate,
         category,
         sample_id: sampleId.trim() || 'Sample-1',

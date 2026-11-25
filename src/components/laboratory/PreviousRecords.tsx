@@ -4,9 +4,9 @@ import React, { useState, useEffect, useMemo } from 'react';
 import {
   Search, Filter, Calendar, Edit3, Trash2, Download, Eye,
   RefreshCw, CheckCircle2, AlertTriangle, X, ChevronDown,
-  ChevronLeft, ChevronRight, FileSpreadsheet, Beaker
+  ChevronLeft, ChevronRight, FileSpreadsheet, Beaker, History, ShieldAlert
 } from 'lucide-react';
-import { LaboratoryRecord, ChemicalParameterKey } from '@/types';
+import { LaboratoryRecord, ChemicalParameterKey, AuditLogEntry } from '@/types';
 import { CHEMICAL_PARAMETERS, PLANT_CATEGORIES, LAB_SHIFTS } from '@/lib/laboratory/constants';
 import { generateSingleRecordPdf, exportToCsv, exportToExcel, buildExcelFilename, calculateOxideSum, formatDateDDMMYYYY } from '@/lib/laboratory/exportService';
 import { useConfirmationModal } from '@/contexts/ConfirmationModalContext';
@@ -40,13 +40,21 @@ export const PreviousRecords: React.FC<PreviousRecordsProps> = ({
   // Edit Modal State
   const [editingRecord, setEditingRecord] = useState<LaboratoryRecord | null>(null);
   const [editFormData, setEditFormData] = useState<Partial<LaboratoryRecord>>({});
+  const [editReason, setEditReason] = useState<string>('');
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
   const [editSuccess, setEditSuccess] = useState<string | null>(null);
 
   // Delete Confirmation State
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteReason, setDeleteReason] = useState<string>('');
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // NABL Audit Trail Modal State
+  const [auditTarget, setAuditTarget] = useState<{ recordId?: string; label: string } | null>(null);
+  const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
+  const [loadingAudit, setLoadingAudit] = useState(false);
+  const [auditTableMissing, setAuditTableMissing] = useState(false);
 
   // Fetch records
   const fetchRecords = async () => {
@@ -98,14 +106,42 @@ export const PreviousRecords: React.FC<PreviousRecordsProps> = ({
   const handleOpenEdit = (rec: LaboratoryRecord) => {
     setEditingRecord(rec);
     setEditFormData({ ...rec });
+    setEditReason('');
     setEditError(null);
     setEditSuccess(null);
+  };
+
+  // Open NABL Audit Trail Modal
+  const handleOpenAuditTrail = async (recordId?: string, label = 'All Laboratory Audit Logs') => {
+    setAuditTarget({ recordId, label });
+    setLoadingAudit(true);
+    setAuditLogs([]);
+    setAuditTableMissing(false);
+    try {
+      const url = recordId
+        ? `/api/audit-logs?recordId=${encodeURIComponent(recordId)}`
+        : `/api/audit-logs?userId=${encodeURIComponent(userId)}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      if (data.tableMissing) {
+        setAuditTableMissing(true);
+      }
+      setAuditLogs(data.logs || []);
+    } catch (err) {
+      console.error('Failed to load audit logs:', err);
+    } finally {
+      setLoadingAudit(false);
+    }
   };
 
   // Handle Save Edit
   const handleSaveEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingRecord) return;
+    if (!editReason || editReason.trim().length < 3) {
+      setEditError('NABL Clause 7.5: Please enter a valid Reason for Change (minimum 3 characters).');
+      return;
+    }
     setIsSavingEdit(true);
     setEditError(null);
 
@@ -116,6 +152,9 @@ export const PreviousRecords: React.FC<PreviousRecordsProps> = ({
         body: JSON.stringify({
           id: editingRecord.id,
           user_id: userId,
+          reason: editReason.trim(),
+          changed_by_name: userName,
+          changed_by_email: userEmail,
           sample_id: editFormData.sample_id,
           test_date: editFormData.test_date,
           shift: editFormData.shift,
@@ -138,15 +177,16 @@ export const PreviousRecords: React.FC<PreviousRecordsProps> = ({
         throw new Error(data.error || 'Failed to update record.');
       }
 
-      setEditSuccess('Record updated successfully.');
+      setEditSuccess('Record updated & logged in NABL audit trail.');
       showSuccess({
         type: 'update',
-        title: 'Changes Saved',
-        message: 'Your changes have been successfully saved to the database.',
+        title: 'Changes Saved & Audited',
+        message: 'Your changes have been saved and permanently logged in the NABL Audit Trail.',
         description: `${editFormData.category || 'Lab Record'} • ${editFormData.sample_id || 'Sample'} (${formatDateDDMMYYYY(editFormData.test_date)})`,
       });
 
       setEditingRecord(null);
+      setEditReason('');
       fetchRecords();
     } catch (err: any) {
       setEditError(err.message || 'Error updating record.');
@@ -161,20 +201,34 @@ export const PreviousRecords: React.FC<PreviousRecordsProps> = ({
 
   // Handle Delete Record
   const handleDeleteRecord = async (id: string) => {
+    if (!deleteReason || deleteReason.trim().length < 3) {
+      showError({
+        title: 'Reason Required (NABL Clause 7.5)',
+        message: 'Please provide a valid Reason for Deletion (minimum 3 characters).',
+      });
+      return;
+    }
     setIsDeleting(true);
     try {
       const res = await fetch(`/api/records?id=${encodeURIComponent(id)}&userId=${encodeURIComponent(userId)}`, {
         method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          reason: deleteReason.trim(),
+          changedByName: userName,
+          changedByEmail: userEmail,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
         throw new Error(data.error || 'Failed to delete record.');
       }
       setDeletingId(null);
+      setDeleteReason('');
       showSuccess({
         type: 'delete',
-        title: 'Record Removed',
-        message: 'Your record has been successfully deleted from the database.',
+        title: 'Record Archived & Logged',
+        message: 'Record removed from active list and permanently preserved in the NABL Audit Trail.',
       });
       fetchRecords();
     } catch (err: any) {
@@ -244,6 +298,14 @@ export const PreviousRecords: React.FC<PreviousRecordsProps> = ({
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={() => handleOpenAuditTrail(undefined, 'All Laboratory Audit Logs (NABL Clause 7.5)')}
+            className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-xl transition-colors"
+            title="View Immutable NABL Audit Trail"
+          >
+            <History className="w-3.5 h-3.5 text-indigo-600" />
+            Audit Trail
+          </button>
           <button
             onClick={handleQuickCsv}
             disabled={filteredRecords.length === 0}
@@ -460,7 +522,14 @@ export const PreviousRecords: React.FC<PreviousRecordsProps> = ({
 
                       {/* Actions */}
                       <td className="py-3 px-4 text-center whitespace-nowrap border-b border-slate-200 bg-slate-50/30">
-                        <div className="flex items-center justify-center gap-2 opacity-90 group-hover:opacity-100">
+                        <div className="flex items-center justify-center gap-1.5 opacity-90 group-hover:opacity-100">
+                          <button
+                            onClick={() => handleOpenAuditTrail(r.id, `Audit Trail: ${r.sample_id || 'Sample'} (${formatDateDDMMYYYY(r.test_date)})`)}
+                            title="View NABL Audit Trail / Edit History"
+                            className="p-1.5 text-indigo-700 hover:text-indigo-900 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg transition-colors"
+                          >
+                            <History className="w-3.5 h-3.5" />
+                          </button>
                           <button
                             onClick={() => handleDownloadSinglePdf(r)}
                             title="Download Single Test PDF Report"
@@ -470,14 +539,17 @@ export const PreviousRecords: React.FC<PreviousRecordsProps> = ({
                           </button>
                           <button
                             onClick={() => handleOpenEdit(r)}
-                            title="Edit Test Record"
+                            title="Edit Test Record (Requires Reason)"
                             className="p-1.5 text-amber-700 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg transition-colors"
                           >
                             <Edit3 className="w-3.5 h-3.5" />
                           </button>
                           <button
-                            onClick={() => setDeletingId(r.id)}
-                            title="Delete Record"
+                            onClick={() => {
+                              setDeletingId(r.id);
+                              setDeleteReason('');
+                            }}
+                            title="Archive / Delete Record (Requires Reason)"
                             className="p-1.5 text-rose-700 hover:text-rose-900 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg transition-colors"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -642,6 +714,45 @@ export const PreviousRecords: React.FC<PreviousRecordsProps> = ({
                 />
               </div>
 
+              {/* NABL ISO/IEC 17025 Mandatory Reason for Change */}
+              <div className="p-3.5 bg-amber-50/70 border border-amber-200 rounded-xl space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-[11px] font-bold text-amber-900 uppercase tracking-wider flex items-center gap-1.5">
+                    <ShieldAlert className="w-3.5 h-3.5 text-amber-600" />
+                    Reason for Change (Mandatory — NABL Clause 7.5) *
+                  </label>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    'Typo / Transcription correction',
+                    'Re-test / Repeat analysis',
+                    'Instrument recalibration adjustment',
+                    'Sample ID / Shift correction',
+                  ].map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => setEditReason(preset)}
+                      className={`px-2 py-1 text-[10px] font-semibold rounded-lg border transition-colors ${
+                        editReason === preset
+                          ? 'bg-amber-600 text-white border-amber-600'
+                          : 'bg-white text-amber-900 border-amber-200 hover:bg-amber-100'
+                      }`}
+                    >
+                      {preset}
+                    </button>
+                  ))}
+                </div>
+                <input
+                  type="text"
+                  required
+                  value={editReason}
+                  onChange={(e) => setEditReason(e.target.value)}
+                  placeholder="Specify exact reason for modifying this test record..."
+                  className="w-full px-3 py-2 text-xs bg-white border border-amber-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-slate-900"
+                />
+              </div>
+
               {/* Modal Actions - Sticky Bottom Footer */}
               <div className="sticky bottom-0 -mx-6 -mb-6 p-4 bg-white/95 backdrop-blur-xs border-t border-slate-200 flex items-center justify-end gap-2 shadow-xs">
                 <button
@@ -653,16 +764,16 @@ export const PreviousRecords: React.FC<PreviousRecordsProps> = ({
                 </button>
                 <button
                   type="submit"
-                  disabled={isSavingEdit}
+                  disabled={isSavingEdit || editReason.trim().length < 3}
                   className="inline-flex items-center gap-1.5 px-5 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-sm transition-colors disabled:opacity-50"
                 >
                   {isSavingEdit ? (
                     <>
                       <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                      Saving Changes...
+                      Saving & Logging...
                     </>
                   ) : (
-                    'Save Changes'
+                    'Save & Log Change'
                   )}
                 </button>
               </div>
@@ -671,21 +782,52 @@ export const PreviousRecords: React.FC<PreviousRecordsProps> = ({
         </div>
       )}
 
-      {/* DELETE CONFIRMATION MODAL */}
+      {/* DELETE / ARCHIVE CONFIRMATION MODAL (NABL Clause 7.5) */}
       {deletingId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl p-6 max-w-sm w-full animate-in fade-in zoom-in-95 duration-150">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl p-6 max-w-md w-full animate-in fade-in zoom-in-95 duration-150">
             <div className="w-10 h-10 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center mx-auto mb-3">
               <Trash2 className="w-5 h-5" />
             </div>
-            <h3 className="text-sm font-bold text-center text-slate-900">Delete Laboratory Record?</h3>
+            <h3 className="text-sm font-bold text-center text-slate-900">Archive / Delete Laboratory Record?</h3>
             <p className="text-xs text-slate-500 text-center mt-1">
-              This action cannot be undone. The chemical analysis entry will be permanently removed from ChittorTech QA database.
+              Under NABL ISO/IEC 17025 Clause 7.5, this record will be preserved in the immutable Audit Trail with your name, timestamp, and reason.
             </p>
+            <div className="mt-4 space-y-2 text-left">
+              <label className="block text-[11px] font-bold text-rose-800 uppercase tracking-wider">
+                Mandatory Reason for Deletion *
+              </label>
+              <div className="flex flex-wrap gap-1.5">
+                {['Duplicate entry', 'Wrong sample logged', 'Invalid / aborted test run'].map((preset) => (
+                  <button
+                    key={preset}
+                    type="button"
+                    onClick={() => setDeleteReason(preset)}
+                    className={`px-2 py-1 text-[10px] font-semibold rounded-lg border transition-colors ${
+                      deleteReason === preset
+                        ? 'bg-rose-600 text-white border-rose-600'
+                        : 'bg-rose-50 text-rose-800 border-rose-200 hover:bg-rose-100'
+                    }`}
+                  >
+                    {preset}
+                  </button>
+                ))}
+              </div>
+              <input
+                type="text"
+                value={deleteReason}
+                onChange={(e) => setDeleteReason(e.target.value)}
+                placeholder="Enter reason for archiving/deleting (min 3 chars)..."
+                className="w-full px-3 py-2 text-xs bg-slate-50 border border-rose-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 text-slate-900"
+              />
+            </div>
             <div className="flex items-center justify-center gap-2 mt-5">
               <button
                 type="button"
-                onClick={() => setDeletingId(null)}
+                onClick={() => {
+                  setDeletingId(null);
+                  setDeleteReason('');
+                }}
                 className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors"
               >
                 Cancel
@@ -693,11 +835,149 @@ export const PreviousRecords: React.FC<PreviousRecordsProps> = ({
               <button
                 type="button"
                 onClick={() => handleDeleteRecord(deletingId)}
-                disabled={isDeleting}
+                disabled={isDeleting || deleteReason.trim().length < 3}
                 className="px-4 py-2 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-xl transition-colors disabled:opacity-50"
               >
-                {isDeleting ? 'Deleting...' : 'Confirm Delete'}
+                {isDeleting ? 'Archiving...' : 'Confirm & Log Deletion'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* NABL IMMUTABLE AUDIT TRAIL MODAL */}
+      {auditTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            {/* Header */}
+            <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-indigo-500/20 text-indigo-300">
+                  <History className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold">{auditTarget.label}</h3>
+                  <p className="text-[11px] text-slate-400">
+                    NABL / ISO/IEC 17025 Clause 7.5 — Immutable Data Integrity Log
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setAuditTarget(null)}
+                className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-white/10 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-6 overflow-y-auto space-y-4 flex-1 bg-slate-50">
+              {auditTableMissing && (
+                <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 flex items-start gap-2.5">
+                  <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-bold">Supabase Audit Table Migration Required</p>
+                    <p className="mt-1 text-amber-800">
+                      Execute <code className="bg-amber-100 px-1.5 py-0.5 rounded font-mono">supabase/audit_logs_migration.sql</code> in your Supabase SQL Editor to activate permanent database audit logging.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {loadingAudit ? (
+                <div className="py-12 text-center text-xs text-slate-500 flex flex-col items-center gap-2">
+                  <RefreshCw className="w-5 h-5 animate-spin text-indigo-600" />
+                  <span>Loading immutable audit history...</span>
+                </div>
+              ) : auditLogs.length === 0 ? (
+                <div className="py-12 text-center text-xs text-slate-500 bg-white rounded-xl border border-slate-200 p-6">
+                  <History className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                  <p className="font-semibold text-slate-700">No audit history recorded yet.</p>
+                  <p className="text-slate-400 mt-1">
+                    All new entries, edits, and deletions will appear here with user identity, timestamp, and field diffs.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {auditLogs.map((log) => {
+                    const dt = new Date(log.created_at);
+                    const formattedTs = `${formatDateDDMMYYYY(dt.toISOString().split('T')[0])} ${dt.toLocaleTimeString('en-IN', { hour12: false })}`;
+                    const actionBadge =
+                      log.action === 'CREATE'
+                        ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
+                        : log.action === 'UPDATE'
+                        ? 'bg-amber-100 text-amber-800 border-amber-200'
+                        : 'bg-rose-100 text-rose-800 border-rose-200';
+
+                    return (
+                      <div key={log.id} className="bg-white rounded-xl border border-slate-200 p-4 shadow-2xs space-y-3">
+                        <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-100">
+                          <div className="flex items-center gap-2">
+                            <span className={`px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-md border ${actionBadge}`}>
+                              {log.action}
+                            </span>
+                            {log.sample_id && (
+                              <span className="text-xs font-mono font-bold text-slate-800 bg-slate-100 px-2 py-0.5 rounded">
+                                {log.sample_id}
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-[11px] font-mono text-slate-500">{formattedTs}</span>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                          <div>
+                            <span className="text-slate-400 font-semibold">Performed By:</span>{' '}
+                            <span className="font-bold text-slate-800">{log.changed_by_name}</span>
+                            {log.changed_by_email && (
+                              <span className="text-slate-500 ml-1">({log.changed_by_email})</span>
+                            )}
+                          </div>
+                          <div>
+                            <span className="text-slate-400 font-semibold">Reason:</span>{' '}
+                            <span className="font-medium text-slate-800">{log.reason}</span>
+                          </div>
+                        </div>
+
+                        {/* Field-by-field diff table for UPDATE */}
+                        {log.action === 'UPDATE' && log.changed_fields && log.changed_fields.length > 0 && (
+                          <div className="overflow-x-auto rounded-lg border border-slate-200">
+                            <table className="w-full text-left text-[11px] border-collapse">
+                              <thead className="bg-slate-100 text-slate-600 uppercase">
+                                <tr>
+                                  <th className="py-1.5 px-3 border-b border-slate-200">Field</th>
+                                  <th className="py-1.5 px-3 border-b border-slate-200">Old Value</th>
+                                  <th className="py-1.5 px-3 border-b border-slate-200">New Value</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {log.changed_fields.map((diff, idx) => (
+                                  <tr key={idx} className="border-b last:border-b-0 border-slate-100">
+                                    <td className="py-1.5 px-3 font-semibold text-slate-800">{diff.label}</td>
+                                    <td className="py-1.5 px-3 font-mono text-rose-700 bg-rose-50/40">
+                                      {diff.old_value !== null && diff.old_value !== undefined ? String(diff.old_value) : '-'}
+                                    </td>
+                                    <td className="py-1.5 px-3 font-mono text-emerald-700 bg-emerald-50/40 font-bold">
+                                      {diff.new_value !== null && diff.new_value !== undefined ? String(diff.new_value) : '-'}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+
+                        {/* Snapshot notice for DELETE */}
+                        {log.action === 'DELETE' && log.old_values && (
+                          <div className="p-2.5 rounded-lg bg-rose-50/50 border border-rose-100 text-[11px] text-rose-900 font-mono">
+                            Preserved Snapshot — Date: {formatDateDDMMYYYY(log.old_values.test_date)} | Category: {log.old_values.category} | CaO: {log.old_values.lime ?? '-'}% | SiO₂: {log.old_values.silica ?? '-'}% | SO₃: {log.old_values.so3 ?? '-'}%
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -123,3 +123,25 @@ export interface EmailDispatchHistory {
   dispatchedAt: string;
   status: 'SENT' | 'FAILED';
 }
+
+export interface ChangedFieldDiff {
+  field: string;
+  label: string;
+  old_value: string | number | null;
+  new_value: string | number | null;
+}
+
+export interface AuditLogEntry {
+  id: string;
+  record_id: string;
+  sample_id?: string | null;
+  action: 'CREATE' | 'UPDATE' | 'DELETE' | 'RESTORE';
+  changed_by_id: string;
+  changed_by_name: string;
+  changed_by_email?: string | null;
+  old_values?: Record<string, any> | null;
+  new_values?: Record<string, any> | null;
+  changed_fields?: ChangedFieldDiff[] | null;
+  reason: string;
+  created_at: string;
+}
