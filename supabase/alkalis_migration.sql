@@ -33,3 +33,4 @@ create index if not exists idx_lab_records_na2o_eq on public.laboratory_records 
 
 -- Reload PostgREST schema cache
 notify pgrst, 'reload schema';
+

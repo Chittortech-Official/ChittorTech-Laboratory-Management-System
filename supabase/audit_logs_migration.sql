@@ -42,3 +42,4 @@ create index if not exists idx_lab_records_not_deleted on public.laboratory_reco
 
 -- Reload PostgREST schema cache
 notify pgrst, 'reload schema';
+
