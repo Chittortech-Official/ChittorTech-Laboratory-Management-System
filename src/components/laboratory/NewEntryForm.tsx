@@ -23,8 +23,9 @@ import { calculateOxideSum, formatDateDDMMYYYY } from '@/lib/laboratory/exportSe
 import { calculateBoguePhases, BogueResult } from '@/lib/laboratory/bogueEngine';
 import { generateProcessAdvisory, CopilotAnalysisResult, ProcessAdvisory } from '@/lib/laboratory/aiCopilotEngine';
 import { parseXrfInstrumentFile, generateDemoXrfCsv, ParsedSample } from '@/lib/laboratory/xrfParser';
-import { Sparkles, Award, TrendingUp, Info, Bot, Zap, Coins, Flame, AlertOctagon, CheckCheck, UploadCloud, FileSpreadsheet, Download, CheckCircle, FileText } from 'lucide-react';
+import { Sparkles, Award, TrendingUp, Info, Bot, Zap, Coins, Flame, AlertOctagon, CheckCheck, UploadCloud, FileSpreadsheet, Download, CheckCircle, FileText, RefreshCw } from 'lucide-react';
 import { useConfirmationModal } from '@/contexts/ConfirmationModalContext';
+import { extractNextSampleId, checkIsDuplicateSampleId } from '@/lib/laboratory/sampleIdHelper';
 
 interface NewEntryFormProps {
   user: UserProfile | null;
@@ -38,8 +39,44 @@ export const NewEntryForm: React.FC<NewEntryFormProps> = ({ user, onRecordSaved 
   const [testDate, setTestDate] = useState<string>(today);
   const [category, setCategory] = useState<string>('Ball mill');
   const [sampleId, setSampleId] = useState<string>('Sample-1');
+  const [suggestedNextId, setSuggestedNextId] = useState<string>('Sample-1');
+  const [isManualOverride, setIsManualOverride] = useState<boolean>(false);
+  const [isLoadingSampleId, setIsLoadingSampleId] = useState<boolean>(false);
+  const [existingRecords, setExistingRecords] = useState<LaboratoryRecord[]>([]);
   const [shift, setShift] = useState<string>('General');
   const [notes, setNotes] = useState<string>('');
+
+  // Live duplicate check against existing laboratory records
+  const isDuplicateSample = React.useMemo(() => {
+    return checkIsDuplicateSampleId(sampleId, testDate, category, existingRecords);
+  }, [sampleId, testDate, category, existingRecords]);
+
+  // Query Supabase for existing records and auto-increment Sample ID
+  const fetchAndSetNextSampleId = React.useCallback(async (forceOverride = false) => {
+    if (!user?.id) return;
+    setIsLoadingSampleId(true);
+    try {
+      const res = await fetch(`/api/records?userId=${encodeURIComponent(user.id)}`);
+      const data = await res.json();
+      if (res.ok && data.records) {
+        setExistingRecords(data.records);
+        const nextId = extractNextSampleId(data.records.map((r: LaboratoryRecord) => r.sample_id));
+        setSuggestedNextId(nextId);
+        if (!isManualOverride || forceOverride) {
+          setSampleId(nextId);
+          setIsManualOverride(false);
+        }
+      }
+    } catch (err) {
+      console.warn('Auto-increment sample ID fetch notice:', err);
+    } finally {
+      setIsLoadingSampleId(false);
+    }
+  }, [user?.id, isManualOverride]);
+
+  React.useEffect(() => {
+    fetchAndSetNextSampleId();
+  }, [fetchAndSetNextSampleId]);
 
   // The 11 Chemical Parameters in Exact Sequence:
   // 1. LOI -> 2. IR -> 3. SO3 -> 4. SiO2 -> 5. Al2O3 -> 6. Fe2O3 -> 7. CaO -> 8. MgO -> 9. K2O -> 10. Na2O -> 11. Chloride
@@ -85,6 +122,7 @@ export const NewEntryForm: React.FC<NewEntryFormProps> = ({ user, onRecordSaved 
 
     if (sample.sampleId) {
       setSampleId(sample.sampleId);
+      setIsManualOverride(true);
     }
     if (sample.testDate) {
       setTestDate(sample.testDate);
@@ -202,7 +240,8 @@ export const NewEntryForm: React.FC<NewEntryFormProps> = ({ user, onRecordSaved 
       chloride: '',
     });
     setNotes('');
-    setSampleId('Sample-1');
+    setSampleId(suggestedNextId);
+    setIsManualOverride(false);
     setError(null);
     setSuccess(null);
   };
@@ -246,6 +285,18 @@ export const NewEntryForm: React.FC<NewEntryFormProps> = ({ user, onRecordSaved 
 
     if (!testDate) {
       setError('Testing date is mandatory.');
+      return;
+    }
+
+    if (!sampleId.trim()) {
+      setError('Sample Identification is mandatory. Please enter a Sample ID or click "Reset to auto".');
+      return;
+    }
+
+    if (isDuplicateSample) {
+      setError(
+        `Duplicate Sample ID: "${sampleId.trim()}" is already registered for ${category} on ${formatDateDDMMYYYY(testDate)}. Please specify a unique Sample ID (suggested: ${suggestedNextId}).`
+      );
       return;
     }
 
@@ -348,9 +399,24 @@ export const NewEntryForm: React.FC<NewEntryFormProps> = ({ user, onRecordSaved 
 
       setSuccess(`Record for ${formatDateDDMMYYYY(testDate)} under "${category}" successfully logged into Supabase.`);
       
-      // Auto increment sample ID for next quick entry
-      const nextNum = parseInt(sampleId.replace(/\D/g, '') || '1', 10) + 1;
-      setSampleId(`Sample-${nextNum}`);
+      // Auto-update after successful save: add saved record and calculate next sequential Sample ID
+      const savedRec: LaboratoryRecord = data.record || {
+        id: String(Date.now()),
+        user_id: user.id,
+        test_date: testDate,
+        category,
+        sample_id: sampleId.trim(),
+        shift,
+        ...values,
+      };
+
+      const updatedRecords = [...existingRecords, savedRec];
+      setExistingRecords(updatedRecords);
+
+      const nextNumId = extractNextSampleId(updatedRecords.map((r) => r.sample_id));
+      setSuggestedNextId(nextNumId);
+      setSampleId(nextNumId);
+      setIsManualOverride(false);
 
       // Clear inputs for next entry
       setValues({
@@ -585,9 +651,31 @@ export const NewEntryForm: React.FC<NewEntryFormProps> = ({ user, onRecordSaved 
 
             {/* Field 3: Sample ID / Batch */}
             <div>
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">
-                Sample Identification
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600">
+                  Sample Identification <span className="text-red-500">*</span>
+                </label>
+                {isManualOverride ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSampleId(suggestedNextId);
+                      setIsManualOverride(false);
+                      setError(null);
+                    }}
+                    className="text-[10px] text-blue-600 hover:text-blue-800 font-semibold flex items-center gap-1 hover:underline cursor-pointer"
+                    title={`Reset to auto-incremented ${suggestedNextId}`}
+                  >
+                    <RotateCcw className="w-2.5 h-2.5" />
+                    Reset to auto ({suggestedNextId})
+                  </button>
+                ) : (
+                  <span className="text-[10px] text-emerald-700 font-bold flex items-center gap-1 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                    <Sparkles className="w-3 h-3 text-emerald-600" />
+                    Auto-incremented
+                  </span>
+                )}
+              </div>
               <div className="relative rounded-md shadow-subtle">
                 <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
                   <Tag className="h-3.5 w-3.5" />
@@ -595,11 +683,42 @@ export const NewEntryForm: React.FC<NewEntryFormProps> = ({ user, onRecordSaved 
                 <input
                   type="text"
                   value={sampleId}
-                  onChange={(e) => setSampleId(e.target.value)}
+                  onChange={(e) => {
+                    setSampleId(e.target.value);
+                    setIsManualOverride(true);
+                    setError(null);
+                  }}
                   placeholder="e.g. Sample-1 / Batch-A"
-                  className="block w-full rounded-md border border-slate-300 bg-white pl-9 pr-3 py-2 text-xs text-slate-800 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/15 focus:outline-none transition-colors"
+                  className={`block w-full rounded-md border pl-9 pr-9 py-2 text-xs font-mono font-bold focus:ring-2 focus:outline-none transition-colors ${
+                    isDuplicateSample
+                      ? 'border-rose-400 bg-rose-50/40 text-rose-900 focus:border-rose-500 focus:ring-rose-500/20'
+                      : 'border-slate-300 bg-white text-slate-900 focus:border-blue-600 focus:ring-blue-600/15'
+                  }`}
                 />
+                {isLoadingSampleId && (
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <RefreshCw className="h-3.5 w-3.5 text-blue-500 animate-spin" />
+                  </div>
+                )}
               </div>
+              {/* Feedback Helper Note */}
+              {isDuplicateSample ? (
+                <p className="text-[11px] text-rose-600 font-semibold mt-1 flex items-center gap-1 animate-in fade-in">
+                  <AlertCircle className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                  <span>
+                    Duplicate warning: <strong>{sampleId}</strong> already exists for {category} on {formatDateDDMMYYYY(testDate)}.
+                  </span>
+                </p>
+              ) : isManualOverride ? (
+                <p className="text-[10px] text-amber-600 font-medium mt-1 flex items-center gap-1">
+                  <Edit3 className="w-3 h-3 text-amber-500 shrink-0" />
+                  <span>Manual override active. Click &ldquo;Reset to auto&rdquo; anytime to restore sequence.</span>
+                </p>
+              ) : (
+                <p className="text-[10px] text-slate-400 font-medium mt-1 flex items-center gap-1">
+                  <span>Auto-sequenced from Supabase database. Fully editable anytime.</span>
+                </p>
+              )}
             </div>
 
             {/* Field 4: Shift */}

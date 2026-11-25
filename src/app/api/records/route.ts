@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { LaboratoryRecordPayload } from '@/types';
+import { extractNextSampleId } from '@/lib/laboratory/sampleIdHelper';
 
 function getSupabase() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -22,12 +23,34 @@ export async function GET(request: Request) {
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
     const month = searchParams.get('month'); // YYYY-MM
+    const limit = searchParams.get('limit');
+    const action = searchParams.get('action');
 
     if (!userId) {
       return NextResponse.json({ success: false, error: 'User identification required' }, { status: 400 });
     }
 
     const supabase = getSupabase();
+
+    // Fast action: retrieve only next sequential sample ID from database
+    if (action === 'next-sample-id') {
+      const { data, error } = await supabase
+        .from('laboratory_records')
+        .select('sample_id')
+        .eq('user_id', userId);
+
+      if (error) {
+        return NextResponse.json({ success: true, nextSampleId: 'Sample-1' });
+      }
+
+      const sampleIds = (data || []).map((r: any) => r.sample_id);
+      return NextResponse.json({
+        success: true,
+        nextSampleId: extractNextSampleId(sampleIds),
+        count: sampleIds.length,
+      });
+    }
+
     let query = supabase
       .from('laboratory_records')
       .select('*')
@@ -56,6 +79,10 @@ export async function GET(request: Request) {
       query = query.gte('test_date', startOfMonth).lte('test_date', endOfMonth);
     }
 
+    if (limit && !isNaN(Number(limit))) {
+      query = query.limit(Number(limit));
+    }
+
     const { data, error } = await query;
 
     if (error) {
@@ -65,6 +92,7 @@ export async function GET(request: Request) {
         return NextResponse.json({
           success: true,
           records: [],
+          nextSampleId: 'Sample-1',
           tableMissing: true,
           message: 'Table public.laboratory_records does not exist in Supabase yet.',
         });
@@ -73,7 +101,12 @@ export async function GET(request: Request) {
       return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true, records: data || [] });
+    const sampleIds = (data || []).map((r: any) => r.sample_id);
+    return NextResponse.json({
+      success: true,
+      records: data || [],
+      nextSampleId: extractNextSampleId(sampleIds),
+    });
   } catch (err: any) {
     console.error('GET /api/records error:', err);
     return NextResponse.json({ success: false, error: err.message || 'Internal server error' }, { status: 500 });
@@ -107,6 +140,7 @@ export async function POST(request: Request) {
     }
 
     const supabase = getSupabase();
+    const cleanSampleId = (sample_id || 'Sample-1').trim();
 
     // Check for duplicate record for same user, date, category and sample
     const { data: existing } = await supabase
@@ -115,14 +149,14 @@ export async function POST(request: Request) {
       .eq('user_id', user_id)
       .eq('test_date', test_date)
       .eq('category', category)
-      .eq('sample_id', sample_id)
+      .ilike('sample_id', cleanSampleId)
       .maybeSingle();
 
     if (existing) {
       return NextResponse.json(
         {
           success: false,
-          error: `A record already exists for ${test_date} under "${category}" (${sample_id}). Use edit to update it or choose another sample ID.`,
+          error: `A record already exists for ${test_date} under "${category}" with Sample ID "${cleanSampleId}". Please use edit to update it or choose a unique Sample ID.`,
         },
         { status: 409 }
       );
@@ -135,7 +169,7 @@ export async function POST(request: Request) {
           user_id,
           test_date,
           category,
-          sample_id,
+          sample_id: cleanSampleId,
           shift,
           loi: loi !== null && !isNaN(Number(loi)) ? Number(loi) : null,
           ir: ir !== null && !isNaN(Number(ir)) ? Number(ir) : null,
