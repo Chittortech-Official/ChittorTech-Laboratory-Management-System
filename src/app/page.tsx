@@ -23,8 +23,8 @@ const TAB_PARAM_MAP: Record<string, DashboardTab> = {
   'multi-line-comparison': 'comparison',
   reports: 'reports',
   'reports-downloads': 'reports',
-  email_reports: 'email_reports',
-  'email-reports': 'email_reports',
+  email_reports: 'reports',
+  'email-reports': 'reports',
   settings: 'settings',
 };
 
@@ -35,7 +35,7 @@ const TAB_TO_PARAM_MAP: Record<DashboardTab, string> = {
   analytics: 'analytics',
   comparison: 'comparison',
   reports: 'reports',
-  email_reports: 'email-reports',
+  email_reports: 'reports',
   settings: 'settings',
 };
 

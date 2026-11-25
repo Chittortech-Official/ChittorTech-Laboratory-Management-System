@@ -14,7 +14,6 @@ import { PreviousRecords } from './PreviousRecords';
 import { AnalyticsView } from './AnalyticsView';
 import { DualLineComparison } from './DualLineComparison';
 import { ReportsView } from './ReportsView';
-import { EmailReportsView } from './EmailReportsView';
 import { CHEMICAL_PARAMETERS } from '@/lib/laboratory/constants';
 import { formatDateDDMMYYYY } from '@/lib/laboratory/exportService';
 import { Scale } from 'lucide-react';
@@ -71,7 +70,6 @@ export const LaboratoryDashboard: React.FC<LaboratoryDashboardProps> = ({
     { id: 'analytics', label: 'Analytics', icon: <BarChart3 className="w-4 h-4" /> },
     { id: 'comparison', label: 'Multi-Line Comparison', icon: <Scale className="w-4 h-4" /> },
     { id: 'reports', label: 'Reports & Downloads', icon: <FileText className="w-4 h-4" /> },
-    { id: 'email_reports', label: 'Email Reports', icon: <Mail className="w-4 h-4" /> },
   ];
 
   return (
@@ -186,14 +184,14 @@ export const LaboratoryDashboard: React.FC<LaboratoryDashboardProps> = ({
 
             <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
               <div>
-                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Email Reporting</span>
+                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">QA Compliance</span>
                 <div className="text-lg font-bold text-slate-900 mt-1 flex items-center gap-1.5 text-emerald-600">
-                  <CheckCircle2 className="w-4 h-4" /> Ready
+                  <CheckCircle2 className="w-4 h-4" /> ASTM C114
                 </div>
-                <span className="text-[11px] text-slate-500">GoDaddy SMTP Relay</span>
+                <span className="text-[11px] text-slate-500">IS 4032 / EN 196-2</span>
               </div>
               <div className="w-11 h-11 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
-                <Mail className="w-5 h-5" />
+                <ShieldCheck className="w-5 h-5" />
               </div>
             </div>
           </div>
@@ -359,22 +357,6 @@ export const LaboratoryDashboard: React.FC<LaboratoryDashboardProps> = ({
                 </div>
                 <ArrowRight className="w-4 h-4 text-slate-400" />
               </div>
-
-              <div
-                onClick={() => setActiveTab('email_reports')}
-                className="p-4 bg-white rounded-2xl border border-slate-200 shadow-sm hover:border-purple-400 cursor-pointer transition-all flex items-center justify-between"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 rounded-xl bg-purple-50 text-purple-600">
-                    <Mail className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-bold text-slate-900">Email Reports</h4>
-                    <p className="text-[11px] text-slate-500">Attach PDF & dispatch</p>
-                  </div>
-                </div>
-                <ArrowRight className="w-4 h-4 text-slate-400" />
-              </div>
             </div>
           </div>
         </div>
@@ -422,17 +404,7 @@ export const LaboratoryDashboard: React.FC<LaboratoryDashboardProps> = ({
         />
       )}
 
-      {/* 6. EMAIL REPORTS TAB */}
-      {activeTab === 'email_reports' && (
-        <EmailReportsView
-          userId={userId}
-          userName={userName}
-          userEmail={userEmail}
-          plantName={plantName}
-        />
-      )}
-
-      {/* 7. ACCOUNT SETTINGS TAB */}
+      {/* 6. ACCOUNT SETTINGS TAB */}
       {activeTab === 'settings' && (
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-6 animate-in fade-in">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
