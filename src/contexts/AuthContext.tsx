@@ -8,7 +8,7 @@ interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ success: boolean; error?: string }>;
-  submitAccountRequest: (payload: AccountRequestPayload) => Promise<{ success: boolean; error?: string }>;
+  submitAccountRequest: (payload: AccountRequestPayload) => Promise<{ success: boolean; requestId?: string; error?: string }>;
   updateProfile: (data: Partial<UserProfile>) => Promise<{ success: boolean; error?: string }>;
 }
 
@@ -218,7 +218,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const submitAccountRequest = async (payload: AccountRequestPayload): Promise<{ success: boolean; error?: string }> => {
+  const submitAccountRequest = async (payload: AccountRequestPayload): Promise<{ success: boolean; requestId?: string; error?: string }> => {
     try {
       const response = await fetch('/api/account-request', {
         method: 'POST',
@@ -231,7 +231,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { success: false, error: data.error || 'Failed to submit account request.' };
       }
 
-      return { success: true };
+      return { success: true, requestId: data.requestId };
     } catch (err: any) {
       console.error('Submit account request error:', err);
       return { success: false, error: err.message || 'Connection error. Please try again.' };

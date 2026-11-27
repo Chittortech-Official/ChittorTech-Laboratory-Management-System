@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { sendAccountRequestEmails } from '@/lib/mail/mailer';
 import { AccountRequestPayload } from '@/types';
 
 export async function POST(request: Request) {
@@ -17,102 +16,68 @@ export async function POST(request: Request) {
 
     // Email format validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(payload.workEmail)) {
+    if (!emailRegex.test(payload.workEmail.trim())) {
       return NextResponse.json(
         { success: false, error: 'Invalid email address provided.' },
         { status: 400 }
       );
     }
 
-    let requestId = `REQ-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
-    let submittedAt = new Date().toLocaleString('en-IN', {
-      timeZone: 'Asia/Kolkata',
-      dateStyle: 'medium',
-      timeStyle: 'short',
-    });
-    let dbSaved = false;
-
-    // 2. Save request in Supabase database first
+    // 2. Save request in Supabase database (INSERT webhook handles applicant & admin emails)
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
     const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
-    if (supabaseUrl && supabaseKey) {
-      try {
-        const supabase = createClient(supabaseUrl, supabaseKey, {
-          auth: { persistSession: false },
-        });
-
-        const { data, error: dbError } = await supabase
-          .from('account_requests')
-          .insert([
-            {
-              full_name: payload.fullName.trim(),
-              work_email: payload.workEmail.trim().toLowerCase(),
-              company_name: payload.companyName.trim(),
-              plant_name: payload.plantName.trim(),
-              designation: payload.designation ? payload.designation.trim() : null,
-              phone: payload.phone ? payload.phone.trim() : null,
-              city: payload.city ? payload.city.trim() : null,
-              state: payload.state ? payload.state.trim() : null,
-              reason: payload.reason ? payload.reason.trim() : null,
-              status: 'pending',
-            },
-          ])
-          .select('id, created_at')
-          .single();
-
-        if (!dbError && data) {
-          dbSaved = true;
-          requestId = data.id;
-          if (data.created_at) {
-            submittedAt = new Date(data.created_at).toLocaleString('en-IN', {
-              timeZone: 'Asia/Kolkata',
-              dateStyle: 'medium',
-              timeStyle: 'short',
-            });
-          }
-        } else if (dbError) {
-          console.warn('Supabase insertion notice:', dbError.message);
-        }
-      } catch (dbErr: any) {
-        console.warn('Supabase connection notice:', dbErr.message);
-      }
+    if (!supabaseUrl || !supabaseKey) {
+      return NextResponse.json(
+        { success: false, error: 'Database service is not configured on server.' },
+        { status: 500 }
+      );
     }
 
-    // 3. Send SMTP Email Notification to chittortech@gmail.com from contact@chittortech.in
-    let emailSent = false;
-    let emailError: string | null = null;
+    const supabase = createClient(supabaseUrl, supabaseKey, {
+      auth: { persistSession: false },
+    });
 
-    try {
-      const mailRes = await sendAccountRequestEmails(payload, {
-        id: requestId,
-        status: 'Pending',
-        createdAt: submittedAt,
-      });
+    const { data, error: dbError } = await supabase
+      .from('account_requests')
+      .insert([
+        {
+          full_name: payload.fullName.trim(),
+          work_email: payload.workEmail.trim().toLowerCase(),
+          company_name: payload.companyName.trim(),
+          plant_name: payload.plantName.trim(),
+          designation: payload.designation ? payload.designation.trim() : null,
+          phone: payload.phone ? payload.phone.trim() : null,
+          city: payload.city ? payload.city.trim() : null,
+          state: payload.state ? payload.state.trim() : null,
+          reason: payload.reason ? payload.reason.trim() : null,
+          status: 'pending',
+        },
+      ])
+      .select('id, created_at')
+      .single();
 
-      emailSent = mailRes.success;
-      if (!mailRes.success) {
-        emailError = mailRes.error || 'SMTP delivery issue';
-      }
-    } catch (err: any) {
-      console.error('SMTP notification error:', err);
-      emailError = err.message || 'SMTP exception';
+    if (dbError || !data) {
+      console.error('Supabase account_requests insert error:', dbError?.message);
+      return NextResponse.json(
+        { success: false, error: 'Failed to save account request in database.' },
+        { status: 500 }
+      );
     }
 
-    // 4. Return success response
+    // 3. Return immediately; Supabase INSERT webhook dispatches applicant & admin emails asynchronously
     return NextResponse.json({
       success: true,
-      requestId,
-      emailSent,
-      emailError,
-      dbSaved,
+      requestId: data.id,
+      dbSaved: true,
+      notificationQueued: true,
       message:
-        'Your account request has been received by ChittorTech. Our team will review your application and, once approved, your account access details will be sent to your registered email address.',
+        'Your Account Request has been submitted successfully. A confirmation email will be sent to your registered work email address.',
     });
   } catch (error: any) {
-    console.error('Account request route error:', error);
+    console.error('Account request route error:', error?.message || error);
     return NextResponse.json(
-      { success: false, error: error.message || 'Internal server error processing request.' },
+      { success: false, error: 'Internal server error processing request.' },
       { status: 500 }
     );
   }

@@ -54,6 +54,7 @@ export const RequestAccountForm: React.FC<RequestAccountFormProps> = ({ onSwitch
   const [stepError, setStepError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [submittedRequestId, setSubmittedRequestId] = useState<string | null>(null);
 
   const stepContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
@@ -209,6 +210,7 @@ export const RequestAccountForm: React.FC<RequestAccountFormProps> = ({ onSwitch
     try {
       const result = await submitAccountRequest(formData);
       if (result.success) {
+        setSubmittedRequestId(result.requestId || null);
         setIsSuccess(true);
       } else {
         setStepError(result.error || 'Failed to submit account request. Please verify connection.');
@@ -236,17 +238,25 @@ export const RequestAccountForm: React.FC<RequestAccountFormProps> = ({ onSwitch
             Request Submitted Successfully
           </h2>
           <p className="mt-2 text-xs sm:text-sm text-slate-600 max-w-md mx-auto leading-relaxed">
-            Your account request has been received by <strong className="text-slate-900">ChittorTech</strong>.
+            Your Account Request has been submitted successfully. A confirmation email will be sent to your registered work email address.
           </p>
         </div>
 
         <div className="rounded-lg border border-slate-200 bg-slate-50/80 p-4 text-left text-xs text-slate-600 space-y-2 max-w-md mx-auto shadow-subtle">
+          {submittedRequestId && (
+            <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-200">
+              <span className="font-semibold text-slate-700">Request Reference ID:</span>
+              <span className="font-mono font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200 text-[11px]">
+                {submittedRequestId}
+              </span>
+            </div>
+          )}
           <p className="font-semibold text-slate-900 flex items-center gap-1.5">
             <Info className="h-4 w-4 text-blue-600 shrink-0" />
-            <span>Review & Provisioning Notice:</span>
+            <span>Review &amp; Provisioning Notice:</span>
           </p>
           <p className="leading-relaxed text-slate-600">
-            Our team will review your request. Once approved, your account access details will be sent to your registered work email address:
+            Submitting a request does not mean an account has already been approved. Our team will review your application and notify your registered work email address:
           </p>
           <p className="font-mono font-semibold text-slate-900 bg-white p-2 rounded border border-slate-200 break-all">
             {formData.workEmail}

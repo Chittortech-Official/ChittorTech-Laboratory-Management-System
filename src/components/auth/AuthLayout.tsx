@@ -2,12 +2,13 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
-import { ShieldCheck, Database, Factory, Award } from 'lucide-react';
+import { ShieldCheck, Database, Factory, Award, Calendar, ArrowRight } from 'lucide-react';
 import gsap from 'gsap';
 import { AuthMode } from '@/types';
 import { LoginForm } from './LoginForm';
 import { RequestAccountForm } from './RequestAccountForm';
 import { ForgotPasswordView } from './ForgotPasswordView';
+import { RequestDemoModal } from './RequestDemoModal';
 import { isSupabaseConfigured } from '@/lib/supabase/client';
 import { BlossomPetals } from '@/components/common/BlossomPetals';
 
@@ -18,6 +19,7 @@ interface AuthLayoutProps {
 export const AuthLayout: React.FC<AuthLayoutProps> = ({ onAuthSuccess }) => {
   const [mode, setMode] = useState<AuthMode>('login');
   const [supabaseReady, setSupabaseReady] = useState<boolean>(false);
+  const [showDemoModal, setShowDemoModal] = useState<boolean>(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const brandingRef = useRef<HTMLDivElement>(null);
   const formBoxRef = useRef<HTMLDivElement>(null);
@@ -161,6 +163,22 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({ onAuthSuccess }) => {
                 </div>
               </div>
             </div>
+
+            {/* Prominent SaaS Request a Demo CTA */}
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={() => setShowDemoModal(true)}
+                className="group inline-flex items-center gap-2.5 rounded-xl bg-gradient-to-r from-[#2563EB] to-[#3B82F6] px-5 py-3 text-sm font-semibold text-white shadow-md shadow-blue-500/25 hover:shadow-lg hover:shadow-blue-500/35 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer"
+              >
+                <Calendar className="h-4 w-4 shrink-0" />
+                <span>Request a Demo</span>
+                <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
+              </button>
+              <p className="mt-1.5 text-[11px] text-slate-500">
+                Schedule a live walkthrough for your cement or industrial QA laboratory.
+              </p>
+            </div>
           </div>
 
           {/* Right / Authentication Section */}
@@ -199,6 +217,11 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({ onAuthSuccess }) => {
           <span className="hover:text-slate-600 cursor-pointer">Technical Support</span>
         </p>
       </footer>
+      {/* Request a Demo Modal */}
+      <RequestDemoModal
+        isOpen={showDemoModal}
+        onClose={() => setShowDemoModal(false)}
+      />
     </div>
   );
 };

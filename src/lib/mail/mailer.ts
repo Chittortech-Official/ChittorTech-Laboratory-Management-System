@@ -7,7 +7,7 @@ const smtpPort = parseInt(process.env.SMTP_PORT || '465', 10);
 const smtpUser = process.env.SMTP_USER || 'contact@chittortech.in';
 const smtpPass = process.env.SMTP_PASSWORD || process.env.SMTP_PASS || '';
 const senderEmail = process.env.SENDER_EMAIL || process.env.SMTP_FROM || 'contact@chittortech.in';
-const notificationEmail = process.env.NOTIFICATION_EMAIL || process.env.ADMIN_NOTIFICATION_EMAIL || 'chittortech@gmail.com';
+const notificationEmail = (process.env.NOTIFICATION_EMAIL || process.env.ADMIN_NOTIFICATION_EMAIL || '').trim();
 
 export const isSmtpConfigured = (): boolean => {
   return typeof smtpUser === 'string' && smtpUser.trim().length > 0 && typeof smtpPass === 'string' && smtpPass.trim().length > 0;
@@ -276,21 +276,524 @@ QA Laboratory Management System`;
 </body>
 </html>`;
 
-  // Admin Notification Email Options (ONLY chittortech@gmail.com receives this)
+  // Admin Notification Email Options (Uses NOTIFICATION_EMAIL env var; never hardcoded)
+  if (!notificationEmail) {
+    console.error('NOTIFICATION_EMAIL is not configured on server.');
+    return {
+      success: false,
+      applicantSent: false,
+      adminSent: false,
+      error: 'Administrator notification email (NOTIFICATION_EMAIL) is not configured.',
+    };
+  }
+
   const adminMailOptions = {
     from: `"ChittorTech QA LMS" <${senderEmail}>`,
     to: notificationEmail,
-    subject: `🚨 [New Account Request] ${payload.companyName} — ${payload.plantName}`,
+    subject: `[New Account Request] ${payload.companyName} – ${payload.plantName}`,
     text: plainTextAdmin,
     html: htmlAdmin,
   };
 
+  // Applicant Acknowledgement Email Options
+  const plainTextApplicant = `ACCOUNT REQUEST RECEIVED
+ChittorTech QA Laboratory Management System
+
+Dear ${payload.fullName},
+
+Thank you for submitting an Account Request for ChittorTech QA Laboratory Management System. Your request has been received and queued for review by our team.
+
+REQUEST SUMMARY
+Request Reference ID: ${requestId}
+Company / Organization: ${payload.companyName}
+Plant / Facility Name: ${payload.plantName}
+Current Status: Pending
+Submitted At: ${submittedAt}
+
+IMPORTANT NOTICE
+Please note that submitting an account request does not mean your account has already been approved. Our team will review your facility details and notify you via email once a decision is made.
+
+Official Support: business@chittortech.in | contact@chittortech.in | +91 75974 51057`;
+
+  const htmlApplicant = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Account Request Received — ChittorTech QA LMS</title>
+</head>
+<body style="margin: 0; padding: 24px 12px; background-color: #f5f8fc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #334155;">
+  <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden;">
+    <div style="background-color: #eaf3ff; padding: 22px 26px; border-bottom: 1px solid #d6e8ff;">
+      <div style="font-size: 11px; font-weight: 700; color: #2563eb; text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 4px;">
+        ACCOUNT REQUEST RECEIVED
+      </div>
+      <h2 style="margin: 0; color: #1e3a8a; font-size: 19px;">ChittorTech QA Laboratory Management System</h2>
+    </div>
+    <div style="padding: 24px 26px; font-size: 14px; line-height: 1.6; color: #334155;">
+      <p style="margin-top: 0;">Dear <strong>${safe.fullName}</strong>,</p>
+      <p>Your Account Request has been successfully received by the ChittorTech team and is currently under review.</p>
+
+      <div style="background-color: #f5f8fc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 16px; margin: 18px 0; font-size: 13px;">
+        <div style="margin-bottom: 6px;"><strong>Request Reference ID:</strong> <span style="font-family: monospace; color: #2563eb; font-weight: 700;">${safe.requestId}</span></div>
+        <div style="margin-bottom: 6px;"><strong>Company Name:</strong> ${safe.companyName}</div>
+        <div style="margin-bottom: 6px;"><strong>Plant Name:</strong> ${safe.plantName}</div>
+        <div style="margin-bottom: 6px;"><strong>Current Status:</strong> <span style="display: inline-block; padding: 2px 8px; border-radius: 999px; background-color: #fef3c7; color: #b45309; font-weight: 700; font-size: 11px; text-transform: uppercase;">Pending</span></div>
+        <div><strong>Submitted At:</strong> ${safe.submittedAt}</div>
+      </div>
+
+      <div style="background-color: #fef3c7; border-left: 3px solid #b45309; padding: 12px 14px; border-radius: 4px; font-size: 13px; color: #78350f; margin: 18px 0;">
+        <strong>Important Notice:</strong> Submitting an Account Request does <strong>not</strong> mean that an account has already been approved. Our team will review your request and send you an update once it is processed.
+      </div>
+
+      <p style="font-size: 12px; color: #64748b; margin-bottom: 0;">Official Support: business@chittortech.in | contact@chittortech.in | +91 75974 51057</p>
+    </div>
+  </div>
+</body>
+</html>`;
+
+  const applicantMailOptions = {
+    from: `"ChittorTech QA LMS" <${senderEmail}>`,
+    to: payload.workEmail,
+    subject: '[ChittorTech] Your Account Request Has Been Received',
+    text: plainTextApplicant,
+    html: htmlApplicant,
+  };
+
   try {
-    const adminResult = await transporter.sendMail(adminMailOptions);
-    return { success: true, messageId: adminResult.messageId };
+    const [applicantResult, adminResult] = await Promise.allSettled([
+      transporter.sendMail(applicantMailOptions),
+      transporter.sendMail(adminMailOptions),
+    ]);
+
+    const applicantSent = applicantResult.status === 'fulfilled';
+    const adminSent = adminResult.status === 'fulfilled';
+
+    const errors: string[] = [];
+    if (applicantResult.status === 'rejected') {
+      errors.push(`Applicant email failed: ${applicantResult.reason?.message || 'Unknown error'}`);
+    }
+    if (adminResult.status === 'rejected') {
+      errors.push(`Admin email failed: ${adminResult.reason?.message || 'Unknown error'}`);
+    }
+
+    if (errors.length > 0) {
+      console.error('Account request email partial/full error:', errors.join(' | '));
+    }
+
+    return {
+      success: applicantSent && adminSent,
+      applicantSent,
+      adminSent,
+      error: errors.length > 0 ? errors.join('; ') : undefined,
+    };
   } catch (error: any) {
-    console.error('SMTP email delivery error:', error);
-    return { success: false, error: error.message };
+    console.error('SMTP email delivery error:', error?.message || error);
+    return {
+      success: false,
+      applicantSent: false,
+      adminSent: false,
+      error: error?.message || 'SMTP delivery failed',
+    };
+  }
+}
+
+export interface AccountRequestStatusEmailInput {
+  requestId: string;
+  fullName: string;
+  workEmail: string;
+  companyName: string;
+  plantName: string;
+  status: 'approved' | 'rejected';
+  adminNotes?: string | null;
+}
+
+/**
+ * Sends Approved or Rejected status update email to the Account Request applicant.
+ */
+export async function sendAccountRequestStatusEmail(input: AccountRequestStatusEmailInput) {
+  if (!isSmtpConfigured()) {
+    return { success: false, error: 'SMTP credentials not configured on server' };
+  }
+
+  const transporter = createTransporter();
+  const isApproved = input.status === 'approved';
+  const safe = {
+    requestId: escapeHtml(input.requestId),
+    fullName: escapeHtml(input.fullName),
+    companyName: escapeHtml(input.companyName),
+    plantName: escapeHtml(input.plantName),
+    adminNotes: input.adminNotes ? escapeHtml(input.adminNotes) : '',
+  };
+
+  const subject = isApproved
+    ? '[ChittorTech] Your Account Request Has Been Approved'
+    : '[ChittorTech] Update on Your Account Request';
+
+  const headerBg = isApproved ? '#dcfce7' : '#f1f5f9';
+  const headerBorder = isApproved ? '#bbf7d0' : '#e2e8f0';
+  const titleColor = isApproved ? '#15803d' : '#334155';
+  const badgeBg = isApproved ? '#dcfce7' : '#fee2e2';
+  const badgeText = isApproved ? '#15803d' : '#b91c1c';
+  const heading = isApproved ? 'Account Request Approved' : 'Update on Your Account Request';
+
+  const notesHtml = safe.adminNotes
+    ? `<div style="background: #ffffff; border-left: 3px solid ${titleColor}; padding: 12px 14px; margin: 16px 0; border-radius: 4px; border-top: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0;">
+         <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #64748b; margin-bottom: 4px;">Administrator Notes</div>
+         <div style="font-size: 13px; color: #334155;">${safe.adminNotes.replace(/\n/g, '<br/>')}</div>
+       </div>`
+    : '';
+
+  const bodyCopy = isApproved
+    ? `<p>Congratulations! Your Account Request for <strong>${safe.companyName} – ${safe.plantName}</strong> has been <strong>approved</strong> by the ChittorTech administration team.</p>
+       <p><strong>Next Steps:</strong> Your account credentials / onboarding instructions will be shared with your registered work email address, after which you can sign in at <a href="https://chittortech-laboratory-management-s.vercel.app" style="color: #2563eb;">ChittorTech QA Laboratory Management System</a>.</p>`
+    : `<p>Thank you for your interest in the ChittorTech QA Laboratory Management System for <strong>${safe.companyName} – ${safe.plantName}</strong>.</p>
+       <p>After reviewing your submission, we are unable to approve this Account Request at this time. If you believe this was in error or would like to provide additional facility details, please contact our support team.</p>`;
+
+  const plainText = isApproved
+    ? `Dear ${input.fullName},\n\nYour Account Request (${input.requestId}) for ${input.companyName} – ${input.plantName} has been APPROVED.\n\nNext Steps: Your account access details will be shared with your registered work email, after which you can sign in at https://chittortech-laboratory-management-s.vercel.app\n${input.adminNotes ? `\nAdministrator Notes:\n${input.adminNotes}\n` : ''}\nOfficial Support: business@chittortech.in | contact@chittortech.in | +91 75974 51057`
+    : `Dear ${input.fullName},\n\nThank you for your interest in ChittorTech QA Laboratory Management System (${input.companyName} – ${input.plantName}).\n\nAfter review, your Account Request (${input.requestId}) could not be approved at this time.\n${input.adminNotes ? `\nAdministrator Notes:\n${input.adminNotes}\n` : ''}\nOfficial Support: business@chittortech.in | contact@chittortech.in | +91 75974 51057`;
+
+  try {
+    await transporter.sendMail({
+      from: `"ChittorTech QA LMS" <${senderEmail}>`,
+      to: input.workEmail,
+      subject,
+      text: plainText,
+      html: `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin: 0; padding: 24px 12px; background-color: #f5f8fc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #334155;">
+  <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden;">
+    <div style="background: ${headerBg}; padding: 20px 24px; border-bottom: 1px solid ${headerBorder};">
+      <h2 style="margin: 0; color: ${titleColor}; font-size: 18px;">${heading}</h2>
+      <p style="margin: 4px 0 0; color: #64748b; font-size: 12px;">ChittorTech QA Laboratory Management System</p>
+    </div>
+    <div style="padding: 24px; font-size: 14px; line-height: 1.6; color: #334155;">
+      <p style="margin-top: 0;">Dear <strong>${safe.fullName}</strong>,</p>
+      ${bodyCopy}
+      <div style="background: #f5f8fc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 16px; margin: 16px 0; font-size: 13px;">
+        <div><strong>Request Reference ID:</strong> <span style="font-family: monospace; font-weight: 700;">${safe.requestId}</span></div>
+        <div><strong>Company / Plant:</strong> ${safe.companyName} – ${safe.plantName}</div>
+        <div><strong>Status:</strong> <span style="display: inline-block; padding: 2px 8px; border-radius: 999px; background: ${badgeBg}; color: ${badgeText}; font-weight: 700; font-size: 11px; text-transform: uppercase;">${escapeHtml(input.status)}</span></div>
+      </div>
+      ${notesHtml}
+      <p style="font-size: 12px; color: #64748b; margin-bottom: 0;">Official Support: business@chittortech.in | contact@chittortech.in | +91 75974 51057</p>
+    </div>
+  </div>
+</body>
+</html>`,
+    });
+
+    return { success: true };
+  } catch (error: any) {
+    console.error('Account request status email error:', error?.message || error);
+    return { success: false, error: error?.message || 'Status email delivery failed' };
+  }
+}
+
+export interface DemoRequestEmailInput {
+  demoRequestId: string;
+  fullName: string;
+  email: string;
+  mobileNumber: string;
+  companyName: string;
+  plantName: string;
+  designation?: string | null;
+  city: string;
+  state: string;
+  message?: string | null;
+  submittedAt: string;
+}
+
+/**
+ * Sends Admin notification and User confirmation emails for a newly submitted Demo Request.
+ */
+export async function sendDemoRequestEmails(demo: DemoRequestEmailInput) {
+  if (!isSmtpConfigured()) {
+    return {
+      success: false,
+      adminSent: false,
+      userSent: false,
+      error: 'SMTP credentials not configured on server',
+    };
+  }
+
+  if (!notificationEmail) {
+    return {
+      success: false,
+      adminSent: false,
+      userSent: false,
+      error: 'Administrator notification email (NOTIFICATION_EMAIL) is not configured.',
+    };
+  }
+
+  const transporter = createTransporter();
+  const safe = {
+    demoRequestId: escapeHtml(demo.demoRequestId),
+    fullName: escapeHtml(demo.fullName),
+    email: escapeHtml(demo.email),
+    mobileNumber: escapeHtml(demo.mobileNumber),
+    companyName: escapeHtml(demo.companyName),
+    plantName: escapeHtml(demo.plantName),
+    designation: escapeHtml(demo.designation || 'N/A'),
+    city: escapeHtml(demo.city),
+    state: escapeHtml(demo.state),
+    message: escapeHtml(demo.message || 'None'),
+    submittedAt: escapeHtml(demo.submittedAt),
+  };
+
+  const userPlainText = `Dear ${demo.fullName},
+
+Thank you for your interest in ChittorTech DG Database / QA Laboratory Management System.
+
+Your demo request has been successfully submitted to our administration team.
+
+Our team will review your request and contact you regarding the demo schedule.
+
+Your Demo Request ID: ${demo.demoRequestId}
+
+Regards,
+Team ChittorTech
+business@chittortech.in
+contact@chittortech.in
++91 75974 51057
+https://chittortech.in`;
+
+  const userHtml = `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin: 0; padding: 24px 12px; background-color: #f5f8fc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #334155;">
+  <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden;">
+    <div style="background: #eaf3ff; padding: 20px 24px; border-bottom: 1px solid #d6e8ff;">
+      <h2 style="margin: 0; color: #2563eb; font-size: 18px;">ChittorTech Demo Request Submitted</h2>
+      <p style="margin: 4px 0 0; color: #64748b; font-size: 12px;">ChittorTech DG Database • QA Laboratory Management System</p>
+    </div>
+    <div style="padding: 24px; font-size: 14px; line-height: 1.6;">
+      <p style="margin-top: 0;">Dear <strong>${safe.fullName}</strong>,</p>
+      <p>Thank you for your interest in <strong>ChittorTech DG Database / QA Laboratory Management System</strong>.</p>
+      <p>Your demo request has been successfully submitted to our administration team. Our team will review your request and contact you regarding the demo schedule.</p>
+      <div style="background: #f5f8fc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 16px; margin: 16px 0; font-size: 13px;">
+        <div><strong>Your Demo Request ID:</strong> <span style="font-family: monospace; color: #2563eb; font-weight: 700;">${safe.demoRequestId}</span></div>
+        <div><strong>Company / Plant:</strong> ${safe.companyName} – ${safe.plantName}</div>
+        <div><strong>Current Status:</strong> Pending</div>
+      </div>
+      <p style="margin-bottom: 0; font-size: 13px;">
+        Regards,<br/>
+        <strong>Team ChittorTech</strong><br/>
+        <a href="mailto:business@chittortech.in" style="color: #2563eb;">business@chittortech.in</a> |
+        <a href="mailto:contact@chittortech.in" style="color: #2563eb;">contact@chittortech.in</a><br/>
+        +91 75974 51057 | <a href="https://chittortech.in" style="color: #2563eb;">https://chittortech.in</a>
+      </p>
+    </div>
+  </div>
+</body>
+</html>`;
+
+  const adminPlainText = `NEW DEMO REQUEST RECEIVED — CHITTORTECH
+Demo Request ID: ${demo.demoRequestId}
+Status: Pending
+Submitted At: ${demo.submittedAt}
+
+Full Name: ${demo.fullName}
+Email: ${demo.email}
+Mobile Number: ${demo.mobileNumber}
+Designation: ${demo.designation || 'N/A'}
+Company / Organization: ${demo.companyName}
+Plant Name: ${demo.plantName}
+Location: ${demo.city}, ${demo.state}
+Message: ${demo.message || 'None'}`;
+
+  const adminHtml = `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin: 0; padding: 24px 12px; background-color: #f5f8fc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #334155;">
+  <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden;">
+    <div style="background: #eaf3ff; padding: 20px 24px; border-bottom: 1px solid #d6e8ff;">
+      <h2 style="margin: 0; color: #1e3a8a; font-size: 18px;">New Demo Request Received – ChittorTech</h2>
+      <p style="margin: 4px 0 0; color: #64748b; font-size: 12px;">Demo Request ID: ${safe.demoRequestId} • ${safe.submittedAt}</p>
+    </div>
+    <div style="padding: 24px; font-size: 13px; line-height: 1.6;">
+      <table style="width: 100%; border-collapse: collapse;">
+        <tr><td style="padding: 6px 0; color: #64748b; width: 160px;"><strong>Full Name</strong></td><td style="padding: 6px 0;">${safe.fullName}</td></tr>
+        <tr><td style="padding: 6px 0; color: #64748b;"><strong>Official Email</strong></td><td style="padding: 6px 0;"><a href="mailto:${safe.email}">${safe.email}</a></td></tr>
+        <tr><td style="padding: 6px 0; color: #64748b;"><strong>Mobile Number</strong></td><td style="padding: 6px 0;">${safe.mobileNumber}</td></tr>
+        <tr><td style="padding: 6px 0; color: #64748b;"><strong>Designation</strong></td><td style="padding: 6px 0;">${safe.designation}</td></tr>
+        <tr><td style="padding: 6px 0; color: #64748b;"><strong>Company</strong></td><td style="padding: 6px 0;">${safe.companyName}</td></tr>
+        <tr><td style="padding: 6px 0; color: #64748b;"><strong>Plant Name</strong></td><td style="padding: 6px 0;">${safe.plantName}</td></tr>
+        <tr><td style="padding: 6px 0; color: #64748b;"><strong>Location</strong></td><td style="padding: 6px 0;">${safe.city}, ${safe.state}</td></tr>
+        <tr><td style="padding: 6px 0; color: #64748b;"><strong>Status</strong></td><td style="padding: 6px 0;">Pending</td></tr>
+        <tr><td style="padding: 6px 0; color: #64748b; vertical-align: top;"><strong>Message</strong></td><td style="padding: 6px 0;">${safe.message.replace(/\n/g, '<br/>')}</td></tr>
+      </table>
+    </div>
+  </div>
+</body>
+</html>`;
+
+  try {
+    const [userRes, adminRes] = await Promise.allSettled([
+      transporter.sendMail({
+        from: `"ChittorTech QA LMS" <${senderEmail}>`,
+        to: demo.email,
+        subject: 'Your ChittorTech Demo Request Has Been Submitted',
+        text: userPlainText,
+        html: userHtml,
+      }),
+      transporter.sendMail({
+        from: `"ChittorTech QA LMS" <${senderEmail}>`,
+        to: notificationEmail,
+        subject: 'New Demo Request Received – ChittorTech',
+        text: adminPlainText,
+        html: adminHtml,
+      }),
+    ]);
+
+    const userSent = userRes.status === 'fulfilled';
+    const adminSent = adminRes.status === 'fulfilled';
+    const errors: string[] = [];
+    if (userRes.status === 'rejected') {
+      errors.push(`User email failed: ${userRes.reason?.message || 'Unknown error'}`);
+    }
+    if (adminRes.status === 'rejected') {
+      errors.push(`Admin email failed: ${adminRes.reason?.message || 'Unknown error'}`);
+    }
+    if (errors.length > 0) {
+      console.error('Demo request email error:', errors.join(' | '));
+    }
+
+    return {
+      success: userSent && adminSent,
+      userSent,
+      adminSent,
+      error: errors.length > 0 ? errors.join('; ') : undefined,
+    };
+  } catch (err: any) {
+    console.error('Demo request SMTP exception:', err?.message || err);
+    return {
+      success: false,
+      userSent: false,
+      adminSent: false,
+      error: err?.message || 'SMTP delivery failed',
+    };
+  }
+}
+
+export interface DemoRequestStatusEmailInput {
+  demoRequestId: string;
+  fullName: string;
+  email: string;
+  companyName: string;
+  plantName: string;
+  status: 'Contacted' | 'Demo Scheduled' | 'Demo Completed' | 'Cancelled';
+  scheduledDemoDate?: string | null;
+  scheduledDemoTime?: string | null;
+  adminNotes?: string | null;
+}
+
+/**
+ * Sends status update / Demo Scheduled email to the visitor when admin updates demo_requests in Supabase.
+ */
+export async function sendDemoRequestStatusEmail(input: DemoRequestStatusEmailInput) {
+  if (!isSmtpConfigured()) {
+    return { success: false, error: 'SMTP credentials not configured on server' };
+  }
+
+  const transporter = createTransporter();
+  const safe = {
+    demoRequestId: escapeHtml(input.demoRequestId),
+    fullName: escapeHtml(input.fullName),
+    companyName: escapeHtml(input.companyName),
+    plantName: escapeHtml(input.plantName),
+    status: escapeHtml(input.status),
+    date: input.scheduledDemoDate ? escapeHtml(input.scheduledDemoDate) : '',
+    time: input.scheduledDemoTime ? escapeHtml(input.scheduledDemoTime) : '',
+    adminNotes: input.adminNotes ? escapeHtml(input.adminNotes) : '',
+  };
+
+  let subject = `[ChittorTech] Demo Request Update (${input.status})`;
+  let heading = `Demo Request Status: ${input.status}`;
+  let headerBg = '#eaf3ff';
+  let headerBorder = '#d6e8ff';
+  let titleColor = '#2563eb';
+  let bodyHtml = '';
+  let plainText = '';
+
+  if (input.status === 'Demo Scheduled') {
+    subject = 'Your ChittorTech Product Demo Has Been Scheduled';
+    heading = 'Your Product Demo Has Been Scheduled';
+    headerBg = '#dcfce7';
+    headerBorder = '#bbf7d0';
+    titleColor = '#15803d';
+    bodyHtml = `
+      <p>Good news! Your ChittorTech product demonstration has been scheduled.</p>
+      <div style="background: #f5f8fc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 16px; margin: 16px 0; font-size: 13px;">
+        <div><strong>Demo Request ID:</strong> <span style="font-family: monospace; font-weight: 700;">${safe.demoRequestId}</span></div>
+        <div><strong>Company / Plant:</strong> ${safe.companyName} – ${safe.plantName}</div>
+        ${safe.date ? `<div><strong>Demo Date:</strong> ${safe.date}</div>` : ''}
+        ${safe.time ? `<div><strong>Demo Time:</strong> ${safe.time}</div>` : ''}
+      </div>
+      <p>Our team looks forward to demonstrating the ChittorTech DG Database / QA Laboratory Management System to you.</p>
+    `;
+    plainText = `Dear ${input.fullName},\n\nGood news! Your ChittorTech product demonstration has been scheduled.\n\nDemo Request ID: ${input.demoRequestId}\n${input.scheduledDemoDate ? `Demo Date: ${input.scheduledDemoDate}\n` : ''}${input.scheduledDemoTime ? `Demo Time: ${input.scheduledDemoTime}\n` : ''}${input.adminNotes ? `\nInstructions / Notes:\n${input.adminNotes}\n` : ''}\nOur team looks forward to demonstrating the ChittorTech DG Database / QA Laboratory Management System to you.\n\nRegards,\nTeam ChittorTech`;
+  } else {
+    const statusMessages: Record<string, string> = {
+      Contacted: 'Our team has reviewed your demo request and reached out to coordinate your demonstration schedule.',
+      'Demo Completed': 'Thank you for attending the ChittorTech DG Database / QA Laboratory Management System demonstration. Please reply if you need pricing or onboarding details.',
+      Cancelled: 'Your ChittorTech demo request has been marked as Cancelled. If you would like to reschedule, please contact our team anytime.',
+    };
+    const msg = statusMessages[input.status] || `Your demo request status has been updated to ${input.status}.`;
+    bodyHtml = `
+      <p>${escapeHtml(msg)}</p>
+      <div style="background: #f5f8fc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 16px; margin: 16px 0; font-size: 13px;">
+        <div><strong>Demo Request ID:</strong> <span style="font-family: monospace; font-weight: 700;">${safe.demoRequestId}</span></div>
+        <div><strong>Status:</strong> ${safe.status}</div>
+      </div>
+    `;
+    plainText = `Dear ${input.fullName},\n\n${msg}\n\nDemo Request ID: ${input.demoRequestId}\nStatus: ${input.status}\n${input.adminNotes ? `\nNotes:\n${input.adminNotes}\n` : ''}\nRegards,\nTeam ChittorTech`;
+  }
+
+  const notesBlock = safe.adminNotes
+    ? `<div style="background: #ffffff; border-left: 3px solid ${titleColor}; padding: 12px 14px; margin: 16px 0; border-radius: 4px; border-top: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0;">
+         <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #64748b; margin-bottom: 4px;">Admin Message / Instructions</div>
+         <div style="font-size: 13px; color: #334155;">${safe.adminNotes.replace(/\n/g, '<br/>')}</div>
+       </div>`
+    : '';
+
+  try {
+    await transporter.sendMail({
+      from: `"ChittorTech QA LMS" <${senderEmail}>`,
+      to: input.email,
+      subject,
+      text: plainText,
+      html: `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin: 0; padding: 24px 12px; background-color: #f5f8fc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #334155;">
+  <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden;">
+    <div style="background: ${headerBg}; padding: 20px 24px; border-bottom: 1px solid ${headerBorder};">
+      <h2 style="margin: 0; color: ${titleColor}; font-size: 18px;">${escapeHtml(heading)}</h2>
+      <p style="margin: 4px 0 0; color: #64748b; font-size: 12px;">ChittorTech DG Database • QA Laboratory Management System</p>
+    </div>
+    <div style="padding: 24px; font-size: 14px; line-height: 1.6;">
+      <p style="margin-top: 0;">Dear <strong>${safe.fullName}</strong>,</p>
+      ${bodyHtml}
+      ${notesBlock}
+      <p style="margin-bottom: 0; font-size: 13px;">
+        Regards,<br/>
+        <strong>Team ChittorTech</strong><br/>
+        <a href="mailto:business@chittortech.in" style="color: #2563eb;">business@chittortech.in</a> |
+        <a href="mailto:contact@chittortech.in" style="color: #2563eb;">contact@chittortech.in</a> | +91 75974 51057
+      </p>
+    </div>
+  </div>
+</body>
+</html>`,
+    });
+
+    return { success: true };
+  } catch (error: any) {
+    console.error('Demo status email error:', error?.message || error);
+    return { success: false, error: error?.message || 'Status email delivery failed' };
   }
 }
 
