@@ -325,6 +325,7 @@ function HomePageContent() {
           <LaboratoryDashboard
             activeTab={activeTab}
             onTabChange={handleTabChange}
+            onContactSupport={() => setIsSupportOpen(true)}
           />
         </main>
 

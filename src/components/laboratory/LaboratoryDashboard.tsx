@@ -14,9 +14,8 @@ import { PreviousRecords } from './PreviousRecords';
 import { AnalyticsView } from './AnalyticsView';
 import { ReportsView } from './ReportsView';
 import { LaboratoryResourcesView } from './LaboratoryResourcesView';
-import { KnowledgeCentreView, type KnowledgeNavigationTarget } from '../knowledge/KnowledgeCentreView';
-import { KnowledgeAssistant } from '../knowledge/KnowledgeAssistant';
-import type { KnowledgeCitation } from '@/lib/knowledge/knowledgeRetrieval';
+import { KnowledgeCentreView } from '../knowledge/KnowledgeCentreView';
+import { AiAssistantComingSoon } from '../knowledge/AiAssistantComingSoon';
 import { CHEMICAL_PARAMETERS } from '@/lib/laboratory/constants';
 import { formatDateDDMMYYYY } from '@/lib/laboratory/exportService';
 import { FolderKanban, BookOpen } from 'lucide-react';
@@ -24,11 +23,13 @@ import { FolderKanban, BookOpen } from 'lucide-react';
 interface LaboratoryDashboardProps {
   activeTab?: DashboardTab;
   onTabChange?: (tab: DashboardTab) => void;
+  onContactSupport?: () => void;
 }
 
 export const LaboratoryDashboard: React.FC<LaboratoryDashboardProps> = ({
   activeTab: externalTab,
   onTabChange,
+  onContactSupport,
 }) => {
   const { user, logout, isConfigured } = useAuth();
   const [internalTab, setInternalTab] = useState<DashboardTab>('dashboard');
@@ -45,21 +46,6 @@ export const LaboratoryDashboard: React.FC<LaboratoryDashboardProps> = ({
   const [recentRecords, setRecentRecords] = useState<LaboratoryRecord[]>([]);
   const [loadingRecent, setLoadingRecent] = useState(false);
   const [totalCount, setTotalCount] = useState(0);
-  const [knowledgeTarget, setKnowledgeTarget] = useState<KnowledgeNavigationTarget | null>(null);
-
-  const handleOpenKnowledgeSource = (citation: KnowledgeCitation) => {
-    const targetSection =
-      citation.sectionTarget && citation.sectionTarget !== 'assistant'
-        ? citation.sectionTarget
-        : 'home';
-    setKnowledgeTarget({
-      section: targetSection,
-      testingSubTab: citation.testingSubTab,
-      topicId: citation.topicId,
-      nonce: Date.now(),
-    });
-    setActiveTab('knowledge_centre');
-  };
 
   const fetchRecentSummary = async () => {
     setLoadingRecent(true);
@@ -392,15 +378,16 @@ export const LaboratoryDashboard: React.FC<LaboratoryDashboardProps> = ({
           userId={userId}
           userName={userName}
           userRole={user?.role}
-          externalTarget={knowledgeTarget}
         />
       )}
 
-      {/* 5.7 DEDICATED AI KNOWLEDGE & COMPLIANCE ASSISTANT TAB */}
+      {/* 5.7 AI ASSISTANT TAB (ENTERPRISE PREMIUM REQUIRED) */}
       {activeTab === 'ai_assistant' && (
-        <div className="bg-white rounded-2xl border border-[#E2E8F0] shadow-xs p-5 sm:p-6 animate-in fade-in">
-          <KnowledgeAssistant onOpenSource={handleOpenKnowledgeSource} />
-        </div>
+        <AiAssistantComingSoon
+          onOpenKnowledgeCentre={() => setActiveTab('knowledge_centre')}
+          onBackToDashboard={() => setActiveTab('dashboard')}
+          onRequestUpgrade={onContactSupport}
+        />
       )}
 
       {/* 6. ACCOUNT SETTINGS TAB */}

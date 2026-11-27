@@ -30,15 +30,29 @@ function checkUserRateLimit(userId: string, nowMs: number = Date.now()): {
   return { allowed: true, retryAfterSeconds: 0 };
 }
 
+const IS_ASSISTANT_ENABLED = process.env.ENABLE_AI_ASSISTANT === 'true';
+
 // GET /api/knowledge-centre/assistant - Safe sanitized status & health of Groq + OpenRouter (never leaks keys)
 export async function GET(request: Request) {
   const auth = requireAuthenticatedSession(request);
   if (!auth.ok) return auth.response;
 
+  if (!IS_ASSISTANT_ENABLED) {
+    return NextResponse.json({
+      success: true,
+      comingSoon: true,
+      configured: false,
+      primary: 'groq',
+      model: '',
+      providers: [],
+    });
+  }
+
   const status = getDualProviderStatus();
   const primarySnapshot = status.providers.find((p) => p.provider === status.primary);
   return NextResponse.json({
     success: true,
+    comingSoon: false,
     configured: status.anyConfigured,
     primary: status.primary,
     model: primarySnapshot?.model || '',
@@ -51,6 +65,18 @@ export async function POST(request: Request) {
   try {
     const auth = requireAuthenticatedSession(request);
     if (!auth.ok) return auth.response;
+
+    if (!IS_ASSISTANT_ENABLED) {
+      return NextResponse.json(
+        {
+          success: false,
+          code: 'COMING_SOON',
+          error:
+            'AI Knowledge & Compliance Assistant is coming soon and is currently paused while the verified database is being expanded.',
+        },
+        { status: 503 }
+      );
+    }
 
     const body = await request.json().catch(() => null);
     const rawQuestion = typeof body?.question === 'string' ? body.question.trim() : '';

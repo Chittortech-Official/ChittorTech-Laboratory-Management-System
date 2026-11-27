@@ -15,7 +15,9 @@ import {
   X,
   Loader2,
   ShieldCheck,
+  FileSpreadsheet,
 } from 'lucide-react';
+import { ExcelResourceImportModal } from './ExcelResourceImportModal';
 
 type SubModule = 'equipment' | 'documents' | 'staff';
 
@@ -97,6 +99,7 @@ export const LaboratoryResourcesView: React.FC<LaboratoryResourcesViewProps> = (
   const [staff, setStaff] = useState<StaffItem[]>([]);
 
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
 
   // Equipment Form State
   const [eqForm, setEqForm] = useState({
@@ -349,7 +352,7 @@ export const LaboratoryResourcesView: React.FC<LaboratoryResourcesViewProps> = (
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2.5">
           <button
             type="button"
             onClick={fetchResources}
@@ -357,6 +360,14 @@ export const LaboratoryResourcesView: React.FC<LaboratoryResourcesViewProps> = (
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
             <span>Refresh</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowImportModal(true)}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-[#BFDBFE] bg-[#EAF3FF] text-xs font-semibold text-[#2563EB] hover:bg-[#D6E8FF] transition-colors"
+          >
+            <FileSpreadsheet className="w-4 h-4" />
+            <span>Import Excel</span>
           </button>
           <button
             type="button"
@@ -1061,6 +1072,23 @@ export const LaboratoryResourcesView: React.FC<LaboratoryResourcesViewProps> = (
           </div>
         </div>
       )}
+
+      <ExcelResourceImportModal
+        isOpen={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        activeModule={activeModule}
+        userId={userId}
+        existingKeys={
+          new Set(
+            activeModule === 'equipment'
+              ? equipment.map((e) => e.equipment_code.toLowerCase())
+              : activeModule === 'documents'
+              ? documents.map((d) => d.doc_code.toLowerCase())
+              : staff.map((s) => s.staff_name.toLowerCase())
+          )
+        }
+        onImported={fetchResources}
+      />
     </div>
   );
 };

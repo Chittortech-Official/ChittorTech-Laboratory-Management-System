@@ -1,8 +1,20 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { requireAuthenticatedSession } from '@/lib/auth/session';
+import { ALLOWED_COLUMNS } from '@/lib/laboratory/excelResourceImport';
 
 type ResourceType = 'equipment' | 'documents' | 'staff';
+
+function sanitizeRecord(resource: ResourceType, raw: Record<string, any>, userId: string) {
+  const allowed = new Set(ALLOWED_COLUMNS[resource]);
+  const clean: Record<string, any> = { user_id: userId };
+  for (const [k, v] of Object.entries(raw || {})) {
+    if (allowed.has(k)) {
+      clean[k] = v === '' ? null : v;
+    }
+  }
+  return clean;
+}
 
 const TABLE_MAP: Record<ResourceType, string> = {
   equipment: 'lab_equipment',
@@ -65,20 +77,48 @@ export async function POST(request: Request) {
     if (!auth.ok) return auth.response;
 
     const body = await request.json();
-    const { resource, userId, record } = body as {
+    const { resource, userId, record, records } = body as {
       resource?: ResourceType;
       userId?: string;
       record?: Record<string, any>;
+      records?: Record<string, any>[];
     };
 
-    if (!resource || !TABLE_MAP[resource] || !userId || !record) {
+    const isBatch = Array.isArray(records);
+    if (!resource || !TABLE_MAP[resource] || !userId || (!record && (!isBatch || records.length === 0))) {
       return NextResponse.json(
-        { success: false, error: 'resource, userId, and record are required' },
+        { success: false, error: 'resource, userId, and record or records[] are required' },
         { status: 400 }
       );
     }
 
     const supabase = getSupabase();
+
+    if (isBatch) {
+      if (records.length > 500) {
+        return NextResponse.json(
+          { success: false, error: 'Maximum 500 rows can be imported at once.' },
+          { status: 400 }
+        );
+      }
+
+      const payload = records.map((r) => sanitizeRecord(resource, r, userId));
+      const { data, error } = await supabase
+        .from(TABLE_MAP[resource])
+        .insert(payload)
+        .select('*');
+
+      if (error) {
+        return NextResponse.json({ success: false, error: error.message }, { status: 400 });
+      }
+
+      return NextResponse.json({
+        success: true,
+        insertedCount: (data || []).length,
+        items: data || [],
+      });
+    }
+
     const { data, error } = await supabase
       .from(TABLE_MAP[resource])
       .insert([{ ...record, user_id: userId }])
