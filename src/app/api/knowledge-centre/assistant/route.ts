@@ -76,43 +76,43 @@ export async function POST(request: Request) {
       .map((t) => t.content.trim())
       .filter(Boolean);
 
-    // 1. ALWAYS search local ChittorTech portal & database first (read-only, zero external API tokens)
+    // 1. ALWAYS search Knowledge Centre first (zero external AI tokens if matched)
     const retrieval = await retrieveRelevantKnowledge(rawQuestion, recentUserQuestions, 5);
 
+    if (retrieval.sufficientLocalMatch && retrieval.localAnswerMarkdown) {
+      const localCitations = retrieval.retrieved.slice(0, 4).map((c) => ({
+        sourceId: c.sourceId,
+        title: c.title,
+        category: c.category,
+        standardRef: c.standardRef,
+        clauseNumber: c.clauseNumber,
+        editionRevision: c.editionRevision,
+        officialUrl: c.officialUrl,
+        lastVerifiedDate: c.lastVerifiedDate,
+        classification: c.classification,
+        sectionTarget: c.sectionTarget,
+        testingSubTab: c.testingSubTab,
+        topicId: c.topicId,
+        excerpt: c.excerpt,
+      }));
+
+      return NextResponse.json({
+        success: true,
+        status: 'local_answered',
+        provider: 'local-database',
+        model: 'portal-knowledge-index',
+        isExternalAi: false,
+        failoverUsed: false,
+        latencyMs: 0,
+        groundedSourceCount: localCitations.length,
+        answer: retrieval.localAnswerMarkdown,
+        citations: localCitations,
+        suggestedFollowUps: [],
+      });
+    }
+
+    // 2. Knowledge Centre did NOT have a sufficient match -> require permission unless already approved for this session
     if (!allowExternalAi) {
-      if (retrieval.sufficientLocalMatch && retrieval.localAnswerMarkdown) {
-        const localCitations = retrieval.retrieved.slice(0, 4).map((c) => ({
-          sourceId: c.sourceId,
-          title: c.title,
-          category: c.category,
-          standardRef: c.standardRef,
-          clauseNumber: c.clauseNumber,
-          editionRevision: c.editionRevision,
-          officialUrl: c.officialUrl,
-          lastVerifiedDate: c.lastVerifiedDate,
-          classification: c.classification,
-          sectionTarget: c.sectionTarget,
-          testingSubTab: c.testingSubTab,
-          topicId: c.topicId,
-          excerpt: c.excerpt,
-        }));
-
-        return NextResponse.json({
-          success: true,
-          status: 'local_answered',
-          provider: 'local-database',
-          model: 'portal-knowledge-index',
-          isExternalAi: false,
-          failoverUsed: false,
-          latencyMs: 0,
-          groundedSourceCount: localCitations.length,
-          answer: retrieval.localAnswerMarkdown,
-          citations: localCitations,
-          suggestedFollowUps: [],
-        });
-      }
-
-      // Local database did NOT have sufficient answer -> ask user permission before ANY external AI call
       return NextResponse.json({
         success: true,
         status: 'needs_ai_approval',

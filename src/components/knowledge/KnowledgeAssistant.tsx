@@ -276,11 +276,14 @@ function StructuredMarkdown({ content }: { content: string }) {
   return <div className="space-y-0.5 text-[#1E293B]">{elements}</div>;
 }
 
+const AI_SESSION_APPROVAL_KEY = 'chittortech_ai_session_approved';
+
 export const KnowledgeAssistant: React.FC<KnowledgeAssistantProps> = ({ onOpenSource }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [loadingMode, setLoadingMode] = useState<'local' | 'external'>('local');
+  const [loadingMode, setLoadingMode] = useState<'local' | 'external' | 'smart'>('local');
+  const [aiSessionApproved, setAiSessionApproved] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
   const [configStatus, setConfigStatus] = useState<{
     checked: boolean;
@@ -289,6 +292,16 @@ export const KnowledgeAssistant: React.FC<KnowledgeAssistantProps> = ({ onOpenSo
   }>({ checked: false, configured: true, model: '' });
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    try {
+      if (sessionStorage.getItem(AI_SESSION_APPROVAL_KEY) === '1') {
+        setAiSessionApproved(true);
+      }
+    } catch {
+      // ignore storage errors
+    }
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -323,9 +336,19 @@ export const KnowledgeAssistant: React.FC<KnowledgeAssistantProps> = ({ onOpenSo
     const questionText = (overrideQuestion ?? input).trim();
     if (!questionText || isLoading) return;
 
-    const allowExternalAi = Boolean(options?.allowExternalAi);
+    const allowExternalAi = Boolean(options?.allowExternalAi) || aiSessionApproved;
     setApiError(null);
     if (!overrideQuestion) setInput('');
+
+    // Once approved, remember AI permission for the rest of this session so we never re-prompt
+    if (options?.allowExternalAi) {
+      setAiSessionApproved(true);
+      try {
+        sessionStorage.setItem(AI_SESSION_APPROVAL_KEY, '1');
+      } catch {
+        // ignore storage errors
+      }
+    }
 
     // Mark the approval bubble resolved immediately if triggered from Yes, Ask AI
     if (options?.approvalMsgId) {
@@ -351,7 +374,9 @@ export const KnowledgeAssistant: React.FC<KnowledgeAssistantProps> = ({ onOpenSo
       setMessages((prev) => [...prev, userMsg]);
     }
 
-    setLoadingMode(allowExternalAi ? 'external' : 'local');
+    setLoadingMode(
+      options?.allowExternalAi ? 'external' : aiSessionApproved ? 'smart' : 'local'
+    );
     setIsLoading(true);
 
     try {
@@ -518,9 +543,18 @@ export const KnowledgeAssistant: React.FC<KnowledgeAssistantProps> = ({ onOpenSo
           <div className="flex items-center gap-1.5">
             <Info className="w-3.5 h-3.5 text-[#2563EB] shrink-0" />
             <span>
-              Answers are verified against ChittorTech&apos;s Knowledge Centre first. External AI is consulted only when you choose to ask it.
+              Answers are verified against ChittorTech&apos;s Knowledge Centre first.{' '}
+              {aiSessionApproved
+                ? 'AI fallback is enabled for this session.'
+                : 'External AI is consulted only when you choose to ask it.'}
             </span>
           </div>
+          {aiSessionApproved && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-[#DCFCE7] border border-[#BBF7D0] px-2.5 py-0.5 text-[10px] font-semibold text-[#15803D]">
+              <CheckCircle2 className="w-3 h-3" />
+              AI Enabled for Session
+            </span>
+          )}
         </div>
 
         {/* Conversation Feed */}
@@ -775,6 +809,8 @@ export const KnowledgeAssistant: React.FC<KnowledgeAssistantProps> = ({ onOpenSo
               <span>
                 {loadingMode === 'external'
                   ? 'Consulting external AI Assistant...'
+                  : loadingMode === 'smart'
+                  ? 'Checking Knowledge Centre & AI Assistant...'
                   : 'Searching ChittorTech Knowledge Centre...'}
               </span>
             </div>

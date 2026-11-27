@@ -643,6 +643,18 @@ export function buildLocalDeterministicAnswer(
   return parts.join('\n').trim();
 }
 
+function hasWordMatch(words: Set<string>, wordArray: string[], token: string): boolean {
+  if (!token) return false;
+  if (words.has(token)) return true;
+  // Allow morphological prefix matching only for longer domain words (e.g. "calibrat" -> "calibration")
+  if (token.length >= 5) {
+    return wordArray.some(
+      (w) => (w.startsWith(token) && w.length - token.length <= 5) || (token.startsWith(w) && w.length >= 5)
+    );
+  }
+  return false;
+}
+
 export async function retrieveRelevantKnowledge(
   question: string,
   recentUserQuestions: string[] = [],
@@ -663,13 +675,15 @@ export async function retrieveRelevantKnowledge(
     };
   }
 
-  // For short follow-ups or anaphoric phrasing ("explain simply", "summarize that", "in hindi"), blend recent user question
-  const hasFollowUpCue = /\b(simpler|simple|summarize|summary|hindi|hinglish|that|this|its|those|above|example|short)\b/i.test(question);
-  const isShortFollowUp =
-    (question.trim().split(/\s+/).length <= 8 || hasFollowUpCue) && recentUserQuestions.length > 0;
-  const combinedQuery = isShortFollowUp
-    ? `${question} ${recentUserQuestions.slice(-2).join(' ')}`
-    : question;
+  // Only blend previous user questions when the current prompt is explicitly an anaphoric follow-up
+  const hasExplicitFollowUpCue =
+    /\b(simpler|simple|summarize|summary|hindi|hinglish|translate|that|this|its|those|above|example|short|elaborate|more details)\b/i.test(
+      question
+    );
+  const combinedQuery =
+    hasExplicitFollowUpCue && recentUserQuestions.length > 0
+      ? `${question} ${recentUserQuestions.slice(-1).join(' ')}`
+      : question;
 
   const { tokens, normalized } = tokenizeQuery(combinedQuery);
   const currentTokens = tokenizeQuery(question).tokens;
@@ -680,6 +694,16 @@ export async function retrieveRelevantKnowledge(
     const bodyNorm = normalizeText(chunk.content);
     const keyNorm = normalizeText(chunk.keywords.join(' '));
     const combinedNorm = `${titleNorm} ${keyNorm} ${bodyNorm}`;
+
+    const titleWordsArr = titleNorm.split(' ').filter(Boolean);
+    const keyWordsArr = keyNorm.split(' ').filter(Boolean);
+    const bodyWordsArr = bodyNorm.split(' ').filter(Boolean);
+    const titleWords = new Set(titleWordsArr);
+    const keyWords = new Set(keyWordsArr);
+    const bodyWords = new Set(bodyWordsArr);
+    const combinedWordsArr = [...titleWordsArr, ...keyWordsArr, ...bodyWordsArr];
+    const combinedWords = new Set(combinedWordsArr);
+
     let score = 0;
 
     // Exact phrase boosts for standards & clauses
@@ -690,7 +714,7 @@ export async function retrieveRelevantKnowledge(
 
     // Special distinction boost for "difference between X and Y"
     const isComparison = tokens.some((t) => ['difference', 'distinction', 'compare', 'vs'].includes(t));
-    if (isComparison && (titleNorm.includes('distinction') || titleNorm.includes('vs') || titleNorm.includes('difference'))) {
+    if (isComparison && (titleWords.has('distinction') || titleWords.has('vs') || titleWords.has('difference'))) {
       score += 8;
     }
 
@@ -698,15 +722,15 @@ export async function retrieveRelevantKnowledge(
     for (const tok of tokens) {
       const weight = currentTokens.includes(tok) ? 1.0 : 0.45;
       let matched = false;
-      if (titleNorm.includes(tok)) {
+      if (hasWordMatch(titleWords, titleWordsArr, tok)) {
         score += 5.5 * weight;
         matched = true;
       }
-      if (keyNorm.includes(tok)) {
+      if (hasWordMatch(keyWords, keyWordsArr, tok)) {
         score += 3.5 * weight;
         matched = true;
       }
-      if (bodyNorm.includes(tok)) {
+      if (hasWordMatch(bodyWords, bodyWordsArr, tok)) {
         score += 1.8 * weight;
         matched = true;
       }
@@ -719,7 +743,7 @@ export async function retrieveRelevantKnowledge(
       score += chunk.priorityBoost * 0.4;
     }
 
-    return { chunk, score, combinedNorm, matchedDistinctTokens };
+    return { chunk, score, combinedNorm, combinedWords, combinedWordsArr, matchedDistinctTokens };
   });
 
   scored.sort((a, b) => b.score - a.score);
@@ -735,19 +759,24 @@ export async function retrieveRelevantKnowledge(
     (t) => !GENERIC_LAB_TOKENS.has(t) && !['difference', 'distinction', 'compare', 'vs'].includes(t)
   );
   const topMergedText = filteredItems.slice(0, 3).map((x) => x.combinedNorm).join(' ');
-  const unmatchedExplicitStd = explicitStandards.some((std) => !topMergedText.includes(std));
-  const matchedSpecificCount = specificQueryTokens.filter((t) => topMergedText.includes(t)).length;
-  const specificCoverage =
-    specificQueryTokens.length > 0 ? matchedSpecificCount / specificQueryTokens.length : 1;
+  const topMergedWordsArr = filteredItems.slice(0, 3).flatMap((x) => x.combinedWordsArr);
+  const topMergedWords = new Set(topMergedWordsArr);
 
-  // If user specifically asks for a pure translation/simpler/Hindi conversational rewrite, allow external AI if approved, OR answer locally when strong English match
+  const unmatchedExplicitStd = explicitStandards.some((std) => !topMergedText.includes(std));
+  const matchedSpecificCount = specificQueryTokens.filter((t) =>
+    hasWordMatch(topMergedWords, topMergedWordsArr, t)
+  ).length;
+  const specificCoverage =
+    specificQueryTokens.length > 0 ? matchedSpecificCount / specificQueryTokens.length : 0;
+
+  // If user specifically asks for a pure translation/simpler/Hindi conversational rewrite, allow external AI if approved
   const wantsHindiRewrite = /\b(hindi|hinglish|translate)\b/i.test(question) || /[\u0900-\u097F]/.test(question);
 
   const sufficientLocalMatch =
     filtered.length > 0 &&
     topScore >= 9.0 &&
     !unmatchedExplicitStd &&
-    specificCoverage >= 0.5 &&
+    (specificQueryTokens.length > 0 ? matchedSpecificCount > 0 && specificCoverage >= 0.5 : explicitStandards.length > 0) &&
     !wantsHindiRewrite;
 
   return {
