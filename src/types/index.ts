@@ -101,8 +101,9 @@ export type DashboardTab =
   | 'new_entry'
   | 'previous_records'
   | 'analytics'
-  | 'comparison'
   | 'reports'
+  | 'laboratory_resources'
+  | 'knowledge_centre'
   | 'email_reports'
   | 'settings';
 

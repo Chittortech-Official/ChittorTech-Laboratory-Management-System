@@ -12,11 +12,12 @@ import { DashboardTab, LaboratoryRecord } from '@/types';
 import { NewEntryForm } from './NewEntryForm';
 import { PreviousRecords } from './PreviousRecords';
 import { AnalyticsView } from './AnalyticsView';
-import { DualLineComparison } from './DualLineComparison';
 import { ReportsView } from './ReportsView';
+import { LaboratoryResourcesView } from './LaboratoryResourcesView';
+import { KnowledgeCentreView } from '../knowledge/KnowledgeCentreView';
 import { CHEMICAL_PARAMETERS } from '@/lib/laboratory/constants';
 import { formatDateDDMMYYYY } from '@/lib/laboratory/exportService';
-import { Scale } from 'lucide-react';
+import { FolderKanban, BookOpen } from 'lucide-react';
 
 interface LaboratoryDashboardProps {
   activeTab?: DashboardTab;
@@ -68,22 +69,23 @@ export const LaboratoryDashboard: React.FC<LaboratoryDashboardProps> = ({
     { id: 'new_entry', label: 'New Laboratory Entry', icon: <PlusCircle className="w-4 h-4" /> },
     { id: 'previous_records', label: 'Previous Records', icon: <Database className="w-4 h-4" /> },
     { id: 'analytics', label: 'Analytics', icon: <BarChart3 className="w-4 h-4" /> },
-    { id: 'comparison', label: 'Multi-Line Comparison', icon: <Scale className="w-4 h-4" /> },
     { id: 'reports', label: 'Reports & Downloads', icon: <FileText className="w-4 h-4" /> },
+    { id: 'laboratory_resources', label: 'Laboratory Resources', icon: <FolderKanban className="w-4 h-4" /> },
+    { id: 'knowledge_centre', label: 'Knowledge & Compliance Centre', icon: <BookOpen className="w-4 h-4" /> },
   ];
 
   return (
     <div className="w-full space-y-6">
-      {/* Full-Width Equally Distributed Soft Sky Blue Navigation Bar */}
+      {/* Full-Width Adaptive Soft Sky Blue Navigation Bar (Never clips long labels) */}
       <div className="w-full bg-[#EAF3FF] rounded-2xl border border-[#D6E8FF] shadow-2xs p-1.5 overflow-x-auto">
-        <nav className="grid grid-flow-col auto-cols-fr items-stretch gap-1.5 w-full">
+        <nav className="flex items-stretch gap-1 w-full min-w-max">
           {navItems.map((item) => {
             const isActive = activeTab === item.id;
             return (
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
-                className={`inline-flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
+                className={`flex-auto inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
                   isActive
                     ? 'bg-[#D6E8FF] text-[#2563EB] shadow-2xs ring-1 ring-[#3B82F6]/25'
                     : 'text-[#64748B] hover:text-[#334155] hover:bg-white/60'
@@ -305,22 +307,6 @@ export const LaboratoryDashboard: React.FC<LaboratoryDashboardProps> = ({
               </div>
 
               <div
-                onClick={() => setActiveTab('comparison')}
-                className="p-4 bg-white rounded-2xl border border-slate-200 shadow-sm hover:border-amber-400 cursor-pointer transition-all flex items-center justify-between"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 rounded-xl bg-amber-50 text-amber-600">
-                    <Scale className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-bold text-slate-900">Multi-Line Split Comparison</h4>
-                    <p className="text-[11px] text-slate-500">Ball Mill 1 vs 2 consistency</p>
-                  </div>
-                </div>
-                <ArrowRight className="w-4 h-4 text-slate-400" />
-              </div>
-
-              <div
                 onClick={() => setActiveTab('reports')}
                 className="p-4 bg-white rounded-2xl border border-slate-200 shadow-sm hover:border-emerald-400 cursor-pointer transition-all flex items-center justify-between"
               >
@@ -367,11 +353,6 @@ export const LaboratoryDashboard: React.FC<LaboratoryDashboardProps> = ({
         <AnalyticsView userId={userId} />
       )}
 
-      {/* 4.5 DUAL-CIRCUIT MULTI-LINE COMPARISON TAB */}
-      {activeTab === 'comparison' && (
-        <DualLineComparison userId={userId} />
-      )}
-
       {/* 5. REPORTS & DOWNLOADS TAB */}
       {activeTab === 'reports' && (
         <ReportsView
@@ -379,6 +360,20 @@ export const LaboratoryDashboard: React.FC<LaboratoryDashboardProps> = ({
           userName={userName}
           userEmail={userEmail}
           plantName={plantName}
+        />
+      )}
+
+      {/* 5.5 LABORATORY RESOURCES TAB (PHASE 2 ISO/IEC 17025) */}
+      {activeTab === 'laboratory_resources' && (
+        <LaboratoryResourcesView userId={userId} />
+      )}
+
+      {/* 5.6 KNOWLEDGE & COMPLIANCE CENTRE TAB (EXTREME RIGHTMOST) */}
+      {activeTab === 'knowledge_centre' && (
+        <KnowledgeCentreView
+          userId={userId}
+          userName={userName}
+          userRole={user?.role}
         />
       )}
 

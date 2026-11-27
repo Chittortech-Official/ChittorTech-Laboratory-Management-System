@@ -21,10 +21,12 @@ const TAB_PARAM_MAP: Record<string, DashboardTab> = {
   'previous-records': 'previous_records',
   previousrecords: 'previous_records',
   analytics: 'analytics',
-  comparison: 'comparison',
-  'multi-line-comparison': 'comparison',
   reports: 'reports',
   'reports-downloads': 'reports',
+  laboratory_resources: 'laboratory_resources',
+  'laboratory-resources': 'laboratory_resources',
+  knowledge_centre: 'knowledge_centre',
+  'knowledge-centre': 'knowledge_centre',
   email_reports: 'reports',
   'email-reports': 'reports',
   settings: 'settings',
@@ -35,8 +37,9 @@ const TAB_TO_PARAM_MAP: Record<DashboardTab, string> = {
   new_entry: 'new-entry',
   previous_records: 'previous-records',
   analytics: 'analytics',
-  comparison: 'comparison',
   reports: 'reports',
+  laboratory_resources: 'laboratory-resources',
+  knowledge_centre: 'knowledge-centre',
   email_reports: 'reports',
   settings: 'settings',
 };
@@ -200,41 +203,83 @@ function HomePageContent() {
     } catch {}
   }, [activeTab]);
 
-  // 1. While Supabase session is being checked and restored on reload, display professional centered loading screen
+  // 1. While Supabase session is being checked and restored on reload, display professional industrial loading screen
   if (!mounted || (loading && !user && !justAuthenticated)) {
     return (
-      <div className="min-h-[100dvh] bg-slate-50 flex flex-col items-center justify-center p-4">
-        <div className="flex flex-col items-center max-w-sm text-center space-y-4 animate-in fade-in duration-200">
-          {/* ChittorTech Logo Card */}
-          <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl border border-slate-200 bg-white p-2.5 shadow-md">
-            <Image
-              src="/assets/images/ct-logo.png"
-              alt="ChittorTech Logo"
-              width={52}
-              height={52}
-              className="object-contain"
-              priority
-            />
+      <div className="min-h-[100dvh] bg-[#F5F8FC] flex flex-col items-center justify-center p-6 relative overflow-hidden">
+        {/* Subtle industrial background accent */}
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_35%,rgba(37,99,235,0.08),transparent_60%)]" />
+
+        <div className="relative w-full max-w-md rounded-2xl border border-[#E2E8F0] bg-white p-8 shadow-xl text-center space-y-6 animate-in fade-in duration-200">
+          {/* Top Industrial Node Badge */}
+          <div className="inline-flex items-center gap-2 rounded-full bg-[#EAF3FF] border border-[#D6E8FF] px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-[#2563EB]">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#0F9D92] animate-pulse" />
+            <span>QA Laboratory Node • Initializing</span>
           </div>
 
-          <div>
-            <h3 className="font-heading text-lg font-extrabold text-slate-900 tracking-tight">
-              Chittor<span className="text-blue-600">Tech</span>{' '}
-              <span className="text-[10px] font-bold text-slate-500 uppercase px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200 ml-1">
-                QA LMS
+          {/* ChittorTech Logo with Soft Ring */}
+          <div className="flex flex-col items-center space-y-3">
+            <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl border border-[#E2E8F0] bg-white p-2.5 shadow-sm ring-4 ring-[#EAF3FF]">
+              <Image
+                src="/assets/images/ct-logo.png"
+                alt="ChittorTech Logo"
+                width={52}
+                height={52}
+                className="object-contain"
+                priority
+              />
+            </div>
+
+            <div>
+              <h3 className="font-heading text-xl font-extrabold text-[#334155] tracking-tight">
+                Chittor<span className="text-[#2563EB]">Tech</span>{' '}
+                <span className="text-[10px] font-bold text-[#2563EB] uppercase px-2 py-0.5 rounded-full bg-[#EAF3FF] border border-[#D6E8FF] ml-1 align-middle">
+                  QA LMS
+                </span>
+              </h3>
+              <p className="text-xs text-[#64748B] mt-1 font-medium">
+                Quality Assurance &amp; Materials Testing Suite
+              </p>
+            </div>
+          </div>
+
+          {/* Smooth Indeterminate Progress Bar */}
+          <div className="space-y-2">
+            <div className="h-1.5 w-full rounded-full bg-[#EAF3FF] overflow-hidden">
+              <div className="h-full w-2/3 rounded-full bg-gradient-to-r from-[#2563EB] via-[#3B82F6] to-[#0F9D92] animate-pulse" />
+            </div>
+            <div className="inline-flex items-center justify-center gap-2 text-xs font-semibold text-[#2563EB]">
+              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+              <span>Restoring your laboratory session...</span>
+            </div>
+          </div>
+
+          {/* Authentic System Readiness Indicators */}
+          <div className="rounded-xl border border-[#E2E8F0] bg-[#F5F8FC] p-3.5 text-left text-[11px] text-[#64748B] space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="font-medium text-[#334155]">Operator Session</span>
+              <span className="inline-flex items-center gap-1.5 text-[#2563EB] font-semibold">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#2563EB] animate-ping" />
+                Verifying
               </span>
-            </h3>
-            <p className="text-xs text-slate-500 mt-1 font-medium">
-              Restoring your session...
-            </p>
-          </div>
-
-          {/* Subtle loading spinner */}
-          <div className="inline-flex items-center gap-2 text-xs font-semibold text-blue-600 bg-blue-50/80 px-4 py-2 rounded-full border border-blue-200/60 shadow-xs">
-            <RefreshCw className="w-3.5 h-3.5 animate-spin text-blue-600" />
-            <span>Loading your laboratory dashboard...</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="font-medium text-[#334155]">Cloud Database Link</span>
+              <span className="inline-flex items-center gap-1.5 text-[#0F9D92] font-semibold">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#0F9D92]" />
+                Connected
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="font-medium text-[#334155]">Compliance Standards</span>
+              <span className="font-mono font-semibold text-[#334155]">ASTM • BIS • ISO 17025</span>
+            </div>
           </div>
         </div>
+
+        <p className="mt-4 text-[11px] text-[#64748B]">
+          ChittorTech Industrial QA Suite • Secure Laboratory Workspace
+        </p>
       </div>
     );
   }

@@ -13,6 +13,9 @@ import {
   Flame,
   Eye,
   X,
+  Upload,
+  Zap,
+  Download,
 } from 'lucide-react';
 import { ChemicalParameterKey, MechanicalParameterKey, UserProfile } from '@/types';
 import {
@@ -31,6 +34,7 @@ import {
   calculateEquivalentAlkali,
   formatDateDDMMYYYY,
 } from '@/lib/laboratory/exportService';
+import { parseXrfInstrumentFile, generateDemoXrfCsv, ParsedSample } from '@/lib/laboratory/xrfParser';
 import { useConfirmationModal } from '@/contexts/ConfirmationModalContext';
 
 interface DailyTestingSheetProps {
@@ -116,6 +120,14 @@ export const DailyTestingSheet: React.FC<DailyTestingSheetProps> = ({ user, onSa
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [showReview, setShowReview] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+
+  // XRF / Spectrometer Auto-Import State
+  const xrfFileInputRef = useRef<HTMLInputElement>(null);
+  const [xrfTargetCategory, setXrfTargetCategory] = useState<string>(DAILY_WORKBOOK_CATEGORIES[0].dbValue);
+  const [isParsingXrf, setIsParsingXrf] = useState<boolean>(false);
+  const [xrfNotice, setXrfNotice] = useState<string | null>(null);
+  const [xrfSamples, setXrfSamples] = useState<ParsedSample[]>([]);
+  const [selectedXrfIdx, setSelectedXrfIdx] = useState<number>(0);
 
   // Excel-like Keyboard Navigation Ref Registry & Grid Helpers
   const cellRefs = useRef<Record<string, HTMLInputElement | null>>({});
@@ -357,6 +369,72 @@ export const DailyTestingSheet: React.FC<DailyTestingSheetProps> = ({ user, onSa
     }));
   };
 
+  const applyXrfSampleToColumn = useCallback((targetDbCat: string, sample: ParsedSample) => {
+    setChemGrid((prev) => {
+      const existing = prev[targetDbCat] || emptyChemCol('NA');
+      const nextCol: ChemColumnState = { ...existing };
+      if (sample.sampleId) {
+        nextCol.sample_id = sample.sampleId;
+      }
+      for (const p of CHEMICAL_PARAMETERS) {
+        const val = sample.values[p.key];
+        if (val !== undefined && val !== '') {
+          nextCol[p.key] = val;
+        }
+      }
+      return { ...prev, [targetDbCat]: nextCol };
+    });
+  }, []);
+
+  const handleProcessXrfFile = async (file: File) => {
+    setIsParsingXrf(true);
+    setError(null);
+    setXrfNotice(null);
+    try {
+      const result = await parseXrfInstrumentFile(file);
+      if (!result.success || result.samples.length === 0) {
+        setError(result.error || 'Could not detect chemical oxide parameters in the uploaded XRF file.');
+        return;
+      }
+
+      setXrfSamples(result.samples);
+      setSelectedXrfIdx(0);
+
+      // If multiple samples have matching plant categories, auto-populate each matching column
+      let autoMappedCount = 0;
+      if (result.samples.length > 1) {
+        for (const s of result.samples) {
+          if (!s.category) continue;
+          const catLower = s.category.trim().toLowerCase();
+          const matched = DAILY_WORKBOOK_CATEGORIES.find(
+            (c) => c.dbValue.toLowerCase() === catLower || c.sheetLabel.toLowerCase() === catLower
+          );
+          if (matched) {
+            applyXrfSampleToColumn(matched.dbValue, s);
+            autoMappedCount++;
+          }
+        }
+      }
+
+      if (autoMappedCount > 0) {
+        setXrfNotice(
+          `Auto-imported ${autoMappedCount} plant categories from "${file.name}" (${result.samples[0].detectedInstrument}).`
+        );
+      } else {
+        const first = result.samples[0];
+        applyXrfSampleToColumn(xrfTargetCategory, first);
+        const catMeta = DAILY_WORKBOOK_CATEGORIES.find((c) => c.dbValue === xrfTargetCategory);
+        setXrfNotice(
+          `Imported ${first.matchedParametersCount} oxides (${first.detectedInstrument}) into ${catMeta?.sheetLabel || xrfTargetCategory}.`
+        );
+      }
+    } catch (err: any) {
+      setError(err?.message || 'Failed to parse XRF instrument file.');
+    } finally {
+      setIsParsingXrf(false);
+    }
+  };
+
   // Computed Chemical Metrics per Category (Orange Calculated Cells)
   const chemCalculated = useMemo(() => {
     const res: Record<
@@ -554,9 +632,6 @@ export const DailyTestingSheet: React.FC<DailyTestingSheetProps> = ({ user, onSa
                 onChange={(e) => setTestDate(e.target.value)}
                 className="h-10 pl-9 pr-3 rounded-xl border border-slate-300 bg-slate-50 text-xs font-mono font-bold text-slate-900 focus:bg-white focus:border-blue-600 focus:outline-none"
               />
-              <span className="ml-2 px-2.5 py-1 rounded-lg bg-blue-50 text-blue-800 border border-blue-200 text-xs font-mono font-bold">
-                {formatDateDDMMYYYY(testDate)}
-              </span>
             </div>
           </div>
 
@@ -622,6 +697,110 @@ export const DailyTestingSheet: React.FC<DailyTestingSheetProps> = ({ user, onSa
           <span>{error}</span>
         </div>
       )}
+
+      {/* 1-CLICK XRF / SPECTROMETER AUTO-IMPORT BAR */}
+      <div
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={(e) => {
+          e.preventDefault();
+          if (e.dataTransfer.files?.[0]) handleProcessXrfFile(e.dataTransfer.files[0]);
+        }}
+        className="bg-white rounded-2xl border border-dashed border-blue-300 bg-gradient-to-r from-[#EAF3FF]/60 via-white to-[#F5F8FC] p-4 shadow-2xs space-y-3"
+      >
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-[#EAF3FF] border border-[#D6E8FF] flex items-center justify-center shrink-0">
+              <Zap className="w-4 h-4 text-[#2563EB]" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-slate-900">1-Click XRF / Spectrometer Auto-Import</span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-[#FEF3C7] text-[#B45309]">
+                  Zero Typing
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500">
+                Drop or browse Thermo ARL, Panalytical, Bruker, Shimadzu (.csv, .xlsx, .txt) to auto-fill oxides into the selected column.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              value={xrfTargetCategory}
+              onChange={(e) => setXrfTargetCategory(e.target.value)}
+              title="Target category column for XRF import"
+              className="h-9 rounded-xl border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-800 focus:border-blue-600 focus:outline-none"
+            >
+              {DAILY_WORKBOOK_CATEGORIES.map((cat) => (
+                <option key={cat.dbValue} value={cat.dbValue}>
+                  Target: {cat.sheetLabel} ({cat.dbValue})
+                </option>
+              ))}
+            </select>
+
+            <input
+              ref={xrfFileInputRef}
+              type="file"
+              accept=".csv,.xlsx,.xls,.txt,.tsv"
+              className="hidden"
+              onChange={(e) => {
+                if (e.target.files?.[0]) handleProcessXrfFile(e.target.files[0]);
+                e.target.value = '';
+              }}
+            />
+
+            <button
+              type="button"
+              disabled={isParsingXrf}
+              onClick={() => xrfFileInputRef.current?.click()}
+              className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-semibold shadow-2xs transition-colors disabled:opacity-60"
+            >
+              <Upload className="w-3.5 h-3.5" />
+              <span>{isParsingXrf ? 'Parsing XRF...' : 'Import XRF File'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={generateDemoXrfCsv}
+              className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold transition-colors"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Demo XRF (.csv)</span>
+            </button>
+          </div>
+        </div>
+
+        {xrfNotice && (
+          <div className="flex items-center justify-between gap-2 rounded-xl border border-emerald-200 bg-[#DCFCE7] px-3 py-2 text-xs text-[#15803D]">
+            <div className="flex items-center gap-2 font-medium">
+              <CheckCircle2 className="w-4 h-4 shrink-0" />
+              <span>{xrfNotice}</span>
+            </div>
+            {xrfSamples.length > 1 && (
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {xrfSamples.map((s, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => {
+                      setSelectedXrfIdx(idx);
+                      applyXrfSampleToColumn(xrfTargetCategory, s);
+                    }}
+                    className={`px-2 py-0.5 rounded-lg text-[11px] font-semibold border transition-colors ${
+                      selectedXrfIdx === idx
+                        ? 'bg-[#15803D] text-white border-[#15803D]'
+                        : 'bg-white text-[#15803D] border-emerald-300 hover:bg-emerald-50'
+                    }`}
+                  >
+                    {s.sampleId || `Row ${idx + 1}`}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* ===================================================================== */}
       {/* SECTION 1: CHEMICAL ANALYSIS (19 CATEGORIES SINGLE-PAGE MATRIX)        */}

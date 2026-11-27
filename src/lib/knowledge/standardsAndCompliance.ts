@@ -1,0 +1,621 @@
+export interface StandardReference {
+  id: string;
+  authority: 'BIS' | 'NABL' | 'ISO';
+  standardNumber: string;
+  title: string;
+  subjectCategory: string;
+  applicableMaterial: string;
+  scopePurpose: string;
+  relatedParameters: string;
+  relatedMethods: string;
+  relatedEquipment: string;
+  editionInfo: string;
+  amendmentInfo: string;
+  status: 'Current' | 'Superseded' | 'Under Verification';
+  officialUrl: string;
+  lastVerifiedDate: string;
+}
+
+export interface IsoClauseTopic {
+  id: string;
+  clauseNumber: string;
+  clauseGroup: string;
+  title: string;
+  simpleExplanation: string;
+  whyItMatters: string;
+  practicalExample: string;
+  relevantRecords: string;
+  responsibleRole: string;
+  relatedActivity: string;
+  relatedModule: string;
+  officialReference: string;
+}
+
+export interface ComplianceMapping {
+  id: string;
+  laboratoryActivity: string;
+  referenceDocument: string;
+  clauseSection: string;
+  requirementSummary: string;
+  practicalExplanation: string;
+  relatedRecords: string;
+  officialSource: string;
+  applicabilityNotes: string;
+  lastVerifiedDate: string;
+}
+
+export interface NablProcessStep {
+  step: number;
+  id: string;
+  title: string;
+  summary: string;
+  detailedGuidance: string;
+  keyEvidence: string;
+}
+
+export interface EducationalArticleSeed {
+  articleCode: string;
+  categorySlug: 'bis' | 'nabl' | 'iso' | 'testing' | 'learning' | 'checklists';
+  subcategory: string;
+  title: string;
+  shortDescription: string;
+  detailedContent: string;
+  relatedStandards: string;
+  relatedClauses: string;
+  relatedEquipment: string;
+  relatedParameters: string;
+  officialSourceUrl: string;
+  editionRevision: string;
+  lastVerifiedDate: string;
+}
+
+export const OFFICIAL_REFERENCES = [
+  { name: 'Bureau of Indian Standards (BIS)', url: 'https://www.bis.gov.in/', desc: 'Official Indian Standards portal for IS 269, IS 4031, IS 4032, IS 12803, IS 1489.' },
+  { name: 'NABL India Official Portal', url: 'https://nabl-india.org/', desc: 'National Accreditation Board for Testing and Calibration Laboratories.' },
+  { name: 'NABL Documents & Guidelines', url: 'https://nabl-india.org/nabl-documents/', desc: 'Current editions of NABL 100A, NABL 100B, NABL 120, NABL 131 and criteria.' },
+  { name: 'ISO/IEC 17025:2017 Standard', url: 'https://www.iso.org/standard/17025', desc: 'General requirements for the competence of testing and calibration laboratories.' },
+];
+
+export const STANDARD_REFERENCES: StandardReference[] = [
+  {
+    id: 'bis-is-269',
+    authority: 'BIS',
+    standardNumber: 'IS 269:2015',
+    title: 'Ordinary Portland Cement — Specification (Sixth Revision)',
+    subjectCategory: 'Cement Product Specification',
+    applicableMaterial: 'OPC 33, 43, and 53 Grade Cement',
+    scopePurpose: 'Specifies chemical, physical, and strength requirements, packing, marking, and sampling for Ordinary Portland Cement grades.',
+    relatedParameters: 'LOI, IR, SO3, MgO, Chloride, Blaine Fineness, IST/FST, Soundness, 3D/7D/28D Compressive Strength',
+    relatedMethods: 'IS 4031 (Parts 1–13), IS 4032, IS 12803',
+    relatedEquipment: 'Compression Testing Machine, Blaine Apparatus, Le Chatelier, Autoclave, XRF',
+    editionInfo: 'IS 269:2015 (Sixth Revision)',
+    amendmentInfo: 'Check official BIS portal for latest amendments and reaffirmation status',
+    status: 'Current',
+    officialUrl: 'https://www.bis.gov.in/',
+    lastVerifiedDate: '2026-11-27',
+  },
+  {
+    id: 'bis-is-4031',
+    authority: 'BIS',
+    standardNumber: 'IS 4031 (Parts 1–13)',
+    title: 'Methods of Physical Tests for Hydraulic Cement',
+    subjectCategory: 'Physical & Mechanical Testing',
+    applicableMaterial: 'Hydraulic Cements (OPC, PPC, PSC)',
+    scopePurpose: 'Multi-part standard defining procedures for fineness (dry sieving & Blaine), soundness (Le Chatelier & Autoclave), consistency, setting time, and compressive strength.',
+    relatedParameters: 'Residue +45/+90/+212 µm, Blaine m²/kg, NC%, IST, FST, Soundness, CS 1D/3D/7D/28D',
+    relatedMethods: 'Part 1 (Sieving), Part 2 (Blaine), Part 3 (Soundness), Part 4 (Consistency), Part 5 (Setting Time), Part 6 (Strength)',
+    relatedEquipment: 'Blaine Permeability Apparatus, Vicat Needle, Le Chatelier Mould, Autoclave, CTM, Sieve Shaker',
+    editionInfo: 'Parts 1–13 (1988–1999 editions, routinely reaffirmed)',
+    amendmentInfo: 'Verify individual part revisions on BIS portal',
+    status: 'Current',
+    officialUrl: 'https://www.bis.gov.in/',
+    lastVerifiedDate: '2026-11-27',
+  },
+  {
+    id: 'bis-is-4032',
+    authority: 'BIS',
+    standardNumber: 'IS 4032:1985',
+    title: 'Method of Chemical Analysis of Hydraulic Cement (First Revision)',
+    subjectCategory: 'Chemical Testing',
+    applicableMaterial: 'Hydraulic Cement & Clinker',
+    scopePurpose: 'Standard wet-chemical gravimetric and volumetric procedures for determining LOI, IR, SiO2, Al2O3, Fe2O3, CaO, MgO, SO3, Alkalis, Chloride, and Free Lime.',
+    relatedParameters: 'LOI, IR, SO3, SiO2, Al2O3, Fe2O3, CaO, MgO, K2O, Na2O, Chloride, Free Lime',
+    relatedMethods: 'Gravimetric, Titrimetric, Flame Photometry',
+    relatedEquipment: 'Muffle Furnace, Drying Oven, Analytical Balance, Hot Plate, Flame Photometer',
+    editionInfo: 'IS 4032:1985 (First Revision, Reaffirmed)',
+    amendmentInfo: 'Verify latest reaffirmation & amendments on BIS portal',
+    status: 'Current',
+    officialUrl: 'https://www.bis.gov.in/',
+    lastVerifiedDate: '2026-11-27',
+  },
+  {
+    id: 'bis-is-12803',
+    authority: 'BIS',
+    standardNumber: 'IS 12803:1989',
+    title: 'Methods of Analysis of Hydraulic Cement by X-ray Fluorescence Spectrometer',
+    subjectCategory: 'Instrumental Chemical Analysis',
+    applicableMaterial: 'Hydraulic Cement, Clinker, Raw Meal',
+    scopePurpose: 'Covers rapid elemental oxide determination using pressed pellet or fused bead X-ray fluorescence spectrometry.',
+    relatedParameters: 'SiO2, Al2O3, Fe2O3, CaO, MgO, SO3, K2O, Na2O, Cl',
+    relatedMethods: 'Pressed Pellet / Fused Bead XRF Calibration',
+    relatedEquipment: 'XRF Spectrometer, Pellet Press / Fusion Bead Maker, Grinding Mill',
+    editionInfo: 'IS 12803:1989 (Reaffirmed)',
+    amendmentInfo: 'Verify latest reaffirmation on BIS portal',
+    status: 'Current',
+    officialUrl: 'https://www.bis.gov.in/',
+    lastVerifiedDate: '2026-11-27',
+  },
+  {
+    id: 'bis-is-1489',
+    authority: 'BIS',
+    standardNumber: 'IS 1489 (Part 1 & Part 2):2015',
+    title: 'Portland Pozzolana Cement — Specification (Part 1: Fly Ash Based; Part 2: Calcined Clay Based)',
+    subjectCategory: 'Cement Product Specification',
+    applicableMaterial: 'PPC (Fly Ash & Calcined Clay Based)',
+    scopePurpose: 'Specifies requirements for pozzolana percentage, chemical limits, fineness, soundness, setting time, and compressive strength of PPC.',
+    relatedParameters: 'LOI, IR, SO3, MgO, Chloride, Blaine, IST/FST, Soundness, 3D/7D/28D CS',
+    relatedMethods: 'IS 4031, IS 4032, IS 1727 (Pozzolana tests)',
+    relatedEquipment: 'Blaine Apparatus, Vicat, CTM, Muffle Furnace, XRF',
+    editionInfo: 'IS 1489 (Part 1):2015 Fourth Revision; Part 2:2015',
+    amendmentInfo: 'Verify latest BIS amendments',
+    status: 'Current',
+    officialUrl: 'https://www.bis.gov.in/',
+    lastVerifiedDate: '2026-11-27',
+  },
+  {
+    id: 'bis-is-455',
+    authority: 'BIS',
+    standardNumber: 'IS 455:2015',
+    title: 'Portland Slag Cement — Specification',
+    subjectCategory: 'Cement Product Specification',
+    applicableMaterial: 'Portland Slag Cement (PSC)',
+    scopePurpose: 'Defines slag content limits, chemical limits (MgO, SO3, Sulphide Sulphur, Chloride), and physical performance for PSC.',
+    relatedParameters: 'LOI, IR, SO3, MgO, Chloride, Blaine, IST/FST, Soundness, CS',
+    relatedMethods: 'IS 4031, IS 4032',
+    relatedEquipment: 'Blaine Apparatus, CTM, Muffle Furnace, XRF',
+    editionInfo: 'IS 455:2015 (Fifth Revision)',
+    amendmentInfo: 'Verify latest BIS amendments',
+    status: 'Current',
+    officialUrl: 'https://www.bis.gov.in/',
+    lastVerifiedDate: '2026-11-27',
+  },
+  {
+    id: 'bis-is-1350',
+    authority: 'BIS',
+    standardNumber: 'IS 1350 (Part 1 & Part 2)',
+    title: 'Methods of Test for Coal and Coke (Proximate Analysis & Calorific Value)',
+    subjectCategory: 'Coal & Fuel Testing',
+    applicableMaterial: 'Kiln Coal, PC Coal, Mixed Coal, Petcoke',
+    scopePurpose: 'Covers moisture, volatile matter, ash, fixed carbon (Part 1) and gross calorific value by bomb calorimeter (Part 2).',
+    relatedParameters: 'IM%, VM%, Ash%, FC%, GCV, UHV',
+    relatedMethods: 'Proximate Analysis, Bomb Calorimetry',
+    relatedEquipment: 'Bomb Calorimeter, Muffle Furnace, Drying Oven, Analytical Balance',
+    editionInfo: 'Part 1:1984 (Second Rev), Part 2:2017/2022',
+    amendmentInfo: 'Verify latest revision on BIS portal',
+    status: 'Current',
+    officialUrl: 'https://www.bis.gov.in/',
+    lastVerifiedDate: '2026-11-27',
+  },
+  {
+    id: 'nabl-100a',
+    authority: 'NABL',
+    standardNumber: 'NABL 100A',
+    title: 'General Information Brochure',
+    subjectCategory: 'NABL Accreditation Policy',
+    applicableMaterial: 'Testing & Calibration Laboratories',
+    scopePurpose: 'Provides general overview of NABL accreditation scheme, fee structure, benefits, and governance.',
+    relatedParameters: 'Accreditation Application & Fee Rules',
+    relatedMethods: 'NABL Accreditation Scheme',
+    relatedEquipment: 'All Laboratory Scopes',
+    editionInfo: 'Current Official Edition (Check NABL Documents Portal)',
+    amendmentInfo: 'Amended 31 Aug 2026 fee schedule referenced',
+    status: 'Current',
+    officialUrl: 'https://nabl-india.org/nabl-documents/',
+    lastVerifiedDate: '2026-11-27',
+  },
+  {
+    id: 'nabl-100b',
+    authority: 'NABL',
+    standardNumber: 'NABL 100B',
+    title: 'Accreditation Process & Procedure',
+    subjectCategory: 'NABL Process Guide',
+    applicableMaterial: 'Applicant & Accredited Laboratories',
+    scopePurpose: 'Details step-by-step application, adequacy audit, on-site assessment, NC closure, grant, surveillance, and reassessment.',
+    relatedParameters: 'Assessment Lifecycle & Timelines',
+    relatedMethods: 'Pre-Assessment, On-Site Assessment, Surveillance',
+    relatedEquipment: 'All Laboratory Scopes',
+    editionInfo: 'Current Official Edition',
+    amendmentInfo: 'Verify latest issue date on nabl-india.org',
+    status: 'Current',
+    officialUrl: 'https://nabl-india.org/nabl-documents/',
+    lastVerifiedDate: '2026-11-27',
+  },
+  {
+    id: 'nabl-120',
+    authority: 'NABL',
+    standardNumber: 'NABL 120',
+    title: 'Guidance for Classification of Product Groups in Testing & Calibration Field',
+    subjectCategory: 'Scope Classification',
+    applicableMaterial: 'Testing & Calibration Scope Definition',
+    scopePurpose: 'Helps laboratories accurately classify cement, clinker, coal, and chemical/mechanical test disciplines when applying for scope.',
+    relatedParameters: 'Scope Matrix Classification',
+    relatedMethods: 'Chemical & Mechanical Product Groups',
+    relatedEquipment: 'Scope-linked Test Equipment',
+    editionInfo: 'Current Official Edition',
+    amendmentInfo: 'Verify latest issue date on nabl-india.org',
+    status: 'Current',
+    officialUrl: 'https://nabl-india.org/nabl-documents/',
+    lastVerifiedDate: '2026-11-27',
+  },
+  {
+    id: 'nabl-131',
+    authority: 'NABL',
+    standardNumber: 'NABL 131',
+    title: 'Terms & Conditions for Obtaining and Maintaining NABL Accreditation',
+    subjectCategory: 'Compliance & Terms',
+    applicableMaterial: 'All NABL Applicant & Accredited Labs',
+    scopePurpose: 'Sets legal, impartiality, symbol usage, proficiency testing, and reporting obligations for maintaining accreditation.',
+    relatedParameters: 'Impartiality, PT Participation, Symbol Usage',
+    relatedMethods: 'Ongoing Accreditation Compliance',
+    relatedEquipment: 'Calibration & Traceability Compliance',
+    editionInfo: 'Current Official Edition',
+    amendmentInfo: 'Verify latest issue date on nabl-india.org',
+    status: 'Current',
+    officialUrl: 'https://nabl-india.org/nabl-documents/',
+    lastVerifiedDate: '2026-11-27',
+  },
+  {
+    id: 'iso-17025',
+    authority: 'ISO',
+    standardNumber: 'ISO/IEC 17025:2017',
+    title: 'General requirements for the competence of testing and calibration laboratories',
+    subjectCategory: 'International Quality Standard',
+    applicableMaterial: 'All Testing & Calibration Laboratories',
+    scopePurpose: 'International benchmark covering impartiality, structural governance, resources, test processes, uncertainty, validity, and QMS.',
+    relatedParameters: 'Clauses 4, 5, 6, 7, 8',
+    relatedMethods: 'Method Verification, Uncertainty, Traceability, Audit & CAPA',
+    relatedEquipment: 'Calibrated & Verified Laboratory Instruments',
+    editionInfo: 'ISO/IEC 17025:2017 (Third Edition)',
+    amendmentInfo: 'Current active edition',
+    status: 'Current',
+    officialUrl: 'https://www.iso.org/standard/17025',
+    lastVerifiedDate: '2026-11-27',
+  },
+];
+
+export const ISO_17025_TOPICS: IsoClauseTopic[] = [
+  {
+    id: 'iso-4-1',
+    clauseNumber: 'Clause 4.1',
+    clauseGroup: 'Clause 4 – General Requirements',
+    title: 'Impartiality',
+    simpleExplanation: 'Laboratory activities must be undertaken impartially so that commercial, financial, or production pressures never compromise test results.',
+    whyItMatters: 'Plant pressure to ship clinker or cement cannot influence a QA chemist to alter LSF, Free Lime, or Compressive Strength values.',
+    practicalExample: 'A plant manager asks to round up 28-day strength; the lab head documents the true measured value and refuses undocumented changes.',
+    relevantRecords: 'Impartiality Risk Assessment, Conflict of Interest Declarations',
+    responsibleRole: 'Laboratory Head / Top Management',
+    relatedActivity: 'Result Approval & Release',
+    relatedModule: 'Audit Trail & Reports',
+    officialReference: 'https://www.iso.org/standard/17025',
+  },
+  {
+    id: 'iso-4-2',
+    clauseNumber: 'Clause 4.2',
+    clauseGroup: 'Clause 4 – General Requirements',
+    title: 'Confidentiality',
+    simpleExplanation: 'Protect customer, supplier, and proprietary plant testing information unless disclosure is required by law or authorized.',
+    whyItMatters: 'Prevents unauthorized sharing of third-party coal, clinker, or competitor benchmark test data.',
+    practicalExample: 'Restricting access to test reports and storing records with controlled operator accounts.',
+    relevantRecords: 'Confidentiality Agreements, Access Control Logs',
+    responsibleRole: 'Laboratory Head / QA Engineer',
+    relatedActivity: 'Report Dispatch & Data Storage',
+    relatedModule: 'Reports & Downloads',
+    officialReference: 'https://www.iso.org/standard/17025',
+  },
+  {
+    id: 'iso-5',
+    clauseNumber: 'Clause 5',
+    clauseGroup: 'Clause 5 – Structural Requirements',
+    title: 'Laboratory Organisation, Responsibilities & Authority',
+    simpleExplanation: 'Define legal identity, reporting lines, and exact authority of personnel who perform, verify, and approve tests.',
+    whyItMatters: 'Ensures clear separation between production targets and quality release authority.',
+    practicalExample: 'An organizational chart showing QA Head reporting independently to Plant Head/Corporate QA, with authorized signatories listed.',
+    relevantRecords: 'Quality Manual Org Chart, Job Descriptions, Signatory Matrix',
+    responsibleRole: 'Laboratory Head / Quality Manager',
+    relatedActivity: 'Governance & Sign-Off',
+    relatedModule: 'Laboratory Resources -> Staff Competency',
+    officialReference: 'https://www.iso.org/standard/17025',
+  },
+  {
+    id: 'iso-6-2',
+    clauseNumber: 'Clause 6.2',
+    clauseGroup: 'Clause 6 – Resource Requirements',
+    title: 'Personnel Competence & Training',
+    simpleExplanation: 'All personnel affecting lab results must be competent, trained, supervised, and formally authorized for specific tests.',
+    whyItMatters: 'An untrained operator running Blaine or XRF can introduce severe systematic error.',
+    practicalExample: 'Maintaining training logs, practical repeatability checks, and signed test-method authorizations before solo duty.',
+    relevantRecords: 'Training Matrix, Competency Assessment Records, Authorization Letters',
+    responsibleRole: 'Quality Manager / Lab Head',
+    relatedActivity: 'Analyst Qualification',
+    relatedModule: 'Laboratory Resources -> Staff Training & Competency',
+    officialReference: 'https://www.iso.org/standard/17025',
+  },
+  {
+    id: 'iso-6-3',
+    clauseNumber: 'Clause 6.3',
+    clauseGroup: 'Clause 6 – Resource Requirements',
+    title: 'Facilities & Environmental Conditions',
+    simpleExplanation: 'Lab temperature, humidity, dust, and vibration must be controlled and monitored where they affect test accuracy.',
+    whyItMatters: 'Cement setting time (IST/FST) and 28-day curing strength are highly sensitive to temperature (27 ± 2 °C) and humidity (≥ 90% RH curing).',
+    practicalExample: 'Daily min/max temperature and humidity log in the physical testing and curing room.',
+    relevantRecords: 'Environmental Monitoring Logs, Curing Tank Temperature Logs',
+    responsibleRole: 'QA Technician / Lab Chemist',
+    relatedActivity: 'Mechanical & Physical Testing',
+    relatedModule: 'Daily Excel Sheet -> Mechanical Analysis',
+    officialReference: 'https://www.iso.org/standard/17025',
+  },
+  {
+    id: 'iso-6-4',
+    clauseNumber: 'Clause 6.4',
+    clauseGroup: 'Clause 6 – Resource Requirements',
+    title: 'Equipment Management & Calibration',
+    simpleExplanation: 'Equipment must be fit for purpose, uniquely identified, calibrated, maintained, and protected from unauthorized adjustments.',
+    whyItMatters: 'Uncalibrated CTM load cells or analytical balances invalidate every test result produced on them.',
+    practicalExample: 'Tracking EQ-XRF-01 and CTM calibration due dates and removing overdue equipment from service.',
+    relevantRecords: 'Equipment Register, Calibration Certificates, Maintenance Logs',
+    responsibleRole: 'QA Engineer / Equipment In-Charge',
+    relatedActivity: 'Equipment Calibration & Servicing',
+    relatedModule: 'Laboratory Resources -> Equipment & Calibration',
+    officialReference: 'https://www.iso.org/standard/17025',
+  },
+  {
+    id: 'iso-6-5',
+    clauseNumber: 'Clause 6.5',
+    clauseGroup: 'Clause 6 – Resource Requirements',
+    title: 'Metrological Traceability',
+    simpleExplanation: 'Calibration and measurements must be linked to SI units through an unbroken chain of calibrations (e.g., NABL-accredited calibration labs and Certified Reference Materials).',
+    whyItMatters: 'Ensures cement test results in Chittorgarh match national and international standards.',
+    practicalExample: 'Calibrating XRF using NIST/BCS/CRM cement reference standards and calibrating weights via NABL-accredited calibration lab.',
+    relevantRecords: 'CRM Certificates, NABL Calibration Certificates',
+    responsibleRole: 'Quality Manager',
+    relatedActivity: 'Calibration & Reference Standards',
+    relatedModule: 'Laboratory Resources -> Equipment & Calibration',
+    officialReference: 'https://www.iso.org/standard/17025',
+  },
+  {
+    id: 'iso-7-2',
+    clauseNumber: 'Clause 7.2',
+    clauseGroup: 'Clause 7 – Process Requirements',
+    title: 'Selection, Verification & Validation of Methods',
+    simpleExplanation: 'Use current standard methods (IS 4031, IS 4032, IS 12803) and verify the lab can achieve required accuracy before routine use.',
+    whyItMatters: 'Demonstrates that your lab’s specific XRF, furnace, and analysts reproduce standard method performance.',
+    practicalExample: 'Running replicate CRM tests on XRF and comparing against IS 4032 wet chemistry.',
+    relevantRecords: 'Method Verification Reports, Approved SOPs',
+    responsibleRole: 'Lab Manager / Senior Chemist',
+    relatedActivity: 'Method Verification',
+    relatedModule: 'Laboratory Resources -> Documents & SOPs',
+    officialReference: 'https://www.iso.org/standard/17025',
+  },
+  {
+    id: 'iso-7-5',
+    clauseNumber: 'Clause 7.5',
+    clauseGroup: 'Clause 7 – Process Requirements',
+    title: 'Technical Records & Audit Trail',
+    simpleExplanation: 'Record original observations, calculations, date, and operator identity; any corrections must preserve the original value with reason and who changed it.',
+    whyItMatters: 'Prevents silent tampering and provides full traceability during NABL assessments.',
+    practicalExample: 'ChittorTech’s immutable `laboratory_audit_logs` capturing CREATE, UPDATE, DELETE, and RESTORE with old/new values and reason.',
+    relevantRecords: 'Daily Test Logs, Immutable Audit Trail',
+    responsibleRole: 'All Lab Personnel',
+    relatedActivity: 'Data Entry & Record Editing',
+    relatedModule: 'New Entry / Previous Records / Audit Trail',
+    officialReference: 'https://www.iso.org/standard/17025',
+  },
+  {
+    id: 'iso-7-6',
+    clauseNumber: 'Clause 7.6 & 7.7',
+    clauseGroup: 'Clause 7 – Process Requirements',
+    title: 'Measurement Uncertainty & Validity of Results',
+    simpleExplanation: 'Evaluate uncertainty of measurement and monitor ongoing validity via control samples, duplicate checks, and Proficiency Testing (PT/ILC).',
+    whyItMatters: 'Proves results stay consistent over time and reveals instrument drift before customer complaints occur.',
+    practicalExample: 'Tracking daily control-sample SO3/CaO trend charts in Analytics and participating in NABL-approved PT programs.',
+    relevantRecords: 'Uncertainty Budgets, Control Charts, PT/ILC Reports',
+    responsibleRole: 'Quality Manager / QA Engineer',
+    relatedActivity: 'Quality Control & Analytics',
+    relatedModule: 'Analytics',
+    officialReference: 'https://www.iso.org/standard/17025',
+  },
+  {
+    id: 'iso-7-8',
+    clauseNumber: 'Clause 7.8',
+    clauseGroup: 'Clause 7 – Process Requirements',
+    title: 'Reporting of Results',
+    simpleExplanation: 'Report test results accurately, clearly, and unambiguously, including sample ID, method reference, date, and authorized reviewer.',
+    whyItMatters: 'Prevents misinterpretation of units, cement grades, or compliance statements.',
+    practicalExample: 'Exporting formatted A4 PDF / Excel reports with sample ID, testing date, and parameter units.',
+    relevantRecords: 'Test Reports, Dispatch Logs',
+    responsibleRole: 'Authorized Signatory / Lab Head',
+    relatedActivity: 'Report Generation & Dispatch',
+    relatedModule: 'Reports & Downloads',
+    officialReference: 'https://www.iso.org/standard/17025',
+  },
+  {
+    id: 'iso-8',
+    clauseNumber: 'Clause 8.2 – 8.9',
+    clauseGroup: 'Clause 8 – Management System Requirements',
+    title: 'Document Control, Internal Audits, CAPA & Management Review',
+    simpleExplanation: 'Maintain controlled SOPs/manuals, run periodic internal audits, fix root causes via CAPA, and review quality system performance with top management.',
+    whyItMatters: 'Drives continual improvement and closes gaps before NABL surveillance or reassessment.',
+    practicalExample: 'Updating SOP revision numbers, reviewing calibration due lists, and recording annual Management Review minutes.',
+    relevantRecords: 'Master Document List, Internal Audit Reports, CAPA Logs, MRM Minutes',
+    responsibleRole: 'Quality Manager / Laboratory Head',
+    relatedActivity: 'QMS Governance',
+    relatedModule: 'Laboratory Resources -> Documents & SOPs',
+    officialReference: 'https://www.iso.org/standard/17025',
+  },
+];
+
+export const COMPLIANCE_MAPPINGS: ComplianceMapping[] = [
+  {
+    id: 'map-1',
+    laboratoryActivity: 'Equipment & Calibration Management',
+    referenceDocument: 'ISO/IEC 17025:2017',
+    clauseSection: 'Clause 6.4',
+    requirementSummary: 'Maintain equipment registers, calibration schedules, status identification, and maintenance logs.',
+    practicalExplanation: 'Track calibration due dates for XRF, CTM, Blaine, balances, and furnaces before use.',
+    relatedRecords: 'Equipment Register, Calibration Certificates, Maintenance Logs',
+    officialSource: 'https://www.iso.org/standard/17025',
+    applicabilityNotes: 'Applies to all measurement & test equipment affecting validity of results.',
+    lastVerifiedDate: '2026-11-27',
+  },
+  {
+    id: 'map-2',
+    laboratoryActivity: 'Personnel Training & Competency',
+    referenceDocument: 'ISO/IEC 17025:2017',
+    clauseSection: 'Clause 6.2',
+    requirementSummary: 'Authorize personnel only after documented training and demonstrated competence.',
+    practicalExplanation: 'Maintain training records, assessment results, and test-specific authorization validity.',
+    relatedRecords: 'Staff Competency Matrix, Training Attendance & Assessment Logs',
+    officialSource: 'https://www.iso.org/standard/17025',
+    applicabilityNotes: 'Mandatory for all technicians, chemists, and authorized signatories.',
+    lastVerifiedDate: '2026-11-27',
+  },
+  {
+    id: 'map-3',
+    laboratoryActivity: 'Method Verification & SOP Control',
+    referenceDocument: 'ISO/IEC 17025:2017',
+    clauseSection: 'Clause 7.2 & Clause 8.3',
+    requirementSummary: 'Verify standard test methods (IS 4031, IS 4032, IS 12803) and control SOP revisions.',
+    practicalExplanation: 'Ensure technicians only access current approved SOP versions and verified calculation sheets.',
+    relatedRecords: 'Controlled SOPs, Method Verification Files, Master Document List',
+    officialSource: 'https://www.iso.org/standard/17025',
+    applicabilityNotes: 'Scope-dependent; required for every test in NABL scope.',
+    lastVerifiedDate: '2026-11-27',
+  },
+  {
+    id: 'map-4',
+    laboratoryActivity: 'Technical Records & Audit Trail',
+    referenceDocument: 'ISO/IEC 17025:2017',
+    clauseSection: 'Clause 7.5',
+    requirementSummary: 'Preserve original test observations, operator identity, timestamps, and traceable edits.',
+    practicalExplanation: 'Never overwrite original lab numbers silently; log every change with old/new values and reason.',
+    relatedRecords: 'Daily Lab Logs, Soft-Delete & Audit Trail (`laboratory_audit_logs`)',
+    officialSource: 'https://www.iso.org/standard/17025',
+    applicabilityNotes: 'Applies to all chemical, mechanical, and coal testing records.',
+    lastVerifiedDate: '2026-11-27',
+  },
+  {
+    id: 'map-5',
+    laboratoryActivity: 'Reporting Results',
+    referenceDocument: 'ISO/IEC 17025:2017',
+    clauseSection: 'Clause 7.8',
+    requirementSummary: 'Issue accurate, clear test reports containing sample ID, dates, units, and methods.',
+    practicalExplanation: 'Use standardized PDF/Excel report exports with verified oxide sums and parameter units.',
+    relatedRecords: 'Issued Test Reports, Email Dispatch Records',
+    officialSource: 'https://www.iso.org/standard/17025',
+    applicabilityNotes: 'NABL symbol usage governed additionally by NABL 131 & NABL 133.',
+    lastVerifiedDate: '2026-11-27',
+  },
+  {
+    id: 'map-6',
+    laboratoryActivity: 'Internal Audits & Management Review',
+    referenceDocument: 'ISO/IEC 17025:2017',
+    clauseSection: 'Clause 8.8 & Clause 8.9',
+    requirementSummary: 'Conduct planned internal audits and management reviews at defined intervals.',
+    practicalExplanation: 'Review audit findings, CAPA closure, calibration compliance, and PT results annually.',
+    relatedRecords: 'Internal Audit Checklists, NC/CAPA Register, MRM Minutes',
+    officialSource: 'https://www.iso.org/standard/17025',
+    applicabilityNotes: 'Required prior to initial NABL application and every surveillance cycle.',
+    lastVerifiedDate: '2026-11-27',
+  },
+  {
+    id: 'map-7',
+    laboratoryActivity: 'Measurement Traceability',
+    referenceDocument: 'ISO/IEC 17025:2017 & NABL 142',
+    clauseSection: 'Clause 6.5',
+    requirementSummary: 'Establish unbroken calibration chain to SI units via NABL-accredited labs & CRMs.',
+    practicalExplanation: 'Link every critical balance, furnace thermocouple, CTM, and XRF calibration to traceable certificates.',
+    relatedRecords: 'Calibration Certificates, CRM Batch Certificates',
+    officialSource: 'https://nabl-india.org/nabl-documents/',
+    applicabilityNotes: 'In-house calibration requires documented procedure & uncertainty.',
+    lastVerifiedDate: '2026-11-27',
+  },
+];
+
+export const NABL_PROCESS_STEPS: NablProcessStep[] = [
+  { step: 1, id: 'nabl-step-1', title: 'Understand Accreditation Requirements', summary: 'Study ISO/IEC 17025:2017, NABL 100A, NABL 100B, and NABL 131.', detailedGuidance: 'Review NABL eligibility, fee structure (NABL 100A), and terms & conditions (NABL 131). Note that educational guidance does not guarantee accreditation.', keyEvidence: 'Gap Analysis Report against ISO/IEC 17025' },
+  { step: 2, id: 'nabl-step-2', title: 'Define Intended Scope', summary: 'Classify cement, clinker, and coal tests using NABL 120.', detailedGuidance: 'List exact parameters (e.g., LOI, CaO, Blaine, 28D CS), test methods (IS 4031, IS 4032, IS 12803), and measurement ranges.', keyEvidence: 'Draft Scope of Accreditation Matrix' },
+  { step: 3, id: 'nabl-step-3', title: 'Understand Technical Requirements', summary: 'Verify environmental controls, CRMs, and method uncertainty.', detailedGuidance: 'Ensure curing rooms meet temperature/humidity norms and calculate measurement uncertainty budgets for each scope test.', keyEvidence: 'Environmental Logs & Uncertainty Budgets' },
+  { step: 4, id: 'nabl-step-4', title: 'Prepare Quality Documentation', summary: 'Draft Quality Manual, SOPs, and controlled forms.', detailedGuidance: 'Create document numbering, version control, and approval workflows aligned with Clause 8.2–8.3.', keyEvidence: 'Quality Manual, Controlled SOPs, Master List' },
+  { step: 5, id: 'nabl-step-5', title: 'Establish Equipment & Calibration Records', summary: 'Register all instruments and complete NABL-traceable calibrations.', detailedGuidance: 'Calibrate CTM, analytical balances, muffle furnaces, Blaine apparatus, and XRF standards through NABL-accredited agencies.', keyEvidence: 'Equipment Register & Calibration Certificates' },
+  { step: 6, id: 'nabl-step-6', title: 'Establish Personnel Competency Records', summary: 'Train staff and authorize analysts for each test method.', detailedGuidance: 'Document academic qualifications, method training, repeatability evaluations, and authorized signatories.', keyEvidence: 'Training Logs & Authorization Matrix' },
+  { step: 7, id: 'nabl-step-7', title: 'Implement Suitable Testing Methods', summary: 'Verify standard test methods in the lab.', detailedGuidance: 'Perform method verification using Certified Reference Materials (CRMs) and duplicate testing.', keyEvidence: 'Method Verification Reports' },
+  { step: 8, id: 'nabl-step-8', title: 'Establish Measurement Traceability & PT', summary: 'Participate in Proficiency Testing / ILC.', detailedGuidance: 'Enroll in at least one NABL-approved PT/ILC cycle for chemical & mechanical cement parameters before applying.', keyEvidence: 'PT/ILC Participation & Z-Score Reports' },
+  { step: 9, id: 'nabl-step-9', title: 'Conduct Internal Audits', summary: 'Audit all clauses and technical operations.', detailedGuidance: 'Trained internal auditors inspect both QMS documents and live bench testing across shifts.', keyEvidence: 'Internal Audit Plan, Checklists, Audit Report' },
+  { step: 10, id: 'nabl-step-10', title: 'Address Nonconformities (CAPA)', summary: 'Perform root-cause analysis and close findings.', detailedGuidance: 'Document nonconforming work, root cause, corrective action, and effectiveness verification.', keyEvidence: 'NC & CAPA Register' },
+  { step: 11, id: 'nabl-step-11', title: 'Prepare for NABL Assessment', summary: 'Submit application (NABL 100B) and host assessment team.', detailedGuidance: 'Organize digital & physical records for adequacy review and on-site witness testing by NABL assessors.', keyEvidence: 'Application Dossier & Witness Test Readiness' },
+  { step: 12, id: 'nabl-step-12', title: 'Surveillance & Reassessment', summary: 'Maintain continuous compliance after grant.', detailedGuidance: 'Keep calibrations, PT cycles, internal audits, and management reviews current for annual surveillance and 2/4-year reassessments.', keyEvidence: 'Annual MRM, Ongoing PT & Calibration Logs' },
+];
+
+export const SEED_KNOWLEDGE_ARTICLES: EducationalArticleSeed[] = [
+  {
+    articleCode: 'BIS-GUIDE-01',
+    categorySlug: 'bis',
+    subcategory: 'BIS Compliance Guidance',
+    title: 'BIS Product Certification vs. Laboratory Testing — Key Distinctions',
+    shortDescription: 'Understand how BIS product licensing (ISI mark on cement bags) differs from routine QA laboratory testing.',
+    detailedContent: 'BIS Product Certification (under BIS Act) grants a manufacturer a licence to mark cement with the Standard Mark (e.g., IS 269, IS 1489, IS 455) subject to a Scheme of Inspection and Testing (SIT). Laboratory testing in a plant QA lab verifies daily clinker, raw meal, and cement compliance against those limits. Note: ChittorTech is a QA software platform and never issues official BIS certificates or licences.',
+    relatedStandards: 'IS 269:2015, IS 1489:2015, IS 455:2015',
+    relatedClauses: 'BIS Scheme of Inspection & Testing',
+    relatedEquipment: 'Full Chemical & Physical Lab',
+    relatedParameters: 'All OPC/PPC/PSC Specification Limits',
+    officialSourceUrl: 'https://www.bis.gov.in/',
+    editionRevision: 'Educational Guidance v1.0',
+    lastVerifiedDate: '2026-11-27',
+  },
+  {
+    articleCode: 'BIS-GUIDE-02',
+    categorySlug: 'bis',
+    subcategory: 'BIS Compliance Guidance',
+    title: 'Factory Quality Control, Sampling & Understanding BIS Amendments',
+    shortDescription: 'How cement plants align shift sampling, BIS-recognised lab testing, and standard amendment tracking.',
+    detailedContent: 'Cement plants follow defined sampling frequencies across Raw Meal, Kiln Feed, Clinker, and Cement silos. Whenever BIS issues an amendment or revision (e.g., chloride or MgO limit updates), the Quality Manager must review the official BIS gazette/portal, update internal specification limits, and revise lab SOPs accordingly.',
+    relatedStandards: 'IS 269:2015, IS 4031, IS 4032',
+    relatedClauses: 'ISO 17025 Clause 7.2 & 8.3',
+    relatedEquipment: 'XRF, Blaine, CTM',
+    relatedParameters: 'LOI, SO3, Chloride, Compressive Strength',
+    officialSourceUrl: 'https://www.bis.gov.in/',
+    editionRevision: 'Educational Guidance v1.0',
+    lastVerifiedDate: '2026-11-27',
+  },
+  {
+    articleCode: 'NABL-PREP-01',
+    categorySlug: 'nabl',
+    subcategory: 'Assessment Preparation',
+    title: 'What Happens During an NABL On-Site Assessment?',
+    shortDescription: 'Educational overview of opening meeting, document audit, witness testing, and closing findings.',
+    detailedContent: 'During an on-site assessment, NABL Lead and Technical Assessors review the Quality Manual, calibration traceability, PT/ILC records, and staff competency files, and witness analysts performing live chemical and mechanical tests. Any gaps are raised as Nonconformities (NCs) to be closed with root-cause CAPA. This guidance is educational preparation only and does not guarantee accreditation.',
+    relatedStandards: 'NABL 100B, ISO/IEC 17025:2017',
+    relatedClauses: 'Clauses 4–8',
+    relatedEquipment: 'All Scope Equipment',
+    relatedParameters: 'Witnessed Chemical & Physical Tests',
+    officialSourceUrl: 'https://nabl-india.org/nabl-documents/',
+    editionRevision: 'Educational Guidance v1.0',
+    lastVerifiedDate: '2026-11-27',
+  },
+  {
+    articleCode: 'NABL-PREP-02',
+    categorySlug: 'nabl',
+    subcategory: 'Understanding NABL',
+    title: 'Testing vs. Calibration Laboratory & Scope of Accreditation',
+    shortDescription: 'Learn why cement plant QA labs apply as Testing Laboratories and how NABL Scope works.',
+    detailedContent: 'A cement plant QA lab applies under the Testing discipline (Chemical & Mechanical) because it tests materials like cement, clinker, and coal. Calibration Laboratories calibrate measuring instruments (weights, load cells, thermometers). Your Scope of Accreditation lists exact approved test methods, parameters, and ranges.',
+    relatedStandards: 'NABL 100A, NABL 120, NABL 131',
+    relatedClauses: 'Scope Definition',
+    relatedEquipment: 'XRF, CTM, Blaine, Calorimeter',
+    relatedParameters: 'Chemical & Mechanical Scope',
+    officialSourceUrl: 'https://nabl-india.org/',
+    editionRevision: 'Educational Guidance v1.0',
+    lastVerifiedDate: '2026-11-27',
+  },
+];
+
