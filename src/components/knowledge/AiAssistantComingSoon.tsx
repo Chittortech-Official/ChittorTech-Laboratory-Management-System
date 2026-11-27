@@ -84,7 +84,7 @@ export const AiAssistantComingSoon: React.FC<AiAssistantComingSoonProps> = ({
             <div className="space-y-4">
               {/* Top Tier Badges */}
               <div className="flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-300 bg-gradient-to-r from-amber-50 to-yellow-50 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-amber-800 shadow-2xs">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-300 bg-gradient-to-r from-amber-50 to-yellow-50 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-amber-800 shadow-sm">
                   <Crown className="w-3.5 h-3.5 text-amber-600" />
                   Enterprise Premium Required
                 </span>
@@ -214,7 +214,7 @@ export const AiAssistantComingSoon: React.FC<AiAssistantComingSoonProps> = ({
           {CAPABILITY_PREVIEWS.map((item) => (
             <div
               key={item.title}
-              className="rounded-2xl border border-[#E2E8F0] bg-white p-5 shadow-2xs flex items-start gap-4"
+              className="rounded-2xl border border-[#E2E8F0] bg-white p-5 shadow-sm flex items-start gap-4"
             >
               <div
                 className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border ${item.accentBg}`}
@@ -235,7 +235,7 @@ export const AiAssistantComingSoon: React.FC<AiAssistantComingSoonProps> = ({
 
       {/* Coming Soon Modal on Upgrade Click */}
       {showUpgradeNotice && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/55 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+        <div className="fixed inset-0 z-[100] !mt-0 flex items-center justify-center bg-slate-900/55 backdrop-blur-sm p-4 overflow-y-auto">
           <div className="relative w-full max-w-md rounded-2xl border border-[#CBD5E1] bg-white shadow-2xl overflow-hidden">
             <div className="bg-[#0F172A] px-6 py-5 text-white flex items-center justify-between">
               <div className="flex items-center gap-2.5">

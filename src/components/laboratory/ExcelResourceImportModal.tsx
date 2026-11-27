@@ -12,6 +12,8 @@ import {
   Loader2,
   ArrowRight,
   SlidersHorizontal,
+  Download,
+  Info,
 } from 'lucide-react';
 import {
   ALLOWED_COLUMNS,
@@ -35,6 +37,139 @@ const MODULE_LABELS: Record<ResourceSubModule, string> = {
   equipment: 'Equipment & Calibration',
   documents: 'Documents & SOPs',
   staff: 'Staff Training & Competency',
+};
+
+const STANDARD_FORMAT_SPEC: Record<
+  ResourceSubModule,
+  {
+    requiredColumns: string[];
+    recommendedColumns: string[];
+    dateFormat: string;
+    statusValues: string;
+    templateFilename: string;
+    sampleRows: Record<string, string>[];
+  }
+> = {
+  equipment: {
+    requiredColumns: ['Equipment Code', 'Equipment Name'],
+    recommendedColumns: [
+      'Manufacturer',
+      'Model',
+      'Serial Number',
+      'Location',
+      'Last Calibration Date',
+      'Next Calibration Due',
+      'Calibration Agency',
+      'Certificate No.',
+      'Status',
+      'Maintenance Notes / Remarks',
+    ],
+    dateFormat: 'DD-MM-YYYY or YYYY-MM-DD (e.g. 15-08-2026)',
+    statusValues: 'Active | Calibration Due | Under Maintenance | Out of Service',
+    templateFilename: 'ChittorTech_Equipment_Import_Template.xlsx',
+    sampleRows: [
+      {
+        'Equipment Code': 'EQ-XRF-01',
+        'Equipment Name': 'WD-XRF Spectrometer',
+        Manufacturer: 'Malvern Panalytical',
+        Model: 'Zetium',
+        'Serial Number': 'SN-84920',
+        Location: 'Chemical QA Lab',
+        'Last Calibration Date': '15-01-2026',
+        'Next Calibration Due': '14-01-2027',
+        'Calibration Agency': 'NABL Accredited Calibration Lab',
+        'Certificate No.': 'CAL-2026-104',
+        Status: 'Active',
+        'Maintenance Notes / Remarks': 'Least Count: 0.01% | Range: Cement Oxides | Verified',
+      },
+      {
+        'Equipment Code': 'EQ-BLN-02',
+        'Equipment Name': 'Blaine Air Permeability Apparatus',
+        Manufacturer: 'AIMIL',
+        Model: 'AIM-392',
+        'Serial Number': 'SN-41205',
+        Location: 'Physical Testing Lab',
+        'Last Calibration Date': '10-02-2026',
+        'Next Calibration Due': '09-02-2027',
+        'Calibration Agency': 'In-house SRM 114q Verification',
+        'Certificate No.': 'SRM-2026-019',
+        Status: 'Active',
+        'Maintenance Notes / Remarks': 'IS 4031 Part 2 Fineness Testing',
+      },
+    ],
+  },
+  documents: {
+    requiredColumns: ['Doc Code', 'Title'],
+    recommendedColumns: [
+      'Category',
+      'Version',
+      'Revision Number',
+      'Effective Date',
+      'Review Due Date',
+      'Standard Ref',
+      'Prepared By',
+      'Reviewed By',
+      'Approved By',
+      'Status',
+      'Summary',
+      'Remarks',
+    ],
+    dateFormat: 'DD-MM-YYYY or YYYY-MM-DD',
+    statusValues: 'Approved | Under Review | Draft | Obsolete',
+    templateFilename: 'ChittorTech_Documents_SOP_Template.xlsx',
+    sampleRows: [
+      {
+        'Doc Code': 'CT-SOP-CHEM-01',
+        Title: 'Loss on Ignition (LOI) in OPC & Clinker',
+        Category: 'SOP',
+        Version: '2.0',
+        'Revision Number': 'Rev 01',
+        'Effective Date': '01-01-2026',
+        'Review Due Date': '31-12-2026',
+        'Standard Ref': 'IS 4032:1985',
+        'Prepared By': 'QA Chemist',
+        'Reviewed By': 'Technical Manager',
+        'Approved By': 'Quality Manager',
+        Status: 'Approved',
+        Summary: 'Gravimetric ignition at 950 ± 50 °C to constant mass.',
+        Remarks: 'Controlled copy in Chemical Lab',
+      },
+    ],
+  },
+  staff: {
+    requiredColumns: ['Staff Name', 'Designation', 'Qualified Tests', 'Training Topic'],
+    recommendedColumns: [
+      'Employee ID',
+      'Training Date',
+      'Valid Until',
+      'Assessment Score',
+      'Competency Status',
+      'Trainer Name',
+      'Certificate Ref',
+      'Approved By',
+      'Notes',
+    ],
+    dateFormat: 'DD-MM-YYYY or YYYY-MM-DD',
+    statusValues: 'Competent | In Training | Re-evaluation Due',
+    templateFilename: 'ChittorTech_Staff_Competency_Template.xlsx',
+    sampleRows: [
+      {
+        'Staff Name': 'Ramesh Verma',
+        'Employee ID': 'EMP-104',
+        Designation: 'Senior QC Chemist',
+        'Qualified Tests': 'LOI, Insoluble Residue, Blaine Fineness, CTM Strength',
+        'Training Topic': 'ISO/IEC 17025:2017 Measurement Uncertainty & Calibration',
+        'Training Date': '20-02-2026',
+        'Valid Until': '19-02-2027',
+        'Assessment Score': '92% (Passed)',
+        'Competency Status': 'Competent',
+        'Trainer Name': 'Dr. R. K. Joshi',
+        'Certificate Ref': 'TRN-17025-2026-09',
+        'Approved By': 'Quality Manager',
+        Notes: 'Authorized for OPC/PPC chemical & physical testing',
+      },
+    ],
+  },
 };
 
 const HEADER_KEYWORDS = [
@@ -329,14 +464,34 @@ export const ExcelResourceImportModal: React.FC<ExcelResourceImportModalProps> =
 
   if (!isOpen) return null;
 
+  const formatSpec = STANDARD_FORMAT_SPEC[activeModule];
+
+  const handleDownloadTemplate = () => {
+    const ws = XLSX.utils.json_to_sheet(formatSpec.sampleRows);
+    const colKeys = Object.keys(formatSpec.sampleRows[0] || {});
+    ws['!cols'] = colKeys.map((key) => {
+      const maxCellLen = Math.max(
+        key.length,
+        ...formatSpec.sampleRows.map((row) => String(row[key] ?? '').length)
+      );
+      return { wch: Math.min(48, Math.max(14, maxCellLen + 4)) };
+    });
+    ws['!rows'] = [{ hpt: 24 }, ...formatSpec.sampleRows.map(() => ({ hpt: 20 }))];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, MODULE_LABELS[activeModule].slice(0, 30));
+    XLSX.writeFile(wb, formatSpec.templateFilename);
+  };
+
   const primaryNameField =
     activeModule === 'equipment' ? 'name' : activeModule === 'documents' ? 'title' : 'staff_name';
   const primaryCodeField =
     activeModule === 'equipment' ? 'equipment_code' : activeModule === 'documents' ? 'doc_code' : 'designation';
   const statusField = activeModule === 'staff' ? 'competency_status' : 'status';
+  const missingPrimaryMapping = Boolean(mapping && !mapping.fieldMap[primaryNameField]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4">
+    <div className="fixed inset-0 z-[100] !mt-0 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 overflow-y-auto">
       <div className="bg-white rounded-2xl border border-[#E2E8F0] shadow-xl w-full max-w-5xl max-h-[92vh] overflow-y-auto">
         {/* Modal Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-[#E2E8F0] sticky top-0 bg-white z-10">
@@ -369,6 +524,64 @@ export const ExcelResourceImportModal: React.FC<ExcelResourceImportModalProps> =
         </div>
 
         <div className="p-6 space-y-5">
+          {/* Standard Excel Format Definition & Template Download */}
+          <div className="rounded-xl border border-[#D6E8FF] bg-[#F8FAFF] p-4 space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-start gap-2.5">
+                <Info className="w-4 h-4 text-[#2563EB] shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="text-xs font-bold text-[#0F172A]">
+                    Standard Excel Format — {MODULE_LABELS[activeModule]}
+                  </h4>
+                  <p className="text-[11px] text-[#475569] mt-0.5">
+                    Use row 1 as clean column headings for best results. Any additional technical columns (Range, Least Count, Accuracy) are saved cleanly in Notes.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleDownloadTemplate}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-[#BFDBFE] bg-white px-3.5 py-2 text-xs font-semibold text-[#2563EB] hover:bg-[#EAF3FF] transition-colors shrink-0"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Download Standard Template (.xlsx)</span>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 text-[11px]">
+              <div className="rounded-lg border border-[#E2E8F0] bg-white px-3 py-2">
+                <span className="font-bold text-[#0F172A] block mb-1">
+                  Required Columns (*)
+                </span>
+                <div className="flex flex-wrap gap-1">
+                  {formatSpec.requiredColumns.map((col) => (
+                    <span
+                      key={col}
+                      className="rounded bg-[#EAF3FF] border border-[#D6E8FF] px-1.5 py-0.5 font-mono text-[10px] font-semibold text-[#2563EB]"
+                    >
+                      {col} *
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div className="rounded-lg border border-[#E2E8F0] bg-white px-3 py-2 space-y-1">
+                <div>
+                  <span className="font-bold text-[#0F172A]">Date Format: </span>
+                  <span className="text-[#475569] font-mono text-[10px]">{formatSpec.dateFormat}</span>
+                </div>
+                <div>
+                  <span className="font-bold text-[#0F172A]">Allowed Status: </span>
+                  <span className="text-[#475569] text-[10px]">{formatSpec.statusValues}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="text-[11px] text-[#475569]">
+              <span className="font-semibold text-[#334155]">Recommended Columns: </span>
+              <span>{formatSpec.recommendedColumns.join(', ')}</span>
+            </div>
+          </div>
+
           {/* File Dropzone / Picker */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 rounded-xl border-2 border-dashed border-[#BFDBFE] bg-[#F5F9FF] p-4">
             <div className="flex items-center gap-3 min-w-0">
@@ -465,6 +678,15 @@ export const ExcelResourceImportModal: React.FC<ExcelResourceImportModalProps> =
                   <span>{showColumnMapper ? 'Hide Column Mapping' : 'Adjust Column Mapping'}</span>
                 </button>
               </div>
+
+              {missingPrimaryMapping && (
+                <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-[11px] text-red-800 flex items-center gap-2">
+                  <AlertTriangle className="w-3.5 h-3.5 shrink-0 text-red-600" />
+                  <span>
+                    Required column <strong>{primaryNameField}</strong> could not be matched automatically. Click <strong>Adjust Column Mapping</strong> above to select it, or use the Standard Template.
+                  </span>
+                </div>
+              )}
 
               {mapping.detectedModule !== activeModule && (
                 <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-800 flex items-center gap-2">
