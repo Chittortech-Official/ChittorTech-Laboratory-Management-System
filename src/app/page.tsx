@@ -27,6 +27,9 @@ const TAB_PARAM_MAP: Record<string, DashboardTab> = {
   'laboratory-resources': 'laboratory_resources',
   knowledge_centre: 'knowledge_centre',
   'knowledge-centre': 'knowledge_centre',
+  ai_assistant: 'ai_assistant',
+  'ai-assistant': 'ai_assistant',
+  assistant: 'ai_assistant',
   email_reports: 'reports',
   'email-reports': 'reports',
   settings: 'settings',
@@ -40,6 +43,7 @@ const TAB_TO_PARAM_MAP: Record<DashboardTab, string> = {
   reports: 'reports',
   laboratory_resources: 'laboratory-resources',
   knowledge_centre: 'knowledge-centre',
+  ai_assistant: 'ai-assistant',
   email_reports: 'reports',
   settings: 'settings',
 };

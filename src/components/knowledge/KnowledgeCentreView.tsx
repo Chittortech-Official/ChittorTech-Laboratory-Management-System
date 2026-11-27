@@ -43,8 +43,6 @@ import {
   LearningModuleView,
   ChecklistsModuleView,
 } from './KnowledgeSubModules';
-import { KnowledgeAssistant } from './KnowledgeAssistant';
-import type { KnowledgeCitation } from '@/lib/knowledge/knowledgeRetrieval';
 
 type KnowledgeSection =
   | 'home'
@@ -55,25 +53,46 @@ type KnowledgeSection =
   | 'learning'
   | 'checklists'
   | 'glossary'
-  | 'mapping'
-  | 'assistant';
+  | 'mapping';
+
+export interface KnowledgeNavigationTarget {
+  section?: KnowledgeSection;
+  testingSubTab?: 'chemical' | 'calculations' | 'mechanical' | 'coal' | 'instruments';
+  topicId?: string;
+  nonce: number;
+}
 
 interface KnowledgeCentreViewProps {
   userId: string;
   userName: string;
   userRole?: string;
+  externalTarget?: KnowledgeNavigationTarget | null;
 }
 
 export const KnowledgeCentreView: React.FC<KnowledgeCentreViewProps> = ({
   userId,
   userName,
   userRole = 'qa_engineer',
+  externalTarget = null,
 }) => {
   const [section, setSection] = useState<KnowledgeSection>('home');
   const [testingPreset, setTestingPreset] = useState<{
     subTab: 'chemical' | 'calculations' | 'mechanical' | 'coal' | 'instruments';
     topicId?: string;
   }>({ subTab: 'chemical' });
+
+  useEffect(() => {
+    if (!externalTarget) return;
+    if (externalTarget.section === 'testing' && externalTarget.testingSubTab) {
+      setTestingPreset({
+        subTab: externalTarget.testingSubTab,
+        topicId: externalTarget.topicId,
+      });
+      setSection('testing');
+    } else if (externalTarget.section) {
+      setSection(externalTarget.section);
+    }
+  }, [externalTarget]);
 
   const [globalQuery, setGlobalQuery] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
@@ -294,15 +313,6 @@ export const KnowledgeCentreView: React.FC<KnowledgeCentreViewProps> = ({
     checklists: 'Quality Assurance Checklists',
     glossary: 'Technical Glossary',
     mapping: 'Compliance Reference Mapping',
-    assistant: 'AI Knowledge & Compliance Assistant',
-  };
-
-  const handleOpenCitationSource = (citation: KnowledgeCitation) => {
-    if (citation.sectionTarget === 'testing' && citation.testingSubTab) {
-      openTestingTopic(citation.testingSubTab, citation.topicId);
-    } else if (citation.sectionTarget && citation.sectionTarget !== 'assistant') {
-      setSection(citation.sectionTarget);
-    }
   };
 
   return (
@@ -324,17 +334,6 @@ export const KnowledgeCentreView: React.FC<KnowledgeCentreViewProps> = ({
           </div>
 
           <div className="flex items-center gap-2 text-xs">
-            <button
-              type="button"
-              onClick={() => setSection('assistant')}
-              className={`px-3 py-1.5 rounded-lg border font-semibold transition-colors ${
-                section === 'assistant'
-                  ? 'bg-[#2563EB] text-white border-[#2563EB]'
-                  : 'border-[#D6E8FF] bg-[#EAF3FF] text-[#2563EB] hover:bg-[#D6E8FF]'
-              }`}
-            >
-              AI Assistant
-            </button>
             <button type="button" onClick={() => setSection('glossary')} className="px-3 py-1.5 rounded-lg border border-[#E2E8F0] bg-white text-[#334155] hover:border-[#2563EB]">
               Glossary
             </button>
@@ -374,14 +373,7 @@ export const KnowledgeCentreView: React.FC<KnowledgeCentreViewProps> = ({
                 </p>
               </div>
 
-              <div className="flex flex-wrap items-center gap-2 shrink-0 text-xs">
-                <button
-                  type="button"
-                  onClick={() => setSection('assistant')}
-                  className="px-3.5 py-2 rounded-lg bg-[#2563EB] hover:bg-blue-700 font-semibold text-white transition-colors"
-                >
-                  AI Compliance Assistant
-                </button>
+              <div className="flex items-center gap-2 shrink-0 text-xs">
                 <button type="button" onClick={() => setSection('glossary')} className="px-3.5 py-2 rounded-lg border border-[#E2E8F0] bg-white font-semibold text-[#334155] hover:border-[#2563EB]">
                   Technical Glossary
                 </button>
@@ -768,9 +760,6 @@ export const KnowledgeCentreView: React.FC<KnowledgeCentreViewProps> = ({
       )}
 
       {/* SUB-SECTIONS */}
-      {section === 'assistant' && (
-        <KnowledgeAssistant onOpenSource={handleOpenCitationSource} />
-      )}
       {section === 'bis' && <BisModuleView />}
       {section === 'nabl' && (
         <NablModuleView

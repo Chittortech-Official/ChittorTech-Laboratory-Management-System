@@ -14,7 +14,9 @@ import { PreviousRecords } from './PreviousRecords';
 import { AnalyticsView } from './AnalyticsView';
 import { ReportsView } from './ReportsView';
 import { LaboratoryResourcesView } from './LaboratoryResourcesView';
-import { KnowledgeCentreView } from '../knowledge/KnowledgeCentreView';
+import { KnowledgeCentreView, type KnowledgeNavigationTarget } from '../knowledge/KnowledgeCentreView';
+import { KnowledgeAssistant } from '../knowledge/KnowledgeAssistant';
+import type { KnowledgeCitation } from '@/lib/knowledge/knowledgeRetrieval';
 import { CHEMICAL_PARAMETERS } from '@/lib/laboratory/constants';
 import { formatDateDDMMYYYY } from '@/lib/laboratory/exportService';
 import { FolderKanban, BookOpen } from 'lucide-react';
@@ -43,6 +45,21 @@ export const LaboratoryDashboard: React.FC<LaboratoryDashboardProps> = ({
   const [recentRecords, setRecentRecords] = useState<LaboratoryRecord[]>([]);
   const [loadingRecent, setLoadingRecent] = useState(false);
   const [totalCount, setTotalCount] = useState(0);
+  const [knowledgeTarget, setKnowledgeTarget] = useState<KnowledgeNavigationTarget | null>(null);
+
+  const handleOpenKnowledgeSource = (citation: KnowledgeCitation) => {
+    const targetSection =
+      citation.sectionTarget && citation.sectionTarget !== 'assistant'
+        ? citation.sectionTarget
+        : 'home';
+    setKnowledgeTarget({
+      section: targetSection,
+      testingSubTab: citation.testingSubTab,
+      topicId: citation.topicId,
+      nonce: Date.now(),
+    });
+    setActiveTab('knowledge_centre');
+  };
 
   const fetchRecentSummary = async () => {
     setLoadingRecent(true);
@@ -72,6 +89,7 @@ export const LaboratoryDashboard: React.FC<LaboratoryDashboardProps> = ({
     { id: 'reports', label: 'Reports & Downloads', icon: <FileText className="w-4 h-4" /> },
     { id: 'laboratory_resources', label: 'Laboratory Resources', icon: <FolderKanban className="w-4 h-4" /> },
     { id: 'knowledge_centre', label: 'Knowledge & Compliance Centre', icon: <BookOpen className="w-4 h-4" /> },
+    { id: 'ai_assistant', label: 'AI Assistant', icon: <Sparkles className="w-4 h-4" /> },
   ];
 
   return (
@@ -368,13 +386,21 @@ export const LaboratoryDashboard: React.FC<LaboratoryDashboardProps> = ({
         <LaboratoryResourcesView userId={userId} />
       )}
 
-      {/* 5.6 KNOWLEDGE & COMPLIANCE CENTRE TAB (EXTREME RIGHTMOST) */}
+      {/* 5.6 KNOWLEDGE & COMPLIANCE CENTRE TAB */}
       {activeTab === 'knowledge_centre' && (
         <KnowledgeCentreView
           userId={userId}
           userName={userName}
           userRole={user?.role}
+          externalTarget={knowledgeTarget}
         />
+      )}
+
+      {/* 5.7 DEDICATED AI KNOWLEDGE & COMPLIANCE ASSISTANT TAB */}
+      {activeTab === 'ai_assistant' && (
+        <div className="bg-white rounded-2xl border border-[#E2E8F0] shadow-xs p-5 sm:p-6 animate-in fade-in">
+          <KnowledgeAssistant onOpenSource={handleOpenKnowledgeSource} />
+        </div>
       )}
 
       {/* 6. ACCOUNT SETTINGS TAB */}

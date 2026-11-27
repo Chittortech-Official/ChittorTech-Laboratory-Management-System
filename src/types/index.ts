@@ -104,6 +104,7 @@ export type DashboardTab =
   | 'reports'
   | 'laboratory_resources'
   | 'knowledge_centre'
+  | 'ai_assistant'
   | 'email_reports'
   | 'settings';
 
