@@ -598,12 +598,12 @@ export const DailyTestingSheet: React.FC<DailyTestingSheetProps> = ({ user, onSa
       {/* SECTION 1: CHEMICAL ANALYSIS (19 CATEGORIES SINGLE-PAGE MATRIX)        */}
       {/* ===================================================================== */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="px-5 py-3.5 bg-slate-900 text-white flex items-center justify-between">
+        <div className="px-5 py-3.5 bg-[#EAF3FF] text-[#1E3A8A] flex items-center justify-between border-b border-[#D6E8FF]">
           <div className="flex items-center gap-2">
-            <FlaskConical className="w-4 h-4 text-sky-400" />
+            <FlaskConical className="w-4 h-4 text-[#2563EB]" />
             <h3 className="text-sm font-bold tracking-wide">1. Chemical Analysis (19 Plant Categories)</h3>
           </div>
-          <span className="text-[11px] text-slate-300 font-mono">
+          <span className="text-[11px] text-[#2563EB] font-mono font-semibold">
             12 Manual Inputs + 11 Auto-Calculated Rows
           </span>
         </div>
@@ -711,12 +711,12 @@ export const DailyTestingSheet: React.FC<DailyTestingSheetProps> = ({ user, onSa
       {/* SECTION 2: MECHANICAL ANALYSIS (13 PARAMETERS)                         */}
       {/* ===================================================================== */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="px-5 py-3.5 bg-slate-800 text-white flex items-center justify-between">
+        <div className="px-5 py-3.5 bg-[#CCFBF1] text-[#115E59] flex items-center justify-between border-b border-[#99F6E4]">
           <div className="flex items-center gap-2">
-            <Hammer className="w-4 h-4 text-amber-400" />
+            <Hammer className="w-4 h-4 text-[#0F9D92]" />
             <h3 className="text-sm font-bold tracking-wide">2. Mechanical Analysis</h3>
           </div>
-          <span className="text-[11px] text-slate-300 font-mono">
+          <span className="text-[11px] text-[#0F9D92] font-mono font-semibold">
             Residues, N.C %, Blaine, I.S.T., F.S.T., Soundness, C.S. (1D–28D)
           </span>
         </div>
@@ -780,12 +780,12 @@ export const DailyTestingSheet: React.FC<DailyTestingSheetProps> = ({ user, onSa
       {/* SECTION 3: COAL ANALYSIS (KILN, PC, MIXED 40/60)                       */}
       {/* ===================================================================== */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="px-5 py-3.5 bg-slate-800 text-white flex items-center justify-between">
+        <div className="px-5 py-3.5 bg-[#FEF3C7] text-[#92400E] flex items-center justify-between border-b border-[#FDE68A]">
           <div className="flex items-center gap-2">
-            <Flame className="w-4 h-4 text-orange-400" />
+            <Flame className="w-4 h-4 text-[#B45309]" />
             <h3 className="text-sm font-bold tracking-wide">3. Coal Analysis</h3>
           </div>
-          <span className="text-[11px] text-slate-300 font-mono">
+          <span className="text-[11px] text-[#B45309] font-mono font-semibold">
             MIXED = 40% Kiln Coal + 60% PC Coal • F.C. & UHV Auto-Calculated
           </span>
         </div>

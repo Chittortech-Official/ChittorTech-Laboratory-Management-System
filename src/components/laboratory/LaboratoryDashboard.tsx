@@ -74,8 +74,8 @@ export const LaboratoryDashboard: React.FC<LaboratoryDashboardProps> = ({
 
   return (
     <div className="w-full space-y-6">
-      {/* Full-Width Equally Distributed Navigation Bar */}
-      <div className="w-full bg-white rounded-2xl border border-slate-200 shadow-sm p-1.5 overflow-x-auto">
+      {/* Full-Width Equally Distributed Soft Sky Blue Navigation Bar */}
+      <div className="w-full bg-[#EAF3FF] rounded-2xl border border-[#D6E8FF] shadow-2xs p-1.5 overflow-x-auto">
         <nav className="grid grid-flow-col auto-cols-fr items-stretch gap-1.5 w-full">
           {navItems.map((item) => {
             const isActive = activeTab === item.id;
@@ -85,11 +85,11 @@ export const LaboratoryDashboard: React.FC<LaboratoryDashboardProps> = ({
                 onClick={() => setActiveTab(item.id)}
                 className={`inline-flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
                   isActive
-                    ? 'bg-blue-600 text-white shadow-sm'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                    ? 'bg-[#D6E8FF] text-[#2563EB] shadow-2xs ring-1 ring-[#3B82F6]/25'
+                    : 'text-[#64748B] hover:text-[#334155] hover:bg-white/60'
                 }`}
               >
-                <span className="shrink-0">{item.icon}</span>
+                <span className={`shrink-0 ${isActive ? 'text-[#2563EB]' : 'text-[#64748B]'}`}>{item.icon}</span>
                 <span>{item.label}</span>
               </button>
             );
@@ -102,95 +102,95 @@ export const LaboratoryDashboard: React.FC<LaboratoryDashboardProps> = ({
       {/* 1. MAIN DASHBOARD OVERVIEW TAB */}
       {activeTab === 'dashboard' && (
         <div className="space-y-6 animate-in fade-in">
-          {/* Welcome & Plant Status Banner */}
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-7 shadow-sm">
+          {/* Welcome & Plant Status Banner (Clean Light White Card with Soft Accents) */}
+          <div className="rounded-2xl border border-[#E2E8F0] bg-[#FFFFFF] p-6 sm:p-7 shadow-2xs">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="flex items-start gap-4">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 border border-blue-200/80">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#EAF3FF] text-[#2563EB] border border-[#D6E8FF]">
                   <Factory className="h-6 w-6" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-700 border border-emerald-200">
+                    <span className="rounded-full bg-[#DCFCE7] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#15803D] border border-[#BBF7D0]">
                       QA Node Active
                     </span>
-                    <span className="text-xs text-slate-500 font-mono font-bold bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                    <span className="text-xs text-[#64748B] font-mono font-bold bg-[#F5F8FC] px-2 py-0.5 rounded border border-[#E2E8F0]">
                       {formatDateDDMMYYYY(new Date())}
                     </span>
                   </div>
-                  <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 mt-1">
+                  <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-[#334155] mt-1.5">
                     {plantName}
                   </h2>
-                  <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-                    Operator: <strong className="text-slate-700">{userName}</strong> ({userEmail}) &bull; Ball Mill & Chemical Oxide Circuit
+                  <p className="text-xs sm:text-sm text-[#64748B] mt-0.5">
+                    Operator: <strong className="text-[#334155]">{userName}</strong> ({userEmail}) &bull; Ball Mill & Chemical Oxide Circuit
                   </p>
                 </div>
               </div>
 
               {/* Quick Actions */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2.5">
                 <button
                   onClick={() => setActiveTab('new_entry')}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-blue-700 transition-colors"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-[#3B82F6] px-4 py-2.5 text-xs font-semibold text-white shadow-2xs hover:bg-[#2563EB] transition-colors"
                 >
                   <PlusCircle className="h-4 w-4" />
                   <span>New Chemical Entry</span>
                 </button>
                 <button
                   onClick={() => setActiveTab('reports')}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-[#CCFBF1] bg-[#CCFBF1]/60 px-3.5 py-2.5 text-xs font-semibold text-[#0F9D92] hover:bg-[#CCFBF1] transition-colors"
                 >
-                  <Download className="h-4 w-4 text-slate-500" />
+                  <Download className="h-4 w-4 text-[#0F9D92]" />
                   <span>Download PDF</span>
                 </button>
               </div>
             </div>
           </div>
 
-          {/* Quick Metrics Grid */}
+          {/* Quick Metrics Grid (White Cards with Subtle Light Pastel Accents) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+            <div className="bg-[#FFFFFF] p-5 rounded-2xl border border-[#E2E8F0] shadow-2xs flex items-center justify-between">
               <div>
-                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Tests Logged</span>
-                <div className="text-2xl font-bold text-slate-900 mt-1">{totalCount}</div>
-                <span className="text-[11px] text-slate-500">Live Supabase Database</span>
+                <span className="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Total Tests Logged</span>
+                <div className="text-2xl font-bold text-[#334155] mt-1">{totalCount}</div>
+                <span className="text-[11px] text-[#64748B]">Live Supabase Database</span>
               </div>
-              <div className="w-11 h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+              <div className="w-11 h-11 rounded-xl bg-[#EAF3FF] text-[#2563EB] border border-[#D6E8FF] flex items-center justify-center">
                 <Database className="w-5 h-5" />
               </div>
             </div>
 
-            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+            <div className="bg-[#FFFFFF] p-5 rounded-2xl border border-[#E2E8F0] shadow-2xs flex items-center justify-between">
               <div>
-                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Monitored Oxides</span>
-                <div className="text-2xl font-bold text-slate-900 mt-1">{CHEMICAL_PARAMETERS.length}</div>
-                <span className="text-[11px] text-slate-500">LOI, IR, SO3, SiO2, Al2O3...</span>
+                <span className="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Monitored Oxides</span>
+                <div className="text-2xl font-bold text-[#334155] mt-1">{CHEMICAL_PARAMETERS.length}</div>
+                <span className="text-[11px] text-[#64748B]">LOI, IR, SO3, SiO2, Free Lime...</span>
               </div>
-              <div className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+              <div className="w-11 h-11 rounded-xl bg-[#CCFBF1] text-[#0F9D92] border border-[#99F6E4] flex items-center justify-center">
                 <Beaker className="w-5 h-5" />
               </div>
             </div>
 
-            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+            <div className="bg-[#FFFFFF] p-5 rounded-2xl border border-[#E2E8F0] shadow-2xs flex items-center justify-between">
               <div>
-                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Primary Category</span>
-                <div className="text-lg font-bold text-slate-900 mt-1 truncate max-w-[140px]">Ball Mill</div>
-                <span className="text-[11px] text-slate-500">Grinding circuit</span>
+                <span className="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">Primary Category</span>
+                <div className="text-lg font-bold text-[#334155] mt-1 truncate max-w-[140px]">Ball Mill</div>
+                <span className="text-[11px] text-[#64748B]">Grinding circuit</span>
               </div>
-              <div className="w-11 h-11 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+              <div className="w-11 h-11 rounded-xl bg-[#FEF3C7] text-[#B45309] border border-[#FDE68A] flex items-center justify-center">
                 <Layers className="w-5 h-5" />
               </div>
             </div>
 
-            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+            <div className="bg-[#FFFFFF] p-5 rounded-2xl border border-[#E2E8F0] shadow-2xs flex items-center justify-between">
               <div>
-                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">QA Compliance</span>
-                <div className="text-lg font-bold text-slate-900 mt-1 flex items-center gap-1.5 text-emerald-600">
-                  <CheckCircle2 className="w-4 h-4" /> ASTM C114
+                <span className="text-[11px] font-bold text-[#64748B] uppercase tracking-wider">QA Compliance</span>
+                <div className="text-lg font-bold text-[#15803D] mt-1 flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 text-[#15803D]" /> ASTM C114
                 </div>
-                <span className="text-[11px] text-slate-500">IS 4032 / EN 196-2</span>
+                <span className="text-[11px] text-[#64748B]">IS 4032 / EN 196-2</span>
               </div>
-              <div className="w-11 h-11 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
+              <div className="w-11 h-11 rounded-xl bg-[#DCFCE7] text-[#15803D] border border-[#BBF7D0] flex items-center justify-center">
                 <ShieldCheck className="w-5 h-5" />
               </div>
             </div>

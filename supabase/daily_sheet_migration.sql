@@ -61,3 +61,4 @@ alter table public.coal_test_records disable row level security;
 grant all on public.coal_test_records to anon, authenticated, service_role;
 
 notify pgrst, 'reload schema';
+

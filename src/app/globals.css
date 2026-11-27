@@ -3,8 +3,25 @@
 @tailwind utilities;
 
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  --background: #F5F8FC;
+  --foreground: #334155;
+  /* LIGHT INDUSTRIAL DESIGN SYSTEM TOKENS */
+  --ct-bg-page: #F5F8FC;
+  --ct-bg-card: #FFFFFF;
+  --ct-border: #E2E8F0;
+  --ct-nav-bg: #EAF3FF;
+  --ct-nav-active-bg: #D6E8FF;
+  --ct-nav-active-text: #2563EB;
+  --ct-primary-btn: #3B82F6;
+  --ct-teal-soft: #CCFBF1;
+  --ct-teal-accent: #0F9D92;
+  --ct-success-bg: #DCFCE7;
+  --ct-success-text: #15803D;
+  --ct-warning-bg: #FEF3C7;
+  --ct-warning-text: #B45309;
+  --ct-footer-bg: #F1F6FC;
+  --ct-text-main: #334155;
+  --ct-text-muted: #64748B;
 }
 
 body {
@@ -43,6 +60,25 @@ body {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+/* Desktop-Only Viewport Restriction (< 1366px) */
+.ct-desktop-notice {
+  display: none;
+}
+
+.ct-desktop-app-shell {
+  display: block;
+}
+
+@media (max-width: 1365.98px) {
+  .ct-desktop-notice {
+    display: flex;
+  }
+
+  .ct-desktop-app-shell {
+    display: none;
   }
 }
 

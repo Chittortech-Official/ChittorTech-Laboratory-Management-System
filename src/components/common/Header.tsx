@@ -137,11 +137,11 @@ export const Header: React.FC<HeaderProps> = ({ onLogout, onOpenSettings }) => {
 
   return (
     <>
-      <header className="sticky top-0 z-40 w-full border-b border-slate-200/90 bg-white/95 backdrop-blur-md shadow-xs">
+      <header className="sticky top-0 z-40 w-full border-b border-[#E2E8F0] bg-[#FFFFFF] shadow-2xs">
         <div className="flex h-16 w-full items-center justify-between px-3 sm:px-5 lg:px-6">
           {/* ChittorTech QA Branding */}
           <div className="flex items-center gap-3">
-            <div className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white p-1.5 shadow-xs">
+            <div className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-[#E2E8F0] bg-[#FFFFFF] p-1.5 shadow-2xs">
               <Image
                 src="/assets/images/ct-logo.png"
                 alt="ChittorTech Logo"
@@ -152,14 +152,14 @@ export const Header: React.FC<HeaderProps> = ({ onLogout, onOpenSettings }) => {
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <span className="font-heading text-base font-extrabold tracking-tight text-slate-900">
-                  Chittor<span className="text-blue-600">Tech</span>
+                <span className="font-heading text-base font-extrabold tracking-tight text-[#334155]">
+                  Chittor<span className="text-[#2563EB]">Tech</span>
                 </span>
-                <span className="rounded-md bg-slate-900 px-1.5 py-0.5 text-[9px] font-bold text-white uppercase tracking-wider">
+                <span className="rounded-md bg-[#EAF3FF] border border-[#D6E8FF] px-1.5 py-0.5 text-[9px] font-bold text-[#2563EB] uppercase tracking-wider">
                   QA LMS
                 </span>
               </div>
-              <p className="text-[11px] font-semibold text-slate-500 leading-none">
+              <p className="text-[11px] font-medium text-[#64748B] leading-none">
                 QA Laboratory Management System
               </p>
             </div>
@@ -168,12 +168,12 @@ export const Header: React.FC<HeaderProps> = ({ onLogout, onOpenSettings }) => {
           {/* User Info & Actions */}
           <div className="flex items-center gap-2.5 sm:gap-3">
             {/* Database Connection Pill */}
-            <div className="hidden sm:flex items-center gap-2 rounded-full border border-slate-200/80 bg-slate-50/80 px-3 py-1 text-xs text-slate-600">
+            <div className="hidden sm:flex items-center gap-2 rounded-full border border-[#DCFCE7] bg-[#DCFCE7] px-3 py-1 text-xs">
               <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#15803D] opacity-60"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#15803D]"></span>
               </span>
-              <span className="text-[11px] font-semibold text-slate-700">
+              <span className="text-[11px] font-semibold text-[#15803D]">
                 Database Live
               </span>
             </div>
@@ -186,28 +186,28 @@ export const Header: React.FC<HeaderProps> = ({ onLogout, onOpenSettings }) => {
                 aria-expanded={isProfileOpen}
                 className={`flex items-center gap-2.5 p-1.5 sm:px-3 sm:py-1.5 rounded-xl border transition-all ${
                   isProfileOpen
-                    ? 'bg-blue-50/80 border-blue-300 ring-2 ring-blue-500/20'
-                    : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                    ? 'bg-[#EAF3FF] border-[#3B82F6] ring-2 ring-[#3B82F6]/20'
+                    : 'bg-[#FFFFFF] border-[#E2E8F0] hover:border-[#CBD5E1] hover:bg-[#F5F8FC]'
                 }`}
               >
-                {/* Avatar Circle with robust solid background */}
-                <div className="relative flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 bg-gradient-to-br from-blue-600 to-indigo-700 text-white font-extrabold text-xs shadow-xs shrink-0">
+                {/* Avatar Circle */}
+                <div className="relative flex h-8 w-8 items-center justify-center rounded-lg bg-[#3B82F6] text-white font-extrabold text-xs shadow-2xs shrink-0">
                   <span>{userInitials}</span>
-                  <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-white" />
+                  <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-[#15803D] ring-2 ring-white" />
                 </div>
 
                 {/* Name & Plant snippet (desktop) */}
                 <div className="hidden md:block text-left">
-                  <p className="text-xs font-bold text-slate-900 leading-tight truncate max-w-[220px]">
+                  <p className="text-xs font-bold text-[#334155] leading-tight truncate max-w-[220px]">
                     {displayName}
                   </p>
-                  <p className="text-[10px] text-slate-500 leading-tight flex items-center gap-1 truncate max-w-[220px]">
-                    <Building2 className="h-2.5 w-2.5 text-blue-500 shrink-0" />
+                  <p className="text-[10px] text-[#64748B] leading-tight flex items-center gap-1 truncate max-w-[220px]">
+                    <Building2 className="h-2.5 w-2.5 text-[#0F9D92] shrink-0" />
                     <span className="truncate">{plantName}</span>
                   </p>
                 </div>
 
-                <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${
+                <ChevronDown className={`h-4 w-4 text-[#64748B] transition-transform duration-200 ${
                   isProfileOpen ? 'rotate-180 text-blue-600' : ''
                 }`} />
               </button>

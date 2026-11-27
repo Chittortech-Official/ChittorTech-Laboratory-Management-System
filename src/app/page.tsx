@@ -7,6 +7,7 @@ import { RefreshCw } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthLayout } from '@/components/auth/AuthLayout';
 import { Header } from '@/components/common/Header';
+import { DesktopOnlyGuard } from '@/components/common/DesktopOnlyGuard';
 import { LaboratoryDashboard } from '@/components/laboratory/LaboratoryDashboard';
 import { DashboardTab } from '@/types';
 
@@ -249,41 +250,43 @@ function HomePageContent() {
 
   // 3. Authenticated: render protected laboratory dashboard directly without any login flash
   return (
-    <div className="min-h-[100dvh] bg-slate-50 flex flex-col justify-between overflow-x-clip">
-      <Header
-        onOpenSettings={() => handleTabChange('settings')}
-        onLogout={async () => {
-          setJustAuthenticated(false);
-          await logout();
-        }}
-      />
-
-      <main className="flex-1 w-full px-3 sm:px-5 lg:px-6 py-4 sm:py-6">
-        <LaboratoryDashboard
-          activeTab={activeTab}
-          onTabChange={handleTabChange}
+    <DesktopOnlyGuard>
+      <div className="min-h-[100dvh] bg-[#F5F8FC] text-[#334155] flex flex-col justify-between overflow-x-clip">
+        <Header
+          onOpenSettings={() => handleTabChange('settings')}
+          onLogout={async () => {
+            setJustAuthenticated(false);
+            await logout();
+          }}
         />
-      </main>
 
-      <footer className="w-full border-t border-slate-200 bg-white py-4 text-center text-xs text-slate-400">
-        <div className="w-full px-3 sm:px-5 lg:px-6 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <p>© {new Date().getFullYear()} ChittorTech QA Laboratory Management System. Official Industrial Build.</p>
-          <div className="flex items-center gap-4 text-slate-500 text-[11px]">
-            <span>Phase 1: Industrial QA Authentication & Request Flow</span>
-            <span>•</span>
-            <button
-              onClick={async () => {
-                setJustAuthenticated(false);
-                await logout();
-              }}
-              className="text-blue-600 hover:underline font-semibold"
-            >
-              Sign Out Session
-            </button>
+        <main className="flex-1 w-full px-3 sm:px-5 lg:px-6 py-4 sm:py-6">
+          <LaboratoryDashboard
+            activeTab={activeTab}
+            onTabChange={handleTabChange}
+          />
+        </main>
+
+        <footer className="w-full border-t border-[#E2E8F0] bg-[#F1F6FC] py-4 text-center text-xs text-[#64748B]">
+          <div className="w-full px-3 sm:px-5 lg:px-6 flex flex-col sm:flex-row items-center justify-between gap-2">
+            <p className="text-[#64748B]">© {new Date().getFullYear()} ChittorTech QA Laboratory Management System. Official Industrial Build.</p>
+            <div className="flex items-center gap-4 text-[#64748B] text-[11px]">
+              <span>Industrial QA &bull; ISO / ASTM / BIS Protocol</span>
+              <span>•</span>
+              <button
+                onClick={async () => {
+                  setJustAuthenticated(false);
+                  await logout();
+                }}
+                className="text-[#2563EB] hover:underline font-semibold"
+              >
+                Sign Out Session
+              </button>
+            </div>
           </div>
-        </div>
-      </footer>
-    </div>
+        </footer>
+      </div>
+    </DesktopOnlyGuard>
   );
 }
 
