@@ -150,6 +150,9 @@ export async function POST(request: Request) {
       k2o = null,
       na2o = null,
       chloride = null,
+      free_lime = null,
+      cv = null,
+      lv = null,
       notes = null,
     }: LaboratoryRecordPayload = body;
 
@@ -183,6 +186,9 @@ export async function POST(request: Request) {
     const k2oNum = k2o !== null && k2o !== undefined && !isNaN(Number(k2o)) ? Number(k2o) : null;
     const na2oNum = na2o !== null && na2o !== undefined && !isNaN(Number(na2o)) ? Number(na2o) : null;
     const na2oEqNum = calculateEquivalentAlkali(na2oNum, k2oNum);
+    const freeLimeNum = free_lime !== null && free_lime !== undefined && !isNaN(Number(free_lime)) ? Number(free_lime) : null;
+    const cvNum = cv !== null && cv !== undefined && !isNaN(Number(cv)) ? Number(cv) : null;
+    const lvNum = lv !== null && lv !== undefined && !isNaN(Number(lv)) ? Number(lv) : null;
 
     const baseInsert = {
       user_id,
@@ -210,13 +216,16 @@ export async function POST(request: Request) {
           k2o: k2oNum,
           na2o: na2oNum,
           na2o_eq: na2oEqNum,
+          free_lime: freeLimeNum,
+          cv: cvNum,
+          lv: lvNum,
         },
       ])
       .select()
       .single();
 
-    // Fallback if alkalis_migration.sql hasn't been executed in Supabase yet
-    if (error && (error.code === '42703' || error.message?.includes('k2o') || error.message?.includes('na2o'))) {
+    // Fallback if daily_sheet_migration.sql / alkalis_migration.sql hasn't been executed in Supabase yet
+    if (error && (error.code === '42703' || error.message?.includes('k2o') || error.message?.includes('na2o') || error.message?.includes('free_lime'))) {
       const alkaliTag =
         k2oNum !== null || na2oNum !== null
           ? `[Alkalis: ${k2oNum !== null ? `K2O=${k2oNum}%` : ''}${k2oNum !== null && na2oNum !== null ? ', ' : ''}${na2oNum !== null ? `Na2O=${na2oNum}%` : ''}]`
@@ -341,6 +350,7 @@ export async function PUT(request: Request) {
       k2o: k2oVal,
       na2o: na2oVal,
       na2o_eq: na2oEqVal,
+      free_lime: updates.free_lime !== null && updates.free_lime !== undefined && String(updates.free_lime) !== '' && !isNaN(Number(updates.free_lime)) ? Number(updates.free_lime) : null,
     };
 
     // Compute field-level diff
@@ -354,7 +364,7 @@ export async function PUT(request: Request) {
       .select()
       .single();
 
-    if (error && (error.code === '42703' || error.message?.includes('k2o') || error.message?.includes('na2o'))) {
+    if (error && (error.code === '42703' || error.message?.includes('k2o') || error.message?.includes('na2o') || error.message?.includes('free_lime'))) {
       const retry = await supabase
         .from('laboratory_records')
         .update(baseUpdate)

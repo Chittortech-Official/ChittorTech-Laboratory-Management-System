@@ -146,6 +146,7 @@ export function generatePdfDocument(records: LaboratoryRecord[], meta: ReportMet
     'K₂O %',
     'Na₂O %',
     'Cl⁻ %',
+    'f-CaO %',
     'Total %',
   ];
 
@@ -167,6 +168,7 @@ export function generatePdfDocument(records: LaboratoryRecord[], meta: ReportMet
       r.k2o !== null && r.k2o !== undefined ? Number(r.k2o).toFixed(2) : '-',
       r.na2o !== null && r.na2o !== undefined ? Number(r.na2o).toFixed(2) : '-',
       r.chloride !== null ? Number(r.chloride).toFixed(4) : '-',
+      r.free_lime !== null && r.free_lime !== undefined ? Number(r.free_lime).toFixed(2) : '-',
       total > 0 ? `${total.toFixed(2)}%` : '-',
     ];
   });
@@ -288,6 +290,7 @@ export function exportToCsv(records: LaboratoryRecord[], filename: string = 'Chi
     'Potassium Oxide K2O (%)',
     'Sodium Oxide Na2O (%)',
     'Chloride Cl (%)',
+    'Free Lime (%)',
     'Total Oxides (%)',
     'Notes',
   ];
@@ -311,6 +314,7 @@ export function exportToCsv(records: LaboratoryRecord[], filename: string = 'Chi
       r.k2o !== null && r.k2o !== undefined ? Number(r.k2o).toFixed(2) : '',
       r.na2o !== null && r.na2o !== undefined ? Number(r.na2o).toFixed(2) : '',
       r.chloride !== null && r.chloride !== undefined ? Number(r.chloride).toFixed(4) : '',
+      r.free_lime !== null && r.free_lime !== undefined ? Number(r.free_lime).toFixed(2) : '',
       calculateOxideSum(r).toFixed(2),
       `"${(r.notes || '').replace(/"/g, '""')}"`,
     ];
@@ -452,8 +456,13 @@ export function exportToExcel(
       alumina: r.alumina,
       iron: r.iron,
       so3: r.so3,
+      magnesia: r.magnesia,
+      k2o: r.k2o,
+      na2o: r.na2o,
+      free_lime: r.free_lime,
     });
 
+    const na2oEq = r.na2o_eq ?? calculateEquivalentAlkali(r.na2o, r.k2o);
     const cleanDate = formatDateDDMMYYYY(r.test_date);
 
     return {
@@ -472,14 +481,18 @@ export function exportToExcel(
       'K2O / Potassium (%)': r.k2o !== undefined && r.k2o !== null ? Number(r.k2o).toFixed(2) : '',
       'Na2O / Sodium (%)': r.na2o !== undefined && r.na2o !== null ? Number(r.na2o).toFixed(2) : '',
       'Cl / Chloride (%)': r.chloride !== null && r.chloride !== undefined ? Number(r.chloride).toFixed(4) : '',
+      'Free Lime (%)': r.free_lime !== null && r.free_lime !== undefined ? Number(r.free_lime).toFixed(2) : '',
       'Total Oxides (%)': calculateOxideSum(r).toFixed(2),
-      'LSF (Lime Saturation)': bogue.lsf !== null ? bogue.lsf : '',
+      'Tot. Alkali as Na2O (%)': na2oEq !== null ? na2oEq.toFixed(3) : '',
+      'LSF (%)': bogue.lsf !== null ? bogue.lsf : '',
       'SM (Silica Ratio)': bogue.sm !== null ? bogue.sm : '',
       'AM (Alumina Ratio)': bogue.am !== null ? bogue.am : '',
       'C3S Alite (%)': bogue.c3s !== null ? bogue.c3s : '',
       'C2S Belite (%)': bogue.c2s !== null ? bogue.c2s : '',
       'C3A (%)': bogue.c3a !== null ? bogue.c3a : '',
       'C4AF (%)': bogue.c4af !== null ? bogue.c4af : '',
+      'C.V. (Coating Value)': bogue.cv !== null ? bogue.cv : '',
+      'L.V. (Liquid Value)': bogue.lv !== null ? bogue.lv : '',
       'Strength Profile': bogue.strengthProfile,
       Notes: r.notes || '',
     };

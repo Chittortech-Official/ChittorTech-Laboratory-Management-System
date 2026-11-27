@@ -18,6 +18,7 @@ const TRACKED_FIELD_LABELS: Record<string, string> = {
   na2o: 'Na₂O (%)',
   na2o_eq: 'Total Eq. Alkalis Na₂Oeq (%)',
   chloride: 'Cl⁻ (%)',
+  free_lime: 'Free Lime (%)',
   notes: 'Observations / Notes',
 };
 
@@ -45,7 +46,7 @@ export function computeRecordDiff(
       normNew !== null &&
       !isNaN(Number(normOld)) &&
       !isNaN(Number(normNew)) &&
-      ['loi', 'ir', 'so3', 'silica', 'alumina', 'iron', 'lime', 'magnesia', 'k2o', 'na2o', 'na2o_eq', 'chloride'].includes(field)
+      ['loi', 'ir', 'so3', 'silica', 'alumina', 'iron', 'lime', 'magnesia', 'k2o', 'na2o', 'na2o_eq', 'chloride', 'free_lime'].includes(field)
     ) {
       if (Number(normOld) !== Number(normNew)) {
         diffs.push({

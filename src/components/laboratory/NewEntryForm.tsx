@@ -26,6 +26,7 @@ import { parseXrfInstrumentFile, generateDemoXrfCsv, ParsedSample } from '@/lib/
 import { Sparkles, Award, TrendingUp, Info, Zap, Flame, AlertOctagon, CheckCheck, UploadCloud, FileSpreadsheet, Download, CheckCircle, FileText, RefreshCw } from 'lucide-react';
 import { useConfirmationModal } from '@/contexts/ConfirmationModalContext';
 import { extractNextSampleId, checkIsDuplicateSampleId } from '@/lib/laboratory/sampleIdHelper';
+import { DailyTestingSheet } from './DailyTestingSheet';
 
 interface NewEntryFormProps {
   user: UserProfile | null;
@@ -34,6 +35,7 @@ interface NewEntryFormProps {
 
 export const NewEntryForm: React.FC<NewEntryFormProps> = ({ user, onRecordSaved }) => {
   const { showSuccess, showError: showGlobalError } = useConfirmationModal();
+  const [entryMode, setEntryMode] = useState<'daily_sheet' | 'single_sample'>('daily_sheet');
   const today = new Date().toISOString().split('T')[0];
 
   const [testDate, setTestDate] = useState<string>(today);
@@ -92,6 +94,7 @@ export const NewEntryForm: React.FC<NewEntryFormProps> = ({ user, onRecordSaved 
     k2o: '',
     na2o: '',
     chloride: '',
+    free_lime: '',
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -191,8 +194,12 @@ export const NewEntryForm: React.FC<NewEntryFormProps> = ({ user, onRecordSaved 
       alumina: values.alumina ? parseFloat(values.alumina) : null,
       iron: values.iron ? parseFloat(values.iron) : null,
       so3: values.so3 ? parseFloat(values.so3) : null,
+      magnesia: values.magnesia ? parseFloat(values.magnesia) : null,
+      k2o: values.k2o ? parseFloat(values.k2o) : null,
+      na2o: values.na2o ? parseFloat(values.na2o) : null,
+      free_lime: values.free_lime ? parseFloat(values.free_lime) : null,
     });
-  }, [values.lime, values.silica, values.alumina, values.iron, values.so3]);
+  }, [values.lime, values.silica, values.alumina, values.iron, values.so3, values.magnesia, values.k2o, values.na2o, values.free_lime]);
 
   const handleFieldChange = (key: string, val: string) => {
     // Only allow numbers and decimal point
@@ -349,6 +356,9 @@ export const NewEntryForm: React.FC<NewEntryFormProps> = ({ user, onRecordSaved 
         na2o: na2oNum,
         na2o_eq: calculateEquivalentAlkali(na2oNum, k2oNum),
         chloride: values.chloride !== '' ? Number(values.chloride) : null,
+        free_lime: values.free_lime !== '' ? Number(values.free_lime) : null,
+        cv: bogue.cv,
+        lv: bogue.lv,
         notes: notes.trim() || null,
       };
 
@@ -426,7 +436,46 @@ export const NewEntryForm: React.FC<NewEntryFormProps> = ({ user, onRecordSaved 
   };
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-5 sm:p-7 shadow-subtle space-y-6">
+    <div className="space-y-4">
+      {/* Mode Switcher: Daily Excel Sheet (19 Categories) vs Single Sample Entry */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-2 px-1">
+          <FlaskConical className="h-4 w-4 text-blue-600" />
+          <span className="text-xs font-bold text-slate-800">Data Entry Mode</span>
+          <span className="text-[11px] text-slate-400 hidden md:inline">
+            • Choose Single-Page Daily Workbook Matrix or Single Sample Card
+          </span>
+        </div>
+        <div className="inline-flex bg-slate-100 p-1 rounded-xl border border-slate-200 self-start sm:self-auto">
+          <button
+            type="button"
+            onClick={() => setEntryMode('daily_sheet')}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              entryMode === 'daily_sheet'
+                ? 'bg-blue-600 text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            Daily Excel Sheet (19 Categories)
+          </button>
+          <button
+            type="button"
+            onClick={() => setEntryMode('single_sample')}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              entryMode === 'single_sample'
+                ? 'bg-blue-600 text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            Single Sample Entry
+          </button>
+        </div>
+      </div>
+
+      {entryMode === 'daily_sheet' ? (
+        <DailyTestingSheet user={user} onSaved={() => onRecordSaved({} as LaboratoryRecord)} />
+      ) : (
+        <div className="rounded-xl border border-slate-200 bg-white p-5 sm:p-7 shadow-subtle space-y-6">
       {/* Header Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 gap-3">
         <div>
@@ -1271,6 +1320,8 @@ export const NewEntryForm: React.FC<NewEntryFormProps> = ({ user, onRecordSaved 
               </button>
             </div>
           </div>
+        </div>
+      )}
         </div>
       )}
     </div>

@@ -100,6 +100,54 @@ export const CHEMICAL_PARAMETERS: ParameterMetadata[] = [
     decimals: 4,
     description: 'Trace halogen strictly restricted to prevent reinforcement corrosion (up to 4 decimals)',
   },
+  {
+    key: 'free_lime',
+    label: 'Free Lime',
+    symbol: 'Free Lime',
+    formula: 'f-CaO',
+    unit: '%',
+    decimals: 2,
+    description: 'Uncombined calcium oxide (clinker burning completeness indicator)',
+  },
+];
+
+// Exact 19 Plant Categories in Father's Daily Workbook Order
+export const DAILY_WORKBOOK_CATEGORIES: { dbValue: string; sheetLabel: string; hasMechanical: boolean; defaultSampleId: string }[] = [
+  { dbValue: 'Ball mill', sheetLabel: 'BM', hasMechanical: true, defaultSampleId: 'NA' },
+  { dbValue: 'VRM', sheetLabel: 'VRM', hasMechanical: true, defaultSampleId: 'NA' },
+  { dbValue: 'KF', sheetLabel: 'KF', hasMechanical: true, defaultSampleId: 'NA' },
+  { dbValue: 'CLK', sheetLabel: 'CLK', hasMechanical: false, defaultSampleId: 'NA' },
+  { dbValue: 'RP', sheetLabel: 'RP', hasMechanical: true, defaultSampleId: 'NA' },
+  { dbValue: 'NKF', sheetLabel: 'NKF', hasMechanical: true, defaultSampleId: 'NA' },
+  { dbValue: 'NCLK', sheetLabel: 'NCLK', hasMechanical: false, defaultSampleId: 'NA' },
+  { dbValue: 'G43', sheetLabel: 'G43', hasMechanical: true, defaultSampleId: '' },
+  { dbValue: 'G53', sheetLabel: 'G53', hasMechanical: true, defaultSampleId: '' },
+  { dbValue: 'G53 S', sheetLabel: 'G53S', hasMechanical: true, defaultSampleId: '' },
+  { dbValue: 'GPF', sheetLabel: 'GPF', hasMechanical: true, defaultSampleId: '' },
+  { dbValue: 'GPF+', sheetLabel: 'GPF+', hasMechanical: true, defaultSampleId: '' },
+  { dbValue: 'L43', sheetLabel: 'L43', hasMechanical: true, defaultSampleId: '' },
+  { dbValue: 'L53', sheetLabel: 'L53', hasMechanical: true, defaultSampleId: '' },
+  { dbValue: 'L53 S', sheetLabel: 'L53S', hasMechanical: true, defaultSampleId: '' },
+  { dbValue: 'LPF', sheetLabel: 'LPF', hasMechanical: true, defaultSampleId: '' },
+  { dbValue: 'LPF+', sheetLabel: 'L-Per+', hasMechanical: true, defaultSampleId: '' },
+  { dbValue: 'AC1', sheetLabel: 'AC 1', hasMechanical: true, defaultSampleId: 'NA' },
+  { dbValue: 'AC2', sheetLabel: 'AC 2', hasMechanical: true, defaultSampleId: 'NA' },
+];
+
+export const MECHANICAL_PARAMETERS: { key: import('@/types').MechanicalParameterKey; label: string; unit: string; decimals: number }[] = [
+  { key: 'residue_45', label: 'Residue +45', unit: '%', decimals: 2 },
+  { key: 'residue_90', label: 'Residue +90', unit: '%', decimals: 2 },
+  { key: 'residue_212', label: 'Residue +212', unit: '%', decimals: 2 },
+  { key: 'nc_pct', label: 'N.C %', unit: '%', decimals: 2 },
+  { key: 'blaine_m2_kg', label: 'Blaine M2/Kg', unit: 'm²/kg', decimals: 1 },
+  { key: 'ist_min', label: 'I.S.T. Min.', unit: 'min', decimals: 0 },
+  { key: 'fst_min', label: 'F.S.T. Min.', unit: 'min', decimals: 0 },
+  { key: 'soundness_le_chat', label: 'Soundness Le.Chat.', unit: 'mm', decimals: 2 },
+  { key: 'soundness_autoclv', label: 'Soundness Autoclv.', unit: '%', decimals: 3 },
+  { key: 'cs_1d', label: 'C.S. 1D (MPa)', unit: 'MPa', decimals: 2 },
+  { key: 'cs_3d', label: 'C.S. 3D (MPa)', unit: 'MPa', decimals: 2 },
+  { key: 'cs_7d', label: 'C.S. 7D (MPa)', unit: 'MPa', decimals: 2 },
+  { key: 'cs_28d', label: 'C.S. 28D (MPa)', unit: 'MPa', decimals: 2 },
 ];
 
 export const PLANT_CATEGORIES = [

@@ -42,6 +42,7 @@ const PARAMETER_ALIASES: Record<ChemicalParameterKey, string[]> = {
   k2o: ['k2o', 'potassium oxide', 'k2o%', 'potassium', 'k'],
   na2o: ['na2o', 'sodium oxide', 'na2o%', 'sodium', 'na'],
   chloride: ['cl', 'chloride', 'cl-', 'cl %', 'chlorine', 'chloride cl', 'cl_ppm'],
+  free_lime: ['free lime', 'f-cao', 'fcao', 'free cao', 'fl'],
 };
 
 /**
@@ -202,6 +203,7 @@ export async function parseXrfInstrumentFile(file: File): Promise<ParseResult> {
           k2o: '',
           na2o: '',
           chloride: '',
+          free_lime: '',
         };
         const rawValues: Record<ChemicalParameterKey, number | null> = {
           loi: null,
@@ -215,6 +217,7 @@ export async function parseXrfInstrumentFile(file: File): Promise<ParseResult> {
           k2o: null,
           na2o: null,
           chloride: null,
+          free_lime: null,
         };
 
         let matchedCount = 0;
@@ -275,6 +278,7 @@ export async function parseXrfInstrumentFile(file: File): Promise<ParseResult> {
       k2o: '',
       na2o: '',
       chloride: '',
+      free_lime: '',
     };
     const rawValues: Record<ChemicalParameterKey, number | null> = {
       loi: null,
@@ -288,6 +292,7 @@ export async function parseXrfInstrumentFile(file: File): Promise<ParseResult> {
       k2o: null,
       na2o: null,
       chloride: null,
+      free_lime: null,
     };
 
     let verticalMatches = 0;

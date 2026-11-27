@@ -61,6 +61,9 @@ export interface LaboratoryRecord {
   na2o?: number | null; // Na2O (%)
   na2o_eq?: number | null; // Total Equivalent Alkalis = Na2O + 0.658 * K2O (%)
   chloride: number | null; // Cl (%)
+  free_lime?: number | null; // Free Lime (%)
+  cv?: number | null; // Coating Value
+  lv?: number | null; // Liquid Value
   total_oxides?: number | null;
   notes?: string | null;
   created_at: string;
@@ -80,7 +83,8 @@ export type ChemicalParameterKey =
   | 'magnesia'
   | 'k2o'
   | 'na2o'
-  | 'chloride';
+  | 'chloride'
+  | 'free_lime';
 
 export interface ParameterMetadata {
   key: ChemicalParameterKey;
@@ -145,4 +149,53 @@ export interface AuditLogEntry {
   changed_fields?: ChangedFieldDiff[] | null;
   reason: string;
   created_at: string;
+}
+
+export type MechanicalParameterKey =
+  | 'residue_45'
+  | 'residue_90'
+  | 'residue_212'
+  | 'nc_pct'
+  | 'blaine_m2_kg'
+  | 'ist_min'
+  | 'fst_min'
+  | 'soundness_le_chat'
+  | 'soundness_autoclv'
+  | 'cs_1d'
+  | 'cs_3d'
+  | 'cs_7d'
+  | 'cs_28d';
+
+export interface MechanicalTestRecord {
+  id?: string;
+  user_id: string;
+  test_date: string;
+  category: string;
+  shift?: string;
+  residue_45: number | null;
+  residue_90: number | null;
+  residue_212: number | null;
+  nc_pct: number | null;
+  blaine_m2_kg: number | null;
+  ist_min: number | null;
+  fst_min: number | null;
+  soundness_le_chat: number | null;
+  soundness_autoclv: number | null;
+  cs_1d: number | null;
+  cs_3d: number | null;
+  cs_7d: number | null;
+  cs_28d: number | null;
+}
+
+export interface CoalTestRecord {
+  id?: string;
+  user_id: string;
+  test_date: string;
+  coal_stream: 'Kiln Coal' | 'PC Coal' | 'MIXED' | 'NKiln Coal' | 'NPC Coal' | 'NMIXED' | string;
+  im_pct: number | null;
+  vm_pct: number | null;
+  ash_pct: number | null;
+  gcv: number | null;
+  fc_pct: number | null;
+  uhv: number | null;
 }

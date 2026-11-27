@@ -170,6 +170,7 @@ export const PreviousRecords: React.FC<PreviousRecordsProps> = ({
           k2o: editFormData.k2o !== undefined && editFormData.k2o !== null && String(editFormData.k2o) !== '' ? Number(editFormData.k2o) : null,
           na2o: editFormData.na2o !== undefined && editFormData.na2o !== null && String(editFormData.na2o) !== '' ? Number(editFormData.na2o) : null,
           chloride: editFormData.chloride !== undefined && editFormData.chloride !== null && String(editFormData.chloride) !== '' ? Number(editFormData.chloride) : null,
+          free_lime: editFormData.free_lime !== undefined && editFormData.free_lime !== null && String(editFormData.free_lime) !== '' ? Number(editFormData.free_lime) : null,
           notes: editFormData.notes || '',
         }),
       });
