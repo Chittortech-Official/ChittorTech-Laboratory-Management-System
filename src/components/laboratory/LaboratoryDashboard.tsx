@@ -74,22 +74,22 @@ export const LaboratoryDashboard: React.FC<LaboratoryDashboardProps> = ({
 
   return (
     <div className="w-full space-y-6">
-      {/* 7-Tab Navigation Bar */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-1.5 overflow-x-auto">
-        <nav className="flex items-center gap-1 min-w-max">
+      {/* Full-Width Equally Distributed Navigation Bar */}
+      <div className="w-full bg-white rounded-2xl border border-slate-200 shadow-sm p-1.5 overflow-x-auto">
+        <nav className="grid grid-flow-col auto-cols-fr items-stretch gap-1.5 w-full">
           {navItems.map((item) => {
             const isActive = activeTab === item.id;
             return (
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
-                className={`inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                className={`inline-flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
                   isActive
                     ? 'bg-blue-600 text-white shadow-sm'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                 }`}
               >
-                {item.icon}
+                <span className="shrink-0">{item.icon}</span>
                 <span>{item.label}</span>
               </button>
             );
