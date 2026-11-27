@@ -129,7 +129,8 @@ export const DailyTestingSheet: React.FC<DailyTestingSheetProps> = ({ user, onSa
 
   const focusCell = useCallback((section: 'chem' | 'mech' | 'coal', row: number, col: number): boolean => {
     const el = cellRefs.current[`${section}:${row}:${col}`];
-    if (!el || el.disabled) return false;
+    if (!el || el.disabled || el.readOnly || el.type === 'hidden') return false;
+    if (el.getClientRects().length === 0) return false;
     el.focus({ preventScroll: true });
     el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
     return true;
@@ -154,21 +155,43 @@ export const DailyTestingSheet: React.FC<DailyTestingSheetProps> = ({ user, onSa
 
       if (e.key === 'Enter') {
         e.preventDefault();
-        // Move right to next editable cell; wrap to first editable cell of next row at end of row
-        let r = row;
-        let c = col + 1;
-        while (r < maxRows) {
-          while (c < maxCols) {
-            if (focusCell(section, r, c)) return;
-            c++;
+        if (e.shiftKey) {
+          // Reverse Excel order: move up within current column, then bottommost editable cell of previous column
+          let c = col;
+          let r = row - 1;
+          while (c >= 0) {
+            while (r >= 0) {
+              if (focusCell(section, r, c)) return;
+              r--;
+            }
+            c--;
+            r = maxRows - 1;
           }
-          r++;
-          c = 0;
+          return;
+        }
+
+        // Excel-style Top-to-Bottom, Then Next Column:
+        // Move down within current column; at bottom, wrap to topmost editable cell of next column
+        let c = col;
+        let r = row + 1;
+        while (c < maxCols) {
+          while (r < maxRows) {
+            if (focusCell(section, r, c)) return;
+            r++;
+          }
+          c++;
+          r = 0;
         }
         return;
       }
 
       if (e.key === 'ArrowRight') {
+        const input = e.currentTarget;
+        const len = input.value.length;
+        const allSelected = input.selectionStart === 0 && input.selectionEnd === len;
+        const atRightEdge = input.selectionStart === len && input.selectionEnd === len;
+        if (!allSelected && !atRightEdge) return;
+
         e.preventDefault();
         for (let c = col + 1; c < maxCols; c++) {
           if (focusCell(section, row, c)) return;
@@ -177,6 +200,12 @@ export const DailyTestingSheet: React.FC<DailyTestingSheetProps> = ({ user, onSa
       }
 
       if (e.key === 'ArrowLeft') {
+        const input = e.currentTarget;
+        const len = input.value.length;
+        const allSelected = input.selectionStart === 0 && input.selectionEnd === len;
+        const atLeftEdge = input.selectionStart === 0 && input.selectionEnd === 0;
+        if (!allSelected && !atLeftEdge) return;
+
         e.preventDefault();
         for (let c = col - 1; c >= 0; c--) {
           if (focusCell(section, row, c)) return;
