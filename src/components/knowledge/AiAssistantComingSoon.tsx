@@ -76,21 +76,21 @@ export const AiAssistantComingSoon: React.FC<AiAssistantComingSoonProps> = ({
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
-      {/* Executive Enterprise Upgrade Hero */}
-      <div className="relative overflow-hidden rounded-2xl border border-[#CBD5E1] bg-white shadow-sm">
+      {/* Executive Enterprise Upgrade Hero — Unified ChittorTech Light Industrial Palette */}
+      <div className="relative overflow-hidden rounded-2xl border border-[#D6E8FF] bg-white shadow-sm">
         <div className="grid grid-cols-1 lg:grid-cols-12">
           {/* Left Column — Enterprise Gate Message & CTAs */}
-          <div className="lg:col-span-7 p-6 sm:p-10 flex flex-col justify-between bg-gradient-to-br from-[#F8FAFF] via-white to-[#F5F8FC] space-y-6">
+          <div className="lg:col-span-7 p-6 sm:p-10 flex flex-col justify-between bg-gradient-to-br from-white via-[#FAFCFF] to-[#F5F9FF] space-y-6">
             <div className="space-y-4">
               {/* Top Tier Badges */}
               <div className="flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-300 bg-gradient-to-r from-amber-50 to-yellow-50 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-amber-800 shadow-sm">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-amber-800">
                   <Crown className="w-3.5 h-3.5 text-amber-600" />
                   Enterprise Premium Required
                 </span>
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-[#E2E8F0] bg-white px-3 py-1 text-[11px] font-semibold text-[#475569]">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-[#E2E8F0] bg-[#F8FAFC] px-3 py-1 text-[11px] font-semibold text-[#475569]">
                   <Lock className="w-3 h-3 text-[#64748B]" />
-                  Locked on Standard Node
+                  Locked on Standard Plan
                 </span>
               </div>
 
@@ -106,7 +106,7 @@ export const AiAssistantComingSoon: React.FC<AiAssistantComingSoonProps> = ({
                   </span>
                 </h2>
                 <p className="text-sm text-[#475569] leading-relaxed max-w-2xl">
-                  The <strong>ChittorTech BIS &amp; NABL AI Assistant</strong> is an enterprise-grade capability built for accredited cement and materials testing laboratories. Upgrade your organization&apos;s workspace license to unlock real-time standards intelligence, NABL audit guidance, and plant-wide AI QA support.
+                  The <strong>ChittorTech BIS &amp; NABL AI Assistant</strong> is an enterprise capability engineered for accredited cement and materials testing laboratories. Upgrade your laboratory license to unlock real-time standards intelligence, NABL audit guidance, and plant-wide AI QA support.
                 </p>
               </div>
             </div>
@@ -117,9 +117,9 @@ export const AiAssistantComingSoon: React.FC<AiAssistantComingSoonProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowUpgradeNotice(true)}
-                  className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#1D4ED8] to-[#2563EB] px-5 py-3 text-xs sm:text-sm font-bold text-white shadow-sm hover:from-[#1E40AF] hover:to-[#1D4ED8] transition-all"
+                  className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#2563EB] to-[#1D4ED8] px-5 py-3 text-xs sm:text-sm font-bold text-white shadow-sm hover:from-[#1D4ED8] hover:to-[#1E40AF] transition-all"
                 >
-                  <Crown className="w-4 h-4 text-amber-300" />
+                  <Crown className="w-4 h-4 text-amber-200" />
                   <span>Upgrade to Enterprise Premium</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
@@ -143,55 +143,55 @@ export const AiAssistantComingSoon: React.FC<AiAssistantComingSoonProps> = ({
                 </button>
               </div>
 
-              <div className="rounded-xl border border-[#E2E8F0] bg-white/80 px-4 py-2.5 flex items-center gap-2.5 text-xs text-[#475569]">
+              <div className="rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] px-4 py-2.5 flex items-center gap-2.5 text-xs text-[#475569]">
                 <Building2 className="w-4 h-4 text-[#0F9D92] shrink-0" />
                 <span>
-                  All core laboratory entry, calculations, reports, resources, and the verified <strong>Knowledge &amp; Compliance Centre</strong> remain active on your current license.
+                  All laboratory entries, calculations, reports, resources, and the verified <strong>Knowledge &amp; Compliance Centre</strong> remain fully active on your current plan.
                 </span>
               </div>
             </div>
           </div>
 
-          {/* Right Column — Executive Dark Slate Entitlements Card */}
-          <div className="lg:col-span-5 bg-[#0F172A] text-white p-6 sm:p-8 flex flex-col justify-between relative overflow-hidden">
-            <div className="pointer-events-none absolute -top-20 -right-20 h-56 w-56 rounded-full bg-[#2563EB]/25 blur-3xl" />
-            <div className="pointer-events-none absolute -bottom-20 -left-20 h-56 w-56 rounded-full bg-[#0F9D92]/20 blur-3xl" />
+          {/* Right Column — Soft Ice-Blue & Teal Enterprise Entitlements Panel */}
+          <div className="lg:col-span-5 border-t lg:border-t-0 lg:border-l border-[#D6E8FF] bg-gradient-to-br from-[#EFF6FF] via-[#F5F9FF] to-[#F0FDFA] p-6 sm:p-8 flex flex-col justify-between relative overflow-hidden">
+            <div className="pointer-events-none absolute -top-16 -right-16 h-48 w-48 rounded-full bg-[#3B82F6]/10 blur-3xl" />
+            <div className="pointer-events-none absolute -bottom-16 -left-16 h-48 w-48 rounded-full bg-[#0F9D92]/10 blur-3xl" />
 
             <div className="relative space-y-5">
-              <div className="flex items-center justify-between gap-2 border-b border-white/10 pb-4">
+              <div className="flex items-center justify-between gap-2 border-b border-[#D6E8FF] pb-4">
                 <div className="flex items-center gap-2.5">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-400/15 border border-amber-400/30">
-                    <Sparkles className="w-4 h-4 text-amber-300" />
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white border border-[#D6E8FF] shadow-sm">
+                    <Sparkles className="w-4 h-4 text-[#2563EB]" />
                   </div>
                   <div>
-                    <p className="text-xs font-bold tracking-wide text-white">
+                    <p className="text-xs font-bold tracking-wide text-[#0F172A]">
                       ChittorTech Enterprise AI Suite
                     </p>
-                    <p className="text-[11px] text-slate-400">
+                    <p className="text-[11px] text-[#64748B]">
                       BIS &amp; NABL Intelligence Add-On
                     </p>
                   </div>
                 </div>
-                <span className="rounded-full bg-amber-400/15 border border-amber-400/30 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-300">
+                <span className="rounded-full bg-white border border-amber-300 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-700 shadow-sm">
                   Premium
                 </span>
               </div>
 
               <ul className="space-y-3">
                 {ENTERPRISE_ENTITLEMENTS.map((item) => (
-                  <li key={item} className="flex items-start gap-2.5 text-xs text-slate-200 leading-relaxed">
-                    <CheckCircle2 className="w-4 h-4 text-[#2DD4BF] shrink-0 mt-0.5" />
+                  <li key={item} className="flex items-start gap-2.5 text-xs text-[#334155] leading-relaxed">
+                    <CheckCircle2 className="w-4 h-4 text-[#0F9D92] shrink-0 mt-0.5" />
                     <span>{item}</span>
                   </li>
                 ))}
               </ul>
             </div>
 
-            <div className="relative mt-6 pt-4 border-t border-white/10 flex items-center justify-between gap-3 text-[11px] text-slate-400">
-              <span>Current Plan: Standard QA Lab</span>
-              <span className="inline-flex items-center gap-1 font-semibold text-amber-300">
+            <div className="relative mt-6 pt-4 border-t border-[#D6E8FF] flex items-center justify-between gap-3 text-[11px] text-[#64748B]">
+              <span className="font-medium">Current Plan: Standard QA Lab</span>
+              <span className="inline-flex items-center gap-1 font-bold text-[#2563EB]">
                 <Lock className="w-3 h-3" />
-                Activation Required
+                License Upgrade Needed
               </span>
             </div>
           </div>
@@ -235,19 +235,19 @@ export const AiAssistantComingSoon: React.FC<AiAssistantComingSoonProps> = ({
 
       {/* Coming Soon Modal on Upgrade Click */}
       {showUpgradeNotice && (
-        <div className="fixed inset-0 z-[100] !mt-0 flex items-center justify-center bg-slate-900/55 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="relative w-full max-w-md rounded-2xl border border-[#CBD5E1] bg-white shadow-2xl overflow-hidden">
-            <div className="bg-[#0F172A] px-6 py-5 text-white flex items-center justify-between">
+        <div className="fixed inset-0 z-[100] !mt-0 flex items-center justify-center bg-slate-900/45 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="relative w-full max-w-md rounded-2xl border border-[#D6E8FF] bg-white shadow-2xl overflow-hidden my-auto">
+            <div className="bg-gradient-to-r from-[#EAF3FF] via-[#F5F9FF] to-[#CCFBF1]/40 border-b border-[#D6E8FF] px-6 py-4 flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-400/15 border border-amber-400/30">
-                  <Crown className="w-4 h-4 text-amber-300" />
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white border border-[#D6E8FF] shadow-sm">
+                  <Crown className="w-4 h-4 text-amber-600" />
                 </div>
                 <div>
-                  <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-amber-300">
-                    <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
+                  <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-[#2563EB]">
+                    <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
                     Coming Soon
                   </span>
-                  <h4 className="text-sm font-bold text-white">
+                  <h4 className="text-sm font-bold text-[#0F172A]">
                     ChittorTech Enterprise AI Upgrade
                   </h4>
                 </div>
@@ -255,7 +255,7 @@ export const AiAssistantComingSoon: React.FC<AiAssistantComingSoonProps> = ({
               <button
                 type="button"
                 onClick={() => setShowUpgradeNotice(false)}
-                className="rounded-lg p-1 text-slate-400 hover:bg-white/10 hover:text-white transition-colors"
+                className="rounded-lg p-1 text-[#64748B] hover:bg-white hover:text-[#0F172A] transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
