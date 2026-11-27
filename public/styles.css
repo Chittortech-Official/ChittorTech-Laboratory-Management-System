@@ -727,6 +727,10 @@ video {
   z-index: 100;
 }
 
+.z-\[110\] {
+  z-index: 110;
+}
+
 .z-\[9999\] {
   z-index: 9999;
 }
@@ -1158,6 +1162,10 @@ video {
   min-width: 0px;
 }
 
+.min-w-\[110px\] {
+  min-width: 110px;
+}
+
 .min-w-\[1150px\] {
   min-width: 1150px;
 }
@@ -1170,12 +1178,12 @@ video {
   min-width: 150px;
 }
 
-.min-w-\[175px\] {
-  min-width: 175px;
+.min-w-\[170px\] {
+  min-width: 170px;
 }
 
-.min-w-\[230px\] {
-  min-width: 230px;
+.min-w-\[175px\] {
+  min-width: 175px;
 }
 
 .min-w-\[540px\] {
@@ -1219,6 +1227,10 @@ video {
   max-width: 72rem;
 }
 
+.max-w-\[135px\] {
+  max-width: 135px;
+}
+
 .max-w-\[140px\] {
   max-width: 140px;
 }
@@ -1235,8 +1247,8 @@ video {
   max-width: 220px;
 }
 
-.max-w-\[300px\] {
-  max-width: 300px;
+.max-w-\[235px\] {
+  max-width: 235px;
 }
 
 .max-w-full {
@@ -1554,6 +1566,10 @@ video {
   border-bottom-width: calc(1px * var(--tw-divide-y-reverse));
 }
 
+.divide-\[\#94A3B8\]\/80 > :not([hidden]) ~ :not([hidden]) {
+  border-color: rgb(148 163 184 / 0.8);
+}
+
 .divide-\[\#E2E8F0\] > :not([hidden]) ~ :not([hidden]) {
   --tw-divide-opacity: 1;
   border-color: rgb(226 232 240 / var(--tw-divide-opacity, 1));
@@ -1716,6 +1732,16 @@ video {
 .border-\[\#3B82F6\] {
   --tw-border-opacity: 1;
   border-color: rgb(59 130 246 / var(--tw-border-opacity, 1));
+}
+
+.border-\[\#64748B\] {
+  --tw-border-opacity: 1;
+  border-color: rgb(100 116 139 / var(--tw-border-opacity, 1));
+}
+
+.border-\[\#94A3B8\] {
+  --tw-border-opacity: 1;
+  border-color: rgb(148 163 184 / var(--tw-border-opacity, 1));
 }
 
 .border-\[\#99F6E4\] {
@@ -2020,6 +2046,11 @@ video {
   background-color: rgb(214 232 255 / var(--tw-bg-opacity, 1));
 }
 
+.bg-\[\#DBEAFE\] {
+  --tw-bg-opacity: 1;
+  background-color: rgb(219 234 254 / var(--tw-bg-opacity, 1));
+}
+
 .bg-\[\#DCFCE7\] {
   --tw-bg-opacity: 1;
   background-color: rgb(220 252 231 / var(--tw-bg-opacity, 1));
@@ -2041,6 +2072,15 @@ video {
 
 .bg-\[\#EAF3FF\]\/70 {
   background-color: rgb(234 243 255 / 0.7);
+}
+
+.bg-\[\#EAF3FF\]\/80 {
+  background-color: rgb(234 243 255 / 0.8);
+}
+
+.bg-\[\#F0FDF4\] {
+  --tw-bg-opacity: 1;
+  background-color: rgb(240 253 244 / var(--tw-bg-opacity, 1));
 }
 
 .bg-\[\#F1F5F9\] {
@@ -3942,6 +3982,11 @@ body {
   background-color: rgb(214 232 255 / var(--tw-bg-opacity, 1));
 }
 
+.hover\:bg-\[\#DCFCE7\]:hover {
+  --tw-bg-opacity: 1;
+  background-color: rgb(220 252 231 / var(--tw-bg-opacity, 1));
+}
+
 .hover\:bg-\[\#EAF3FF\]:hover {
   --tw-bg-opacity: 1;
   background-color: rgb(234 243 255 / var(--tw-bg-opacity, 1));
@@ -4017,9 +4062,14 @@ body {
   background-color: rgb(224 231 255 / var(--tw-bg-opacity, 1));
 }
 
-.hover\:bg-red-50:hover {
+.hover\:bg-red-100:hover {
   --tw-bg-opacity: 1;
-  background-color: rgb(254 242 242 / var(--tw-bg-opacity, 1));
+  background-color: rgb(254 226 226 / var(--tw-bg-opacity, 1));
+}
+
+.hover\:bg-red-700:hover {
+  --tw-bg-opacity: 1;
+  background-color: rgb(185 28 28 / var(--tw-bg-opacity, 1));
 }
 
 .hover\:bg-rose-100:hover {
@@ -4131,14 +4181,14 @@ body {
   color: rgb(49 46 129 / var(--tw-text-opacity, 1));
 }
 
-.hover\:text-red-600:hover {
-  --tw-text-opacity: 1;
-  color: rgb(220 38 38 / var(--tw-text-opacity, 1));
-}
-
 .hover\:text-red-700:hover {
   --tw-text-opacity: 1;
   color: rgb(185 28 28 / var(--tw-text-opacity, 1));
+}
+
+.hover\:text-red-800:hover {
+  --tw-text-opacity: 1;
+  color: rgb(153 27 27 / var(--tw-text-opacity, 1));
 }
 
 .hover\:text-rose-900:hover {
@@ -4681,5 +4731,36 @@ body {
   .xl\:block {
     display: block;
   }
+
+  .xl\:px-3 {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+}
+
+.\[\&_td\:last-child\]\:border-r-0 td:last-child {
+  border-right-width: 0px;
+}
+
+.\[\&_td\]\:border-r td {
+  border-right-width: 1px;
+}
+
+.\[\&_td\]\:border-\[\#CBD5E1\] td {
+  --tw-border-opacity: 1;
+  border-color: rgb(203 213 225 / var(--tw-border-opacity, 1));
+}
+
+.\[\&_th\:last-child\]\:border-r-0 th:last-child {
+  border-right-width: 0px;
+}
+
+.\[\&_th\]\:border-r th {
+  border-right-width: 1px;
+}
+
+.\[\&_th\]\:border-\[\#94A3B8\] th {
+  --tw-border-opacity: 1;
+  border-color: rgb(148 163 184 / var(--tw-border-opacity, 1));
 }
 

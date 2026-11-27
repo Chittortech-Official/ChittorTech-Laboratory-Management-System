@@ -17,8 +17,15 @@ import {
   ShieldCheck,
   FileSpreadsheet,
   Eye,
+  Printer,
+  Download,
 } from 'lucide-react';
 import { ExcelResourceImportModal } from './ExcelResourceImportModal';
+import { useConfirmationModal } from '@/contexts/ConfirmationModalContext';
+import {
+  exportResourcesToExcel,
+  exportResourcesToPdf,
+} from '@/lib/laboratory/resourceExportService';
 
 type SubModule = 'equipment' | 'documents' | 'staff';
 
@@ -107,6 +114,7 @@ function parseNotePairs(raw?: string | null): Array<{ label: string; value: stri
 }
 
 export const LaboratoryResourcesView: React.FC<LaboratoryResourcesViewProps> = ({ userId }) => {
+  const { showSuccess, showError } = useConfirmationModal();
   const [activeModule, setActiveModule] = useState<SubModule>('equipment');
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
@@ -121,6 +129,20 @@ export const LaboratoryResourcesView: React.FC<LaboratoryResourcesViewProps> = (
   const [showAddModal, setShowAddModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [selectedEquipment, setSelectedEquipment] = useState<EquipmentItem | null>(null);
+  const [pendingStatusChange, setPendingStatusChange] = useState<{
+    resource: SubModule;
+    id: string;
+    itemLabel: string;
+    field: string;
+    fromValue: string;
+    toValue: string;
+  } | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<{
+    resource: SubModule;
+    id: string;
+    itemLabel: string;
+  } | null>(null);
+  const [confirmBusy, setConfirmBusy] = useState(false);
 
   // Equipment Form State
   const [eqForm, setEqForm] = useState({
@@ -285,6 +307,11 @@ export const LaboratoryResourcesView: React.FC<LaboratoryResourcesViewProps> = (
         notes: '',
       });
       await fetchResources();
+      showSuccess({
+        type: 'create',
+        title: 'Resource Record Added',
+        message: 'Your laboratory resource record has been saved successfully.',
+      });
     } catch {
       setError('Network error while saving record.');
     } finally {
@@ -292,32 +319,85 @@ export const LaboratoryResourcesView: React.FC<LaboratoryResourcesViewProps> = (
     }
   };
 
-  const handleStatusChange = async (resource: SubModule, id: string, field: string, value: string) => {
+  const requestStatusChange = (
+    resource: SubModule,
+    id: string,
+    itemLabel: string,
+    field: string,
+    fromValue: string,
+    toValue: string
+  ) => {
+    if (!toValue || toValue === fromValue) return;
+    setPendingStatusChange({ resource, id, itemLabel, field, fromValue, toValue });
+  };
+
+  const confirmStatusChange = async () => {
+    if (!pendingStatusChange || confirmBusy) return;
+    const change = pendingStatusChange;
+    setConfirmBusy(true);
+    setError(null);
     try {
       const res = await fetch('/api/laboratory-resources', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ resource, userId, id, updates: { [field]: value } }),
+        body: JSON.stringify({
+          resource: change.resource,
+          userId,
+          id: change.id,
+          updates: { [change.field]: change.toValue },
+        }),
       });
-      if (res.ok) {
-        await fetchResources();
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        const msg = data.error || 'Failed to update status.';
+        setError(msg);
+        showError({ title: 'Update Failed', message: msg });
+        return;
       }
+      setPendingStatusChange(null);
+      await fetchResources();
+      showSuccess({
+        type: 'update',
+        title: 'Status Updated',
+        message: `${change.itemLabel} updated from ${change.fromValue} to ${change.toValue}.`,
+      });
     } catch {
-      // ignore
+      setError('Network error while updating status.');
+      showError({ title: 'Network Error', message: 'Network error while updating status.' });
+    } finally {
+      setConfirmBusy(false);
     }
   };
 
-  const handleDelete = async (resource: SubModule, id: string) => {
+  const confirmDeleteRecord = async () => {
+    if (!pendingDelete || confirmBusy) return;
+    const delTarget = pendingDelete;
+    setConfirmBusy(true);
+    setError(null);
     try {
       const res = await fetch(
-        `/api/laboratory-resources?resource=${resource}&userId=${encodeURIComponent(userId)}&id=${encodeURIComponent(id)}`,
+        `/api/laboratory-resources?resource=${delTarget.resource}&userId=${encodeURIComponent(userId)}&id=${encodeURIComponent(delTarget.id)}`,
         { method: 'DELETE' }
       );
-      if (res.ok) {
-        await fetchResources();
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        const msg = data.error || 'Failed to delete record.';
+        setError(msg);
+        showError({ title: 'Delete Failed', message: msg });
+        return;
       }
+      setPendingDelete(null);
+      await fetchResources();
+      showSuccess({
+        type: 'delete',
+        title: 'Record Deleted',
+        message: `${delTarget.itemLabel} has been removed from Laboratory Resources.`,
+      });
     } catch {
-      // ignore
+      setError('Network error while deleting record.');
+      showError({ title: 'Network Error', message: 'Network error while deleting record.' });
+    } finally {
+      setConfirmBusy(false);
     }
   };
 
@@ -378,14 +458,80 @@ export const LaboratoryResourcesView: React.FC<LaboratoryResourcesViewProps> = (
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={fetchResources}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-[#E2E8F0] bg-white text-xs font-semibold text-[#334155] hover:bg-slate-50 transition-colors"
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-[#CBD5E1] bg-white text-xs font-semibold text-[#334155] hover:bg-slate-50 transition-colors"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
             <span>Refresh</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const count =
+                activeModule === 'equipment'
+                  ? filteredEquipment.length
+                  : activeModule === 'documents'
+                  ? filteredDocuments.length
+                  : filteredStaff.length;
+              if (count === 0) {
+                showError({
+                  title: 'No Records to Print',
+                  message: 'Add or import records in this register before exporting to Excel.',
+                });
+                return;
+              }
+              const file = exportResourcesToExcel({
+                module: activeModule,
+                equipment: filteredEquipment,
+                documents: filteredDocuments,
+                staff: filteredStaff,
+              });
+              showSuccess({
+                type: 'export',
+                title: 'Excel Register Ready',
+                message: `Exported ${count} records cleanly into ${file}.`,
+              });
+            }}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-[#BBF7D0] bg-[#F0FDF4] text-xs font-semibold text-[#15803D] hover:bg-[#DCFCE7] transition-colors"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>Print in Excel</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const count =
+                activeModule === 'equipment'
+                  ? filteredEquipment.length
+                  : activeModule === 'documents'
+                  ? filteredDocuments.length
+                  : filteredStaff.length;
+              if (count === 0) {
+                showError({
+                  title: 'No Records to Print',
+                  message: 'Add or import records in this register before generating a PDF.',
+                });
+                return;
+              }
+              const file = exportResourcesToPdf({
+                module: activeModule,
+                equipment: filteredEquipment,
+                documents: filteredDocuments,
+                staff: filteredStaff,
+              });
+              showSuccess({
+                type: 'export',
+                title: 'PDF Register Ready',
+                message: `Generated landscape audit-ready register ${file}.`,
+              });
+            }}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-[#94A3B8] bg-white text-xs font-semibold text-[#0F172A] hover:bg-slate-100 transition-colors"
+          >
+            <Printer className="w-3.5 h-3.5 text-[#2563EB]" />
+            <span>Print in PDF</span>
           </button>
           <button
             type="button"
@@ -475,8 +621,8 @@ export const LaboratoryResourcesView: React.FC<LaboratoryResourcesViewProps> = (
       </div>
 
       {/* Sub-Module Switcher + Search */}
-      <div className="bg-white rounded-2xl border border-[#E2E8F0] shadow-xs overflow-hidden">
-        <div className="p-4 border-b border-[#E2E8F0] flex flex-col md:flex-row md:items-center justify-between gap-3 bg-[#F5F8FC]">
+      <div className="bg-white rounded-2xl border-2 border-[#94A3B8] shadow-sm overflow-hidden">
+        <div className="p-4 border-b-2 border-[#94A3B8] flex flex-col md:flex-row md:items-center justify-between gap-3 bg-[#F5F8FC]">
           <div className="flex flex-wrap items-center gap-2">
             {[
               { id: 'equipment' as SubModule, label: 'Equipment & Calibration', icon: <Wrench className="w-4 h-4" /> },
@@ -522,39 +668,39 @@ export const LaboratoryResourcesView: React.FC<LaboratoryResourcesViewProps> = (
                 No equipment records logged yet. Click <strong>Add Equipment</strong> to register XRF, Blaine, Compression Testing Machine, or analytical balances.
               </div>
             ) : (
-              <table className="w-full text-left text-xs">
-                <thead className="bg-[#EAF3FF] text-[#334155] border-b border-[#D6E8FF]">
+              <table className="w-full text-left text-xs border-collapse [&_th]:border-r [&_th]:border-[#94A3B8] [&_th:last-child]:border-r-0 [&_td]:border-r [&_td]:border-[#CBD5E1] [&_td:last-child]:border-r-0">
+                <thead className="bg-[#DBEAFE] text-[#0F172A] border-b-2 border-[#94A3B8]">
                   <tr>
-                    <th className="py-3 px-4 font-bold">Code</th>
-                    <th className="py-3 px-4 font-bold">Equipment &amp; Make</th>
-                    <th className="py-3 px-4 font-bold">Serial / Location</th>
-                    <th className="py-3 px-4 font-bold">Last Calibrated</th>
-                    <th className="py-3 px-4 font-bold">Next Due</th>
-                    <th className="py-3 px-4 font-bold">Agency / Cert</th>
-                    <th className="py-3 px-4 font-bold">Technical Specs &amp; Notes</th>
-                    <th className="py-3 px-4 font-bold">Status</th>
-                    <th className="py-3 px-4 font-bold text-right">Action</th>
+                    <th className="py-2.5 px-2.5 xl:px-3 font-bold whitespace-nowrap">Code</th>
+                    <th className="py-2.5 px-2.5 xl:px-3 font-bold">Equipment &amp; Make</th>
+                    <th className="py-2.5 px-2.5 xl:px-3 font-bold">Serial / Location</th>
+                    <th className="py-2.5 px-2.5 xl:px-3 font-bold whitespace-nowrap">Last Cal.</th>
+                    <th className="py-2.5 px-2.5 xl:px-3 font-bold whitespace-nowrap">Next Due</th>
+                    <th className="py-2.5 px-2.5 xl:px-3 font-bold">Agency / Cert</th>
+                    <th className="py-2.5 px-2.5 xl:px-3 font-bold">Technical Specs</th>
+                    <th className="py-2.5 px-2.5 xl:px-3 font-bold">Status</th>
+                    <th className="py-2.5 px-2.5 xl:px-3 font-bold text-right whitespace-nowrap">Action</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#E2E8F0]">
+                <tbody className="divide-y divide-[#94A3B8]/80">
                   {filteredEquipment.map((item) => {
                     const remaining = daysUntil(item.next_calibration_date);
                     const specs = parseNotePairs(item.maintenance_notes);
                     return (
                       <tr key={item.id} className="hover:bg-slate-50/70 align-top">
-                        <td className="py-3 px-4 font-mono font-bold text-[#2563EB] whitespace-nowrap">{item.equipment_code}</td>
-                        <td className="py-3 px-4">
+                        <td className="py-2.5 px-2.5 xl:px-3 font-mono font-bold text-[#2563EB] whitespace-nowrap">{item.equipment_code}</td>
+                        <td className="py-2.5 px-2.5 xl:px-3 min-w-[130px]">
                           <div className="font-semibold text-[#334155]">{item.name}</div>
                           <div className="text-[11px] text-[#64748B]">
                             {[item.manufacturer, item.model].filter(Boolean).join(' • ') || '—'}
                           </div>
                         </td>
-                        <td className="py-3 px-4 text-[#64748B]">
-                          <div>{item.serial_number || '—'}</div>
+                        <td className="py-2.5 px-2.5 xl:px-3 text-[#64748B] min-w-[110px]">
+                          <div className="break-all">{item.serial_number || '—'}</div>
                           <div className="text-[11px]">{item.location || 'Main QA Lab'}</div>
                         </td>
-                        <td className="py-3 px-4 font-mono whitespace-nowrap">{item.last_calibration_date || '—'}</td>
-                        <td className="py-3 px-4 whitespace-nowrap">
+                        <td className="py-2.5 px-2.5 xl:px-3 font-mono whitespace-nowrap">{item.last_calibration_date || '—'}</td>
+                        <td className="py-2.5 px-2.5 xl:px-3 whitespace-nowrap">
                           <div className="font-mono">{item.next_calibration_date || '—'}</div>
                           {remaining !== null && (
                             <span
@@ -570,17 +716,17 @@ export const LaboratoryResourcesView: React.FC<LaboratoryResourcesViewProps> = (
                             </span>
                           )}
                         </td>
-                        <td className="py-3 px-4 text-[#64748B]">
+                        <td className="py-2.5 px-2.5 xl:px-3 text-[#64748B]">
                           <div>{item.calibration_agency || '—'}</div>
                           <div className="text-[11px] font-mono">{item.certificate_no || ''}</div>
                         </td>
-                        <td className="py-3 px-4 min-w-[230px] max-w-[300px]">
+                        <td className="py-2.5 px-2.5 xl:px-3 min-w-[170px] max-w-[235px]">
                           {specs.length === 0 ? (
                             <span className="text-[#94A3B8]">—</span>
                           ) : (
                             <div className="space-y-1">
                               {specs.slice(0, 3).map((sp, i) => (
-                                <div key={i} className="text-[11px] text-[#475569] leading-snug truncate">
+                                <div key={i} className="text-[11px] text-[#475569] leading-snug break-words">
                                   <span className="font-semibold text-[#1E293B]">{sp.label}:</span>{' '}
                                   <span>{sp.value}</span>
                                 </div>
@@ -597,11 +743,20 @@ export const LaboratoryResourcesView: React.FC<LaboratoryResourcesViewProps> = (
                             </div>
                           )}
                         </td>
-                        <td className="py-3 px-4">
+                        <td className="py-2.5 px-2.5 xl:px-3">
                           <select
                             value={item.status}
-                            onChange={(e) => handleStatusChange('equipment', item.id, 'status', e.target.value)}
-                            className="rounded-lg border border-[#E2E8F0] bg-white px-2 py-1 text-[11px] font-semibold text-[#334155]"
+                            onChange={(e) =>
+                              requestStatusChange(
+                                'equipment',
+                                item.id,
+                                `${item.equipment_code} • ${item.name}`,
+                                'status',
+                                item.status,
+                                e.target.value
+                              )
+                            }
+                            className="rounded-lg border border-[#64748B] bg-white px-2 py-1 text-[11px] font-semibold text-[#0F172A] focus:border-[#2563EB] focus:outline-none max-w-[135px]"
                           >
                             <option value="Active">Active</option>
                             <option value="Calibration Due">Calibration Due</option>
@@ -609,20 +764,26 @@ export const LaboratoryResourcesView: React.FC<LaboratoryResourcesViewProps> = (
                             <option value="Out of Service">Out of Service</option>
                           </select>
                         </td>
-                        <td className="py-3 px-4 text-right whitespace-nowrap">
-                          <div className="inline-flex items-center gap-1">
+                        <td className="py-2.5 px-2.5 xl:px-3 text-right whitespace-nowrap">
+                          <div className="inline-flex items-center gap-1.5">
                             <button
                               type="button"
                               onClick={() => setSelectedEquipment(item)}
-                              className="p-1.5 rounded-lg text-slate-500 hover:text-[#2563EB] hover:bg-[#EAF3FF] transition-colors"
+                              className="p-1.5 rounded-lg text-[#2563EB] bg-[#EAF3FF]/80 hover:bg-[#D6E8FF] transition-colors"
                               title="View full equipment details"
                             >
                               <Eye className="w-4 h-4" />
                             </button>
                             <button
                               type="button"
-                              onClick={() => handleDelete('equipment', item.id)}
-                              className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                              onClick={() =>
+                                setPendingDelete({
+                                  resource: 'equipment',
+                                  id: item.id,
+                                  itemLabel: `${item.equipment_code} • ${item.name}`,
+                                })
+                              }
+                              className="p-1.5 rounded-lg text-red-600 bg-red-50/80 hover:text-red-700 hover:bg-red-100 transition-colors"
                               title="Delete equipment"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -646,8 +807,8 @@ export const LaboratoryResourcesView: React.FC<LaboratoryResourcesViewProps> = (
                 No controlled documents or SOPs yet. Click <strong>Add Document / SOP</strong> to track ISO 17025 manuals, IS 4031 / ASTM C114 methods, and revision history.
               </div>
             ) : (
-              <table className="w-full text-left text-xs">
-                <thead className="bg-[#EAF3FF] text-[#334155] border-b border-[#D6E8FF]">
+              <table className="w-full text-left text-xs border-collapse [&_th]:border-r [&_th]:border-[#94A3B8] [&_th:last-child]:border-r-0 [&_td]:border-r [&_td]:border-[#CBD5E1] [&_td:last-child]:border-r-0">
+                <thead className="bg-[#DBEAFE] text-[#0F172A] border-b-2 border-[#94A3B8]">
                   <tr>
                     <th className="py-3 px-4 font-bold">Doc Code</th>
                     <th className="py-3 px-4 font-bold">Title &amp; Standard Ref</th>
@@ -659,7 +820,7 @@ export const LaboratoryResourcesView: React.FC<LaboratoryResourcesViewProps> = (
                     <th className="py-3 px-4 font-bold text-right">Action</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#E2E8F0]">
+                <tbody className="divide-y divide-[#94A3B8]/80">
                   {filteredDocuments.map((doc) => (
                     <tr key={doc.id} className="hover:bg-slate-50/70">
                       <td className="py-3 px-4 font-mono font-bold text-[#2563EB]">{doc.doc_code}</td>
@@ -681,8 +842,17 @@ export const LaboratoryResourcesView: React.FC<LaboratoryResourcesViewProps> = (
                       <td className="py-3 px-4">
                         <select
                           value={doc.status}
-                          onChange={(e) => handleStatusChange('documents', doc.id, 'status', e.target.value)}
-                          className="rounded-lg border border-[#E2E8F0] bg-white px-2 py-1 text-[11px] font-semibold text-[#334155]"
+                          onChange={(e) =>
+                            requestStatusChange(
+                              'documents',
+                              doc.id,
+                              `${doc.doc_code} • ${doc.title}`,
+                              'status',
+                              doc.status,
+                              e.target.value
+                            )
+                          }
+                          className="rounded-lg border border-[#64748B] bg-white px-2.5 py-1 text-[11px] font-semibold text-[#0F172A] focus:border-[#2563EB] focus:outline-none"
                         >
                           <option value="Draft">Draft</option>
                           <option value="Under Review">Under Review</option>
@@ -693,8 +863,14 @@ export const LaboratoryResourcesView: React.FC<LaboratoryResourcesViewProps> = (
                       <td className="py-3 px-4 text-right">
                         <button
                           type="button"
-                          onClick={() => handleDelete('documents', doc.id)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                          onClick={() =>
+                            setPendingDelete({
+                              resource: 'documents',
+                              id: doc.id,
+                              itemLabel: `${doc.doc_code} • ${doc.title}`,
+                            })
+                          }
+                          className="p-1.5 rounded-lg text-red-600 bg-red-50/80 hover:text-red-700 hover:bg-red-100 transition-colors"
                           title="Delete document"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -716,8 +892,8 @@ export const LaboratoryResourcesView: React.FC<LaboratoryResourcesViewProps> = (
                 No staff competency records logged yet. Click <strong>Add Training Record</strong> to document analyst authorizations, training dates, and re-evaluation schedules.
               </div>
             ) : (
-              <table className="w-full text-left text-xs">
-                <thead className="bg-[#EAF3FF] text-[#334155] border-b border-[#D6E8FF]">
+              <table className="w-full text-left text-xs border-collapse [&_th]:border-r [&_th]:border-[#94A3B8] [&_th:last-child]:border-r-0 [&_td]:border-r [&_td]:border-[#CBD5E1] [&_td:last-child]:border-r-0">
+                <thead className="bg-[#DBEAFE] text-[#0F172A] border-b-2 border-[#94A3B8]">
                   <tr>
                     <th className="py-3 px-4 font-bold">Staff &amp; Role</th>
                     <th className="py-3 px-4 font-bold">Qualified Tests</th>
@@ -728,7 +904,7 @@ export const LaboratoryResourcesView: React.FC<LaboratoryResourcesViewProps> = (
                     <th className="py-3 px-4 font-bold text-right">Action</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#E2E8F0]">
+                <tbody className="divide-y divide-[#94A3B8]/80">
                   {filteredStaff.map((person) => (
                     <tr key={person.id} className="hover:bg-slate-50/70">
                       <td className="py-3 px-4">
@@ -751,9 +927,16 @@ export const LaboratoryResourcesView: React.FC<LaboratoryResourcesViewProps> = (
                         <select
                           value={person.competency_status}
                           onChange={(e) =>
-                            handleStatusChange('staff', person.id, 'competency_status', e.target.value)
+                            requestStatusChange(
+                              'staff',
+                              person.id,
+                              `${person.staff_name} (${person.designation})`,
+                              'competency_status',
+                              person.competency_status,
+                              e.target.value
+                            )
                           }
-                          className="rounded-lg border border-[#E2E8F0] bg-white px-2 py-1 text-[11px] font-semibold text-[#334155]"
+                          className="rounded-lg border border-[#64748B] bg-white px-2.5 py-1 text-[11px] font-semibold text-[#0F172A] focus:border-[#2563EB] focus:outline-none"
                         >
                           <option value="In Training">In Training</option>
                           <option value="Competent">Competent</option>
@@ -763,8 +946,14 @@ export const LaboratoryResourcesView: React.FC<LaboratoryResourcesViewProps> = (
                       <td className="py-3 px-4 text-right">
                         <button
                           type="button"
-                          onClick={() => handleDelete('staff', person.id)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                          onClick={() =>
+                            setPendingDelete({
+                              resource: 'staff',
+                              id: person.id,
+                              itemLabel: `${person.staff_name} (${person.designation})`,
+                            })
+                          }
+                          className="p-1.5 rounded-lg text-red-600 bg-red-50/80 hover:text-red-700 hover:bg-red-100 transition-colors"
                           title="Delete training record"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -1230,6 +1419,109 @@ export const LaboratoryResourcesView: React.FC<LaboratoryResourcesViewProps> = (
               >
                 Close
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Modal Before Status Update */}
+      {pendingStatusChange && (
+        <div className="fixed inset-0 z-[110] !mt-0 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="w-full max-w-md rounded-2xl border border-[#CBD5E1] bg-white shadow-2xl overflow-hidden my-auto">
+            <div className="px-6 py-4 bg-[#EAF3FF] border-b border-[#D6E8FF] flex items-center justify-between">
+              <div className="flex items-center gap-2 text-sm font-bold text-[#0F172A]">
+                <AlertTriangle className="w-4 h-4 text-[#2563EB]" />
+                <span>Confirm Status Change</span>
+              </div>
+              <button
+                type="button"
+                disabled={confirmBusy}
+                onClick={() => setPendingStatusChange(null)}
+                className="text-[#64748B] hover:text-[#0F172A] p-1 rounded-lg hover:bg-white/60"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4 text-xs text-[#334155]">
+              <p className="leading-relaxed">
+                Are you sure you want to change the status for{' '}
+                <strong className="text-[#0F172A]">{pendingStatusChange.itemLabel}</strong>?
+              </p>
+              <div className="rounded-xl border border-[#CBD5E1] bg-[#F8FAFC] p-3 flex items-center justify-center gap-2.5 font-semibold">
+                <span className="rounded-lg border border-[#CBD5E1] bg-white px-2.5 py-1 text-[#475569]">
+                  {pendingStatusChange.fromValue}
+                </span>
+                <span className="text-[#2563EB] font-bold">→</span>
+                <span className="rounded-lg border border-[#BFDBFE] bg-[#EAF3FF] px-2.5 py-1 text-[#2563EB]">
+                  {pendingStatusChange.toValue}
+                </span>
+              </div>
+              <div className="flex justify-end gap-2.5 pt-2">
+                <button
+                  type="button"
+                  disabled={confirmBusy}
+                  onClick={() => setPendingStatusChange(null)}
+                  className="rounded-xl border border-[#CBD5E1] bg-white px-4 py-2 font-semibold text-[#475569] hover:bg-slate-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={confirmBusy}
+                  onClick={() => void confirmStatusChange()}
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-[#2563EB] px-4 py-2 font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
+                >
+                  {confirmBusy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+                  <span>Confirm Change</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Modal Before Delete */}
+      {pendingDelete && (
+        <div className="fixed inset-0 z-[110] !mt-0 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="w-full max-w-md rounded-2xl border border-red-200 bg-white shadow-2xl overflow-hidden my-auto">
+            <div className="px-6 py-4 bg-red-50 border-b border-red-200 flex items-center justify-between">
+              <div className="flex items-center gap-2 text-sm font-bold text-red-900">
+                <Trash2 className="w-4 h-4 text-red-600" />
+                <span>Confirm Record Deletion</span>
+              </div>
+              <button
+                type="button"
+                disabled={confirmBusy}
+                onClick={() => setPendingDelete(null)}
+                className="text-red-500 hover:text-red-800 p-1 rounded-lg hover:bg-white/60"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4 text-xs text-[#334155]">
+              <p className="leading-relaxed">
+                Are you sure you want to permanently delete{' '}
+                <strong className="text-[#0F172A]">{pendingDelete.itemLabel}</strong>? This action cannot be undone.
+              </p>
+              <div className="flex justify-end gap-2.5 pt-2">
+                <button
+                  type="button"
+                  disabled={confirmBusy}
+                  onClick={() => setPendingDelete(null)}
+                  className="rounded-xl border border-[#CBD5E1] bg-white px-4 py-2 font-semibold text-[#475569] hover:bg-slate-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={confirmBusy}
+                  onClick={() => void confirmDeleteRecord()}
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-red-600 px-4 py-2 font-semibold text-white hover:bg-red-700 disabled:opacity-60"
+                >
+                  {confirmBusy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                  <span>Delete Record</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
