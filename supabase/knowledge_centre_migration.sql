@@ -224,5 +224,18 @@ begin
   end loop;
 end $$;
 
+-- Ensure verification metadata columns exist if tables were already created
+alter table public.knowledge_articles
+  add column if not exists source_organization text,
+  add column if not exists source_title text,
+  add column if not exists source_document_number text,
+  add column if not exists source_revision text,
+  add column if not exists source_url text,
+  add column if not exists last_verified_at timestamp with time zone,
+  add column if not exists verification_status text default 'Verified' check (
+    verification_status in ('Verified', 'Needs Review', 'Outdated', 'Draft', 'Pending Verification')
+  ),
+  add column if not exists applicability_notes text;
+
 notify pgrst, 'reload schema';
 

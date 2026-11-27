@@ -150,9 +150,10 @@ export const BisModuleView: React.FC = () => {
                 </td>
                 <td className="py-4 px-4 align-top whitespace-nowrap">
                   <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DCFCE7] text-[#15803D]">
-                    {std.status}
+                    {std.verificationStatus} • {std.status}
                   </span>
-                  <div className="text-[11px] text-[#64748B] mt-1">{std.lastVerifiedDate}</div>
+                  <div className="text-[10px] font-semibold text-[#2563EB] mt-1">{std.classification}</div>
+                  <div className="text-[11px] text-[#64748B] mt-0.5">Verified {std.lastVerifiedDate}</div>
                 </td>
                 <td className="py-4 px-4 align-top text-right whitespace-nowrap">
                   <a href={std.officialUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[#2563EB] font-semibold hover:underline">
@@ -226,8 +227,14 @@ export const NablModuleView: React.FC<{
         </a>
       </div>
 
-      {/* Horizontal 6-Stage Process Flow */}
-      <div className="bg-white rounded-xl border border-[#E2E8F0] p-4 overflow-x-auto">
+      {/* Horizontal 6-Stage Process Flow (ChittorTech's Practical Learning Framework) */}
+      <div className="bg-white rounded-xl border border-[#E2E8F0] p-4 space-y-2.5 overflow-x-auto">
+        <div className="flex items-center justify-between text-[11px]">
+          <span className="font-bold uppercase tracking-wider text-[#64748B]">
+            ChittorTech&apos;s Practical Learning Framework
+          </span>
+          <span className="text-[#64748B]">Simplified educational roadmap (not an official NABL-mandated sequence)</span>
+        </div>
         <div className="flex items-center justify-between min-w-[640px] gap-2">
           {stages.map((st, idx) => (
             <React.Fragment key={st.name}>
@@ -270,8 +277,17 @@ export const NablModuleView: React.FC<{
         </div>
 
         <div className="lg:col-span-7 space-y-4">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-[#2563EB]">Step {selectedStep.step} of 12</span>
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-[#2563EB]">Step {selectedStep.step} of 12</span>
+              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                selectedStep.classification === 'Official Requirement'
+                  ? 'bg-[#EAF3FF] text-[#2563EB]'
+                  : 'bg-[#FEF3C7] text-[#B45309]'
+              }`}>
+                {selectedStep.classification}
+              </span>
+            </div>
             <button
               type="button"
               onClick={() => onToggleStep(selectedStep.id)}
@@ -287,9 +303,15 @@ export const NablModuleView: React.FC<{
           <h4 className="text-lg font-bold text-[#334155]">{selectedStep.title}</h4>
           <p className="text-sm font-medium text-[#334155]">{selectedStep.summary}</p>
           <p className="text-xs text-[#64748B] leading-relaxed">{selectedStep.detailedGuidance}</p>
-          <div className="border-t border-[#E2E8F0] pt-3 text-xs">
-            <span className="font-bold text-[#334155]">Key Required Evidence: </span>
-            <span className="text-[#0F9D92] font-semibold">{selectedStep.keyEvidence}</span>
+          <div className="border-t border-[#E2E8F0] pt-3 text-xs flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <span className="font-bold text-[#334155]">Key Required Evidence: </span>
+              <span className="text-[#0F9D92] font-semibold">{selectedStep.keyEvidence}</span>
+            </div>
+            <a href={selectedStep.officialReference} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[#2563EB] font-semibold hover:underline">
+              <span>Official Source</span>
+              <ExternalLink className="w-3 h-3" />
+            </a>
           </div>
         </div>
       </div>
