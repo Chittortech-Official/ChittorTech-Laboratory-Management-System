@@ -138,7 +138,7 @@ export const Header: React.FC<HeaderProps> = ({ onLogout, onOpenSettings }) => {
   return (
     <>
       <header className="sticky top-0 z-40 w-full border-b border-slate-200/90 bg-white/95 backdrop-blur-md shadow-xs">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+        <div className="flex h-16 w-full items-center justify-between px-3 sm:px-5 lg:px-6">
           {/* ChittorTech QA Branding */}
           <div className="flex items-center gap-3">
             <div className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white p-1.5 shadow-xs">

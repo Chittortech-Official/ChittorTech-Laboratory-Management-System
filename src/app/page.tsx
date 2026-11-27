@@ -249,7 +249,7 @@ function HomePageContent() {
 
   // 3. Authenticated: render protected laboratory dashboard directly without any login flash
   return (
-    <div className="min-h-[100dvh] bg-slate-50 flex flex-col justify-between">
+    <div className="min-h-[100dvh] bg-slate-50 flex flex-col justify-between overflow-x-clip">
       <Header
         onOpenSettings={() => handleTabChange('settings')}
         onLogout={async () => {
@@ -258,7 +258,7 @@ function HomePageContent() {
         }}
       />
 
-      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+      <main className="flex-1 w-full px-3 sm:px-5 lg:px-6 py-4 sm:py-6">
         <LaboratoryDashboard
           activeTab={activeTab}
           onTabChange={handleTabChange}
@@ -266,7 +266,7 @@ function HomePageContent() {
       </main>
 
       <footer className="w-full border-t border-slate-200 bg-white py-4 text-center text-xs text-slate-400">
-        <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+        <div className="w-full px-3 sm:px-5 lg:px-6 flex flex-col sm:flex-row items-center justify-between gap-2">
           <p>© {new Date().getFullYear()} ChittorTech QA Laboratory Management System. Official Industrial Build.</p>
           <div className="flex items-center gap-4 text-slate-500 text-[11px]">
             <span>Phase 1: Industrial QA Authentication & Request Flow</span>
