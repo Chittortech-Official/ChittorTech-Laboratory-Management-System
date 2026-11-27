@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
+import { requireAuthenticatedSession } from '@/lib/auth/session';
 
 const smtpHost = process.env.SMTP_HOST || 'smtpout.secureserver.net';
 const smtpPort = parseInt(process.env.SMTP_PORT || '465', 10);
@@ -9,6 +10,9 @@ const senderEmail = process.env.SENDER_EMAIL || process.env.SMTP_FROM || 'contac
 
 export async function POST(request: Request) {
   try {
+    const auth = requireAuthenticatedSession(request);
+    if (!auth.ok) return auth.response;
+
     const body = await request.json();
     const {
       recipientEmail,

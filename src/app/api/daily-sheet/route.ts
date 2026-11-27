@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { calculateEquivalentAlkali } from '@/lib/laboratory/exportService';
 import { calculateBoguePhases, calculateCoalMetrics } from '@/lib/laboratory/bogueEngine';
 import { insertAuditLog } from '@/lib/laboratory/auditHelper';
+import { requireAuthenticatedSession } from '@/lib/auth/session';
 
 function getSupabase() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -24,6 +25,9 @@ function toNum(v: any): number | null {
 // GET /api/daily-sheet?userId=...&date=YYYY-MM-DD
 export async function GET(request: Request) {
   try {
+    const auth = requireAuthenticatedSession(request);
+    if (!auth.ok) return auth.response;
+
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
     const date = searchParams.get('date');
@@ -68,6 +72,9 @@ export async function GET(request: Request) {
 // POST /api/daily-sheet - Save/Upsert entire daily sheet (Chemical + Mechanical + Coal)
 export async function POST(request: Request) {
   try {
+    const auth = requireAuthenticatedSession(request);
+    if (!auth.ok) return auth.response;
+
     const body = await request.json();
     const {
       user_id,

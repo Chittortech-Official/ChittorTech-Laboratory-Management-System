@@ -4,6 +4,7 @@ import { LaboratoryRecordPayload } from '@/types';
 import { extractNextSampleId } from '@/lib/laboratory/sampleIdHelper';
 import { computeRecordDiff, insertAuditLog } from '@/lib/laboratory/auditHelper';
 import { calculateEquivalentAlkali } from '@/lib/laboratory/exportService';
+import { requireAuthenticatedSession } from '@/lib/auth/session';
 
 function getSupabase() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -19,6 +20,9 @@ function getSupabase() {
 // GET /api/records - Retrieve records with filters
 export async function GET(request: Request) {
   try {
+    const auth = requireAuthenticatedSession(request);
+    if (!auth.ok) return auth.response;
+
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
     const category = searchParams.get('category');
@@ -132,6 +136,9 @@ export async function GET(request: Request) {
 // POST /api/records - Insert new laboratory test record
 export async function POST(request: Request) {
   try {
+    const auth = requireAuthenticatedSession(request);
+    if (!auth.ok) return auth.response;
+
     const body = await request.json();
     const {
       user_id,
@@ -282,6 +289,9 @@ export async function POST(request: Request) {
 // PUT /api/records - Update an existing laboratory record (Requires Reason for Change under NABL Clause 7.5)
 export async function PUT(request: Request) {
   try {
+    const auth = requireAuthenticatedSession(request);
+    if (!auth.ok) return auth.response;
+
     const body = await request.json();
     const {
       id,
@@ -406,6 +416,9 @@ export async function PUT(request: Request) {
 // DELETE /api/records - Soft-delete / archive an existing record (Requires Reason under NABL Clause 7.5)
 export async function DELETE(request: Request) {
   try {
+    const auth = requireAuthenticatedSession(request);
+    if (!auth.ok) return auth.response;
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
     const userId = searchParams.get('userId');

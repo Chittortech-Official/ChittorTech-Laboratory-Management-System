@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { sendSupportTicketEmails, isSmtpConfigured } from '@/lib/mail/mailer';
 import { SupportIssueCategory, SupportPriority, SupportTicketStatus } from '@/types';
+import { requireAuthenticatedSession } from '@/lib/auth/session';
 
 function getSupabase() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -51,9 +52,11 @@ function generateTicketId(): string {
 // GET /api/support-tickets?userId=...&role=...
 export async function GET(request: Request) {
   try {
+    const auth = requireAuthenticatedSession(request);
+    if (!auth.ok) return auth.response;
+
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
-    const role = searchParams.get('role');
+    const userId = searchParams.get('userId') || auth.session.sub;
 
     if (!userId) {
       return NextResponse.json({ success: false, error: 'User identification required' }, { status: 400 });
@@ -67,8 +70,8 @@ export async function GET(request: Request) {
       .limit(100);
 
     // Protect private support records: non-admins can ONLY read their own tickets
-    if (role !== 'admin') {
-      query = query.eq('user_id', userId);
+    if (auth.session.role !== 'admin') {
+      query = query.eq('user_id', auth.session.sub);
     }
 
     const { data, error } = await query;
@@ -94,6 +97,9 @@ export async function GET(request: Request) {
 // POST /api/support-tickets
 export async function POST(request: Request) {
   try {
+    const auth = requireAuthenticatedSession(request);
+    if (!auth.ok) return auth.response;
+
     const body = await request.json();
 
     const userId = sanitizeText(body.user_id, 120);
@@ -217,13 +223,15 @@ export async function POST(request: Request) {
 // PATCH /api/support-tickets (Restricted to authorized administrators)
 export async function PATCH(request: Request) {
   try {
+    const auth = requireAuthenticatedSession(request);
+    if (!auth.ok) return auth.response;
+
     const body = await request.json();
-    const role = sanitizeText(body.role, 40);
     const id = sanitizeText(body.id, 80);
     const status = sanitizeText(body.status, 40) as SupportTicketStatus;
     const adminNotes = body.admin_notes !== undefined ? sanitizeText(body.admin_notes, 2000) : undefined;
 
-    if (role !== 'admin') {
+    if (auth.session.role !== 'admin') {
       return NextResponse.json(
         { success: false, error: 'Unauthorized: Only administrators can update support ticket statuses.' },
         { status: 403 }

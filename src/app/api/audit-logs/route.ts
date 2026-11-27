@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { requireAuthenticatedSession } from '@/lib/auth/session';
 
 function getSupabase() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -15,6 +16,9 @@ function getSupabase() {
 // GET /api/audit-logs?recordId=...&userId=...
 export async function GET(request: Request) {
   try {
+    const auth = requireAuthenticatedSession(request);
+    if (!auth.ok) return auth.response;
+
     const { searchParams } = new URL(request.url);
     const recordId = searchParams.get('recordId');
     const userId = searchParams.get('userId');

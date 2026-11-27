@@ -54,6 +54,13 @@ function HomePageContent() {
   const [mounted, setMounted] = useState(false);
   const [isSupportOpen, setIsSupportOpen] = useState(false);
 
+  // Reset optimistic post-login state if session expires or user logs out automatically
+  useEffect(() => {
+    if (!loading && !user && justAuthenticated) {
+      setJustAuthenticated(false);
+    }
+  }, [loading, user, justAuthenticated]);
+
   // Helper to determine active tab from URL query params or sessionStorage fallback
   const getInitialTab = useCallback((): DashboardTab => {
     if (typeof window !== 'undefined') {

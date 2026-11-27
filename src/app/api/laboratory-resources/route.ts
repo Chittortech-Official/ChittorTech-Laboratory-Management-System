@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { requireAuthenticatedSession } from '@/lib/auth/session';
 
 type ResourceType = 'equipment' | 'documents' | 'staff';
 
@@ -20,6 +21,9 @@ function getSupabase() {
 
 export async function GET(request: Request) {
   try {
+    const auth = requireAuthenticatedSession(request);
+    if (!auth.ok) return auth.response;
+
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
 
@@ -57,6 +61,9 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const auth = requireAuthenticatedSession(request);
+    if (!auth.ok) return auth.response;
+
     const body = await request.json();
     const { resource, userId, record } = body as {
       resource?: ResourceType;
@@ -93,6 +100,9 @@ export async function POST(request: Request) {
 
 export async function PATCH(request: Request) {
   try {
+    const auth = requireAuthenticatedSession(request);
+    if (!auth.ok) return auth.response;
+
     const body = await request.json();
     const { resource, userId, id, updates } = body as {
       resource?: ResourceType;
@@ -132,6 +142,9 @@ export async function PATCH(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
+    const auth = requireAuthenticatedSession(request);
+    if (!auth.ok) return auth.response;
+
     const { searchParams } = new URL(request.url);
     const resource = searchParams.get('resource') as ResourceType | null;
     const userId = searchParams.get('userId');

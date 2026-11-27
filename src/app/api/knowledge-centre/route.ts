@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { requireAuthenticatedSession } from '@/lib/auth/session';
 
 function getSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -12,6 +13,9 @@ function getSupabase() {
 
 export async function GET(request: Request) {
   try {
+    const auth = requireAuthenticatedSession(request);
+    if (!auth.ok) return auth.response;
+
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId') || '';
 
@@ -55,6 +59,9 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const auth = requireAuthenticatedSession(request);
+    if (!auth.ok) return auth.response;
+
     const body = await request.json();
     const { action, userId } = body;
 
