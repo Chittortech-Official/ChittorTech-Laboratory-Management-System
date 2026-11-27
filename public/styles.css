@@ -918,6 +918,10 @@ video {
   max-height: 90vh;
 }
 
+.max-h-\[92vh\] {
+  max-height: 92vh;
+}
+
 .min-h-\[100dvh\] {
   min-height: 100dvh;
 }
@@ -1101,6 +1105,10 @@ video {
 
 .max-w-sm {
   max-width: 24rem;
+}
+
+.max-w-xl {
+  max-width: 36rem;
 }
 
 .max-w-xs {
@@ -2534,6 +2542,11 @@ video {
   color: rgb(51 65 85 / var(--tw-text-opacity, 1));
 }
 
+.text-\[\#475569\] {
+  --tw-text-opacity: 1;
+  color: rgb(71 85 105 / var(--tw-text-opacity, 1));
+}
+
 .text-\[\#64748B\] {
   --tw-text-opacity: 1;
   color: rgb(100 116 139 / var(--tw-text-opacity, 1));
@@ -3302,6 +3315,16 @@ body {
   background-color: rgb(204 251 241 / var(--tw-bg-opacity, 1));
 }
 
+.hover\:bg-\[\#D6E8FF\]:hover {
+  --tw-bg-opacity: 1;
+  background-color: rgb(214 232 255 / var(--tw-bg-opacity, 1));
+}
+
+.hover\:bg-\[\#EAF3FF\]:hover {
+  --tw-bg-opacity: 1;
+  background-color: rgb(234 243 255 / var(--tw-bg-opacity, 1));
+}
+
 .hover\:bg-\[\#F5F8FC\]:hover {
   --tw-bg-opacity: 1;
   background-color: rgb(245 248 252 / var(--tw-bg-opacity, 1));
@@ -3461,6 +3484,11 @@ body {
 
 .hover\:underline:hover {
   text-decoration-line: underline;
+}
+
+.focus\:border-\[\#3B82F6\]:focus {
+  --tw-border-opacity: 1;
+  border-color: rgb(59 130 246 / var(--tw-border-opacity, 1));
 }
 
 .focus\:border-amber-500:focus {

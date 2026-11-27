@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { 
   LogOut, User, ShieldCheck, Building2, ChevronDown, 
   Copy, Check, Settings, Mail, Database, Edit3, 
-  Sparkles, Award, Shield, X, RefreshCw, CheckCircle2
+  Sparkles, Award, Shield, X, RefreshCw, CheckCircle2, LifeBuoy
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useConfirmationModal } from '@/contexts/ConfirmationModalContext';
@@ -13,9 +13,10 @@ import { useConfirmationModal } from '@/contexts/ConfirmationModalContext';
 interface HeaderProps {
   onLogout?: () => void;
   onOpenSettings?: () => void;
+  onOpenSupport?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onLogout, onOpenSettings }) => {
+export const Header: React.FC<HeaderProps> = ({ onLogout, onOpenSettings, onOpenSupport }) => {
   const { user, logout, isConfigured, updateProfile } = useAuth();
   const { showSuccess, showError } = useConfirmationModal();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -167,6 +168,19 @@ export const Header: React.FC<HeaderProps> = ({ onLogout, onOpenSettings }) => {
 
           {/* User Info & Actions */}
           <div className="flex items-center gap-2.5 sm:gap-3">
+            {/* Contact Support Button */}
+            {onOpenSupport && (
+              <button
+                type="button"
+                onClick={onOpenSupport}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-[#D6E8FF] bg-[#EAF3FF] px-3 py-1.5 text-xs font-semibold text-[#2563EB] hover:bg-[#D6E8FF] transition-colors"
+                title="Contact ChittorTech Support or Report a Bug"
+              >
+                <LifeBuoy className="h-3.5 w-3.5" />
+                <span>Contact Support</span>
+              </button>
+            )}
+
             {/* Database Connection Pill */}
             <div className="hidden sm:flex items-center gap-2 rounded-full border border-[#DCFCE7] bg-[#DCFCE7] px-3 py-1 text-xs">
               <span className="relative flex h-2 w-2">
@@ -308,6 +322,20 @@ export const Header: React.FC<HeaderProps> = ({ onLogout, onOpenSettings }) => {
 
                   {/* 4. Action Buttons (Edit Profile + Settings + Sign Out) */}
                   <div className="pt-2 space-y-2">
+                    {onOpenSupport && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsProfileOpen(false);
+                          onOpenSupport();
+                        }}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-xs font-bold text-[#2563EB] bg-[#EAF3FF] hover:bg-[#D6E8FF] rounded-xl border border-[#D6E8FF] transition-colors"
+                      >
+                        <LifeBuoy className="w-3.5 h-3.5" />
+                        Contact Support &amp; Report Bug
+                      </button>
+                    )}
+
                     <button
                       type="button"
                       onClick={handleOpenEdit}

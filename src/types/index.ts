@@ -199,3 +199,41 @@ export interface CoalTestRecord {
   fc_pct: number | null;
   uhv: number | null;
 }
+
+export type SupportIssueCategory =
+  | 'Bug / Technical Issue'
+  | 'Website Glitch'
+  | 'Login / Authentication Problem'
+  | 'Data Entry Issue'
+  | 'Calculation / Formula Issue'
+  | 'Report / Export Issue'
+  | 'Performance / Loading Issue'
+  | 'Feature Request'
+  | 'General Inquiry'
+  | 'Other';
+
+export type SupportPriority = 'Low' | 'Medium' | 'High' | 'Critical';
+
+export type SupportTicketStatus =
+  | 'Open'
+  | 'In Progress'
+  | 'Awaiting User Response'
+  | 'Resolved'
+  | 'Closed';
+
+export interface SupportTicket {
+  id: string;
+  ticket_id: string;
+  user_id: string;
+  full_name: string;
+  email: string;
+  issue_category: SupportIssueCategory | string;
+  issue_title: string;
+  description: string;
+  affected_module: string;
+  priority: SupportPriority;
+  status: SupportTicketStatus;
+  admin_notes?: string | null;
+  created_at: string;
+  updated_at: string;
+}

@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { AuthLayout } from '@/components/auth/AuthLayout';
 import { Header } from '@/components/common/Header';
 import { DesktopOnlyGuard } from '@/components/common/DesktopOnlyGuard';
+import { ContactSupportModal } from '@/components/support/ContactSupportModal';
 import { LaboratoryDashboard } from '@/components/laboratory/LaboratoryDashboard';
 import { DashboardTab } from '@/types';
 
@@ -48,6 +49,7 @@ function HomePageContent() {
   const { user, loading, logout } = useAuth();
   const [justAuthenticated, setJustAuthenticated] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [isSupportOpen, setIsSupportOpen] = useState(false);
 
   // Helper to determine active tab from URL query params or sessionStorage fallback
   const getInitialTab = useCallback((): DashboardTab => {
@@ -254,6 +256,7 @@ function HomePageContent() {
       <div className="min-h-[100dvh] bg-[#F5F8FC] text-[#334155] flex flex-col justify-between overflow-x-clip">
         <Header
           onOpenSettings={() => handleTabChange('settings')}
+          onOpenSupport={() => setIsSupportOpen(true)}
           onLogout={async () => {
             setJustAuthenticated(false);
             await logout();
@@ -271,6 +274,14 @@ function HomePageContent() {
           <div className="w-full px-3 sm:px-5 lg:px-6 flex flex-col sm:flex-row items-center justify-between gap-2">
             <p className="text-[#64748B]">© {new Date().getFullYear()} ChittorTech QA Laboratory Management System. Official Industrial Build.</p>
             <div className="flex items-center gap-4 text-[#64748B] text-[11px]">
+              <button
+                type="button"
+                onClick={() => setIsSupportOpen(true)}
+                className="text-[#2563EB] hover:underline font-semibold"
+              >
+                Contact Support
+              </button>
+              <span>•</span>
               <span>Industrial QA &bull; ISO / ASTM / BIS Protocol</span>
               <span>•</span>
               <button
@@ -286,6 +297,12 @@ function HomePageContent() {
           </div>
         </footer>
       </div>
+
+      <ContactSupportModal
+        isOpen={isSupportOpen}
+        onClose={() => setIsSupportOpen(false)}
+        user={user}
+      />
     </DesktopOnlyGuard>
   );
 }

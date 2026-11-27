@@ -293,3 +293,235 @@ QA Laboratory Management System`;
     return { success: false, error: error.message };
   }
 }
+
+export interface SupportTicketEmailPayload {
+  ticketId: string;
+  fullName: string;
+  email: string;
+  issueCategory: string;
+  issueTitle: string;
+  description: string;
+  affectedModule: string;
+  priority: string;
+  createdAt: string;
+}
+
+/**
+ * Sends support ticket notification to ChittorTech Support & acknowledgement to the user.
+ */
+export async function sendSupportTicketEmails(ticket: SupportTicketEmailPayload) {
+  if (!isSmtpConfigured()) {
+    return { success: false, error: 'SMTP credentials not configured on server' };
+  }
+
+  const transporter = createTransporter();
+  const safe = {
+    ticketId: escapeHtml(ticket.ticketId),
+    fullName: escapeHtml(ticket.fullName),
+    email: escapeHtml(ticket.email),
+    category: escapeHtml(ticket.issueCategory),
+    title: escapeHtml(ticket.issueTitle),
+    description: escapeHtml(ticket.description),
+    module: escapeHtml(ticket.affectedModule),
+    priority: escapeHtml(ticket.priority),
+  };
+
+  try {
+    // Send User Acknowledgement & Internal Support Notification in parallel
+    await Promise.all([
+      transporter.sendMail({
+        from: `"ChittorTech Support" <${senderEmail}>`,
+        to: ticket.email,
+        subject: `[${ticket.ticketId}] Support Request Received — ${ticket.issueTitle}`,
+        html: `
+          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden;">
+            <div style="background: #eaf3ff; padding: 20px 24px; border-bottom: 1px solid #d6e8ff;">
+              <h2 style="margin: 0; color: #2563eb; font-size: 18px;">ChittorTech Support Confirmation</h2>
+              <p style="margin: 4px 0 0; color: #64748b; font-size: 12px;">QA Laboratory Management System</p>
+            </div>
+            <div style="padding: 24px; color: #334155; font-size: 14px; line-height: 1.6;">
+              <p>Dear <strong>${safe.fullName}</strong>,</p>
+              <p>Your support request has been submitted successfully. Our ChittorTech support team will review your request and respond shortly.</p>
+              <div style="background: #f5f8fc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 16px; margin: 16px 0; font-size: 13px;">
+                <div><strong>Ticket ID:</strong> ${safe.ticketId}</div>
+                <div><strong>Category:</strong> ${safe.category}</div>
+                <div><strong>Module:</strong> ${safe.module}</div>
+                <div><strong>Priority:</strong> ${safe.priority}</div>
+                <div><strong>Title:</strong> ${safe.title}</div>
+              </div>
+              <p style="font-size: 12px; color: #64748b;">Official Support: business@chittortech.in | contact@chittortech.in | +91 75974 51057</p>
+            </div>
+          </div>
+        `,
+      }),
+      transporter.sendMail({
+        from: `"ChittorTech Support System" <${senderEmail}>`,
+        to: 'contact@chittortech.in',
+        subject: `[${ticket.priority}] ${ticket.ticketId}: ${ticket.issueTitle}`,
+        html: `
+          <div style="font-family: sans-serif; padding: 16px; color: #334155;">
+            <h3>New Support Ticket: ${safe.ticketId}</h3>
+            <p><strong>From:</strong> ${safe.fullName} (${safe.email})</p>
+            <p><strong>Category:</strong> ${safe.category} | <strong>Module:</strong> ${safe.module} | <strong>Priority:</strong> ${safe.priority}</p>
+            <p><strong>Title:</strong> ${safe.title}</p>
+            <p><strong>Description:</strong><br/>${safe.description.replace(/\n/g, '<br/>')}</p>
+          </div>
+        `,
+      }),
+    ]);
+
+    return { success: true };
+  } catch (error: any) {
+    console.error('Support email delivery error:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+export interface SupportTicketStatusEmailInput {
+  ticketId: string;
+  fullName: string;
+  email: string;
+  issueCategory: string;
+  issueTitle: string;
+  affectedModule: string;
+  priority: string;
+  status: string;
+  adminNotes?: string | null;
+}
+
+const STATUS_EMAIL_STYLES: Record<
+  string,
+  {
+    headerBg: string;
+    headerBorder: string;
+    titleColor: string;
+    badgeBg: string;
+    badgeText: string;
+    heading: string;
+    subjectPrefix: string;
+    intro: string;
+  }
+> = {
+  Resolved: {
+    headerBg: '#dcfce7',
+    headerBorder: '#bbf7d0',
+    titleColor: '#15803d',
+    badgeBg: '#dcfce7',
+    badgeText: '#15803d',
+    heading: 'Your Support Ticket Has Been Resolved',
+    subjectPrefix: 'Issue Resolved',
+    intro:
+      'Good news — our ChittorTech engineering & support team has resolved your reported issue. Please review the details below and verify on your end.',
+  },
+  'In Progress': {
+    headerBg: '#eaf3ff',
+    headerBorder: '#d6e8ff',
+    titleColor: '#2563eb',
+    badgeBg: '#dbeafe',
+    badgeText: '#2563eb',
+    heading: 'Your Support Ticket Is In Progress',
+    subjectPrefix: 'In Progress',
+    intro:
+      'Our ChittorTech support team is actively investigating and working on your request. We will notify you as soon as there is another update.',
+  },
+  'Awaiting User Response': {
+    headerBg: '#fef3c7',
+    headerBorder: '#fde68a',
+    titleColor: '#b45309',
+    badgeBg: '#fef3c7',
+    badgeText: '#b45309',
+    heading: 'Action Needed: Awaiting Your Response',
+    subjectPrefix: 'Awaiting Response',
+    intro:
+      'Our support team needs a bit more information from you to proceed with your request. Please reply to this email or contact us using the details below.',
+  },
+  Closed: {
+    headerBg: '#f1f5f9',
+    headerBorder: '#e2e8f0',
+    titleColor: '#475569',
+    badgeBg: '#f1f5f9',
+    badgeText: '#475569',
+    heading: 'Support Ticket Closed',
+    subjectPrefix: 'Ticket Closed',
+    intro:
+      'Your support ticket has been marked as Closed. If you still experience this issue, feel free to open a new support request anytime.',
+  },
+};
+
+export async function sendSupportTicketStatusEmail(ticket: SupportTicketStatusEmailInput) {
+  if (!isSmtpConfigured()) {
+    return { success: false, skipped: true };
+  }
+
+  const senderEmail = process.env.SENDER_EMAIL || process.env.SMTP_USER;
+  if (!senderEmail) {
+    return { success: false, skipped: true };
+  }
+
+  const style = STATUS_EMAIL_STYLES[ticket.status] || {
+    headerBg: '#eaf3ff',
+    headerBorder: '#d6e8ff',
+    titleColor: '#2563eb',
+    badgeBg: '#eaf3ff',
+    badgeText: '#2563eb',
+    heading: `Support Ticket Status Updated: ${ticket.status}`,
+    subjectPrefix: `Status: ${ticket.status}`,
+    intro: `The status of your support ticket has been updated to ${ticket.status}.`,
+  };
+
+  const transporter = createTransporter();
+  const safe = {
+    ticketId: escapeHtml(ticket.ticketId),
+    fullName: escapeHtml(ticket.fullName),
+    category: escapeHtml(ticket.issueCategory),
+    title: escapeHtml(ticket.issueTitle),
+    module: escapeHtml(ticket.affectedModule),
+    priority: escapeHtml(ticket.priority),
+    status: escapeHtml(ticket.status),
+    adminNotes: ticket.adminNotes ? escapeHtml(ticket.adminNotes) : '',
+  };
+
+  const notesBlock = safe.adminNotes
+    ? `
+      <div style="background: #ffffff; border-left: 3px solid ${style.titleColor}; padding: 12px 14px; margin: 16px 0; border-radius: 4px; border-top: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0;">
+        <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: #64748b; margin-bottom: 4px;">Support Team Note</div>
+        <div style="font-size: 13px; color: #334155;">${safe.adminNotes.replace(/\n/g, '<br/>')}</div>
+      </div>
+    `
+    : '';
+
+  try {
+    await transporter.sendMail({
+      from: `"ChittorTech Support" <${senderEmail}>`,
+      to: ticket.email,
+      subject: `[${ticket.ticketId}] ${style.subjectPrefix} — ${ticket.issueTitle}`,
+      html: `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden;">
+          <div style="background: ${style.headerBg}; padding: 20px 24px; border-bottom: 1px solid ${style.headerBorder};">
+            <h2 style="margin: 0; color: ${style.titleColor}; font-size: 18px;">${escapeHtml(style.heading)}</h2>
+            <p style="margin: 4px 0 0; color: #64748b; font-size: 12px;">ChittorTech QA Laboratory Management System</p>
+          </div>
+          <div style="padding: 24px; color: #334155; font-size: 14px; line-height: 1.6;">
+            <p>Dear <strong>${safe.fullName}</strong>,</p>
+            <p>${escapeHtml(style.intro)}</p>
+            <div style="background: #f5f8fc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 16px; margin: 16px 0; font-size: 13px;">
+              <div><strong>Ticket ID:</strong> ${safe.ticketId}</div>
+              <div><strong>Status:</strong> <span style="display: inline-block; padding: 2px 8px; border-radius: 999px; background: ${style.badgeBg}; color: ${style.badgeText}; font-weight: 600; font-size: 12px;">${safe.status}</span></div>
+              <div><strong>Category:</strong> ${safe.category}</div>
+              <div><strong>Module:</strong> ${safe.module}</div>
+              <div><strong>Priority:</strong> ${safe.priority}</div>
+              <div><strong>Title:</strong> ${safe.title}</div>
+            </div>
+            ${notesBlock}
+            <p style="font-size: 12px; color: #64748b;">Official Support: business@chittortech.in | contact@chittortech.in | +91 75974 51057</p>
+          </div>
+        </div>
+      `,
+    });
+
+    return { success: true };
+  } catch (error: any) {
+    console.error('Support status email delivery error:', error);
+    return { success: false, error: error.message };
+  }
+}
