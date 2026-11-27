@@ -197,11 +197,15 @@ function extractSheetPreview(workbook: XLSX.WorkBook, sheetName: string): Parsed
   const ws = workbook.Sheets[sheetName];
   if (!ws) return { sheetName, headerRowIndex: 0, headers: [], rows: [] };
 
+  const range = ws['!ref'] ? XLSX.utils.decode_range(ws['!ref']) : null;
+  const startRow = range?.s.r ?? 0;
+  const startCol = range?.s.c ?? 0;
+
   const matrix = XLSX.utils.sheet_to_json<any[]>(ws, {
     header: 1,
     raw: false,
     defval: '',
-    blankrows: false,
+    blankrows: true,
   });
 
   if (matrix.length === 0) {
@@ -254,9 +258,17 @@ function extractSheetPreview(workbook: XLSX.WorkBook, sheetName: string): Parsed
     let nonEmptyCount = 0;
 
     colIndices.forEach((colIdx, hIdx) => {
-      const val = String(rawRow[colIdx] ?? '')
+      let val = String(rawRow[colIdx] ?? '')
         .replace(/\s+/g, ' ')
         .trim();
+      // Preserve full integer string if Excel displayed a long ID/serial in scientific notation (e.g. 3E+09)
+      if (/^\d+(\.\d+)?[eE]\+\d+$/.test(val)) {
+        const cellAddr = XLSX.utils.encode_cell({ r: startRow + r, c: startCol + colIdx });
+        const rawCell = ws[cellAddr];
+        if (rawCell && typeof rawCell.v === 'number') {
+          val = String(Math.round(rawCell.v));
+        }
+      }
       obj[headers[hIdx]] = val;
       if (val) nonEmptyCount++;
     });

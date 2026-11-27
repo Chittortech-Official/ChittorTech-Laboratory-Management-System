@@ -16,6 +16,7 @@ import {
   Loader2,
   ShieldCheck,
   FileSpreadsheet,
+  Eye,
 } from 'lucide-react';
 import { ExcelResourceImportModal } from './ExcelResourceImportModal';
 
@@ -86,6 +87,25 @@ function daysUntil(dateStr?: string | null): number | null {
   return Math.ceil((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 }
 
+function parseNotePairs(raw?: string | null): Array<{ label: string; value: string }> {
+  if (!raw || !raw.trim()) return [];
+  return raw
+    .split(/\s*\|\s*/)
+    .map((segment) => segment.trim())
+    .filter(Boolean)
+    .map((segment) => {
+      const colonIdx = segment.indexOf(':');
+      if (colonIdx > 0 && colonIdx < 60) {
+        return {
+          label: segment.slice(0, colonIdx).trim(),
+          value: segment.slice(colonIdx + 1).trim(),
+        };
+      }
+      return { label: 'Note', value: segment };
+    })
+    .filter((entry) => entry.value.length > 0);
+}
+
 export const LaboratoryResourcesView: React.FC<LaboratoryResourcesViewProps> = ({ userId }) => {
   const [activeModule, setActiveModule] = useState<SubModule>('equipment');
   const [searchQuery, setSearchQuery] = useState('');
@@ -100,6 +120,7 @@ export const LaboratoryResourcesView: React.FC<LaboratoryResourcesViewProps> = (
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [selectedEquipment, setSelectedEquipment] = useState<EquipmentItem | null>(null);
 
   // Equipment Form State
   const [eqForm, setEqForm] = useState({
@@ -314,7 +335,12 @@ export const LaboratoryResourcesView: React.FC<LaboratoryResourcesViewProps> = (
       !q ||
       item.name.toLowerCase().includes(q) ||
       item.equipment_code.toLowerCase().includes(q) ||
-      (item.serial_number || '').toLowerCase().includes(q)
+      (item.serial_number || '').toLowerCase().includes(q) ||
+      (item.manufacturer || '').toLowerCase().includes(q) ||
+      (item.model || '').toLowerCase().includes(q) ||
+      (item.location || '').toLowerCase().includes(q) ||
+      (item.calibration_agency || '').toLowerCase().includes(q) ||
+      (item.maintenance_notes || '').toLowerCase().includes(q)
   );
   const filteredDocuments = documents.filter(
     (item) =>
@@ -505,6 +531,7 @@ export const LaboratoryResourcesView: React.FC<LaboratoryResourcesViewProps> = (
                     <th className="py-3 px-4 font-bold">Last Calibrated</th>
                     <th className="py-3 px-4 font-bold">Next Due</th>
                     <th className="py-3 px-4 font-bold">Agency / Cert</th>
+                    <th className="py-3 px-4 font-bold">Technical Specs &amp; Notes</th>
                     <th className="py-3 px-4 font-bold">Status</th>
                     <th className="py-3 px-4 font-bold text-right">Action</th>
                   </tr>
@@ -512,9 +539,10 @@ export const LaboratoryResourcesView: React.FC<LaboratoryResourcesViewProps> = (
                 <tbody className="divide-y divide-[#E2E8F0]">
                   {filteredEquipment.map((item) => {
                     const remaining = daysUntil(item.next_calibration_date);
+                    const specs = parseNotePairs(item.maintenance_notes);
                     return (
-                      <tr key={item.id} className="hover:bg-slate-50/70">
-                        <td className="py-3 px-4 font-mono font-bold text-[#2563EB]">{item.equipment_code}</td>
+                      <tr key={item.id} className="hover:bg-slate-50/70 align-top">
+                        <td className="py-3 px-4 font-mono font-bold text-[#2563EB] whitespace-nowrap">{item.equipment_code}</td>
                         <td className="py-3 px-4">
                           <div className="font-semibold text-[#334155]">{item.name}</div>
                           <div className="text-[11px] text-[#64748B]">
@@ -525,8 +553,8 @@ export const LaboratoryResourcesView: React.FC<LaboratoryResourcesViewProps> = (
                           <div>{item.serial_number || '—'}</div>
                           <div className="text-[11px]">{item.location || 'Main QA Lab'}</div>
                         </td>
-                        <td className="py-3 px-4 font-mono">{item.last_calibration_date || '—'}</td>
-                        <td className="py-3 px-4">
+                        <td className="py-3 px-4 font-mono whitespace-nowrap">{item.last_calibration_date || '—'}</td>
+                        <td className="py-3 px-4 whitespace-nowrap">
                           <div className="font-mono">{item.next_calibration_date || '—'}</div>
                           {remaining !== null && (
                             <span
@@ -546,6 +574,29 @@ export const LaboratoryResourcesView: React.FC<LaboratoryResourcesViewProps> = (
                           <div>{item.calibration_agency || '—'}</div>
                           <div className="text-[11px] font-mono">{item.certificate_no || ''}</div>
                         </td>
+                        <td className="py-3 px-4 min-w-[230px] max-w-[300px]">
+                          {specs.length === 0 ? (
+                            <span className="text-[#94A3B8]">—</span>
+                          ) : (
+                            <div className="space-y-1">
+                              {specs.slice(0, 3).map((sp, i) => (
+                                <div key={i} className="text-[11px] text-[#475569] leading-snug truncate">
+                                  <span className="font-semibold text-[#1E293B]">{sp.label}:</span>{' '}
+                                  <span>{sp.value}</span>
+                                </div>
+                              ))}
+                              {specs.length > 3 && (
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedEquipment(item)}
+                                  className="inline-flex items-center gap-1 rounded-md bg-[#EAF3FF] border border-[#D6E8FF] px-2 py-0.5 text-[10px] font-bold text-[#2563EB] hover:bg-[#D6E8FF] transition-colors"
+                                >
+                                  +{specs.length - 3} more specs →
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </td>
                         <td className="py-3 px-4">
                           <select
                             value={item.status}
@@ -558,15 +609,25 @@ export const LaboratoryResourcesView: React.FC<LaboratoryResourcesViewProps> = (
                             <option value="Out of Service">Out of Service</option>
                           </select>
                         </td>
-                        <td className="py-3 px-4 text-right">
-                          <button
-                            type="button"
-                            onClick={() => handleDelete('equipment', item.id)}
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                            title="Delete equipment"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                        <td className="py-3 px-4 text-right whitespace-nowrap">
+                          <div className="inline-flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => setSelectedEquipment(item)}
+                              className="p-1.5 rounded-lg text-slate-500 hover:text-[#2563EB] hover:bg-[#EAF3FF] transition-colors"
+                              title="View full equipment details"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDelete('equipment', item.id)}
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                              title="Delete equipment"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -1089,6 +1150,90 @@ export const LaboratoryResourcesView: React.FC<LaboratoryResourcesViewProps> = (
         }
         onImported={fetchResources}
       />
+
+      {/* Full Equipment Technical Specification & Calibration Modal */}
+      {selectedEquipment && (
+        <div className="fixed inset-0 z-[100] !mt-0 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="w-full max-w-2xl rounded-2xl border border-[#E2E8F0] bg-white shadow-2xl overflow-hidden my-auto max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between px-6 py-4 bg-[#EAF3FF] border-b border-[#D6E8FF]">
+              <div>
+                <span className="font-mono text-[11px] font-bold text-[#2563EB]">
+                  {selectedEquipment.equipment_code}
+                </span>
+                <h3 className="text-base font-bold text-[#0F172A]">{selectedEquipment.name}</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedEquipment(null)}
+                className="text-[#64748B] hover:text-[#0F172A] p-1 rounded-lg hover:bg-white/60"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-5 overflow-y-auto text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {[
+                  { label: 'Manufacturer', value: selectedEquipment.manufacturer },
+                  { label: 'Model', value: selectedEquipment.model },
+                  { label: 'Serial Number', value: selectedEquipment.serial_number },
+                  { label: 'Location', value: selectedEquipment.location },
+                  { label: 'Last Calibration Date', value: selectedEquipment.last_calibration_date },
+                  { label: 'Next Calibration Due', value: selectedEquipment.next_calibration_date },
+                  { label: 'Calibration Agency', value: selectedEquipment.calibration_agency },
+                  { label: 'Certificate No.', value: selectedEquipment.certificate_no },
+                  { label: 'Status', value: selectedEquipment.status },
+                ].map((f) => (
+                  <div
+                    key={f.label}
+                    className="rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] px-3.5 py-2.5"
+                  >
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#64748B] block">
+                      {f.label}
+                    </span>
+                    <span className="text-xs font-semibold text-[#0F172A] mt-0.5 block">
+                      {f.value || '—'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              {parseNotePairs(selectedEquipment.maintenance_notes).length > 0 && (
+                <div className="space-y-2.5">
+                  <h4 className="text-[11px] font-bold uppercase tracking-wider text-[#2563EB]">
+                    Imported Technical Specifications &amp; Calibration Details
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {parseNotePairs(selectedEquipment.maintenance_notes).map((pair, idx) => (
+                      <div
+                        key={idx}
+                        className="rounded-xl border border-[#D6E8FF] bg-[#F5F9FF] px-3.5 py-2.5"
+                      >
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-[#475569] block">
+                          {pair.label}
+                        </span>
+                        <span className="text-xs font-medium text-[#0F172A] mt-0.5 block break-words">
+                          {pair.value}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="px-6 py-3.5 border-t border-[#E2E8F0] bg-[#F8FAFC] flex justify-end">
+              <button
+                type="button"
+                onClick={() => setSelectedEquipment(null)}
+                className="rounded-xl bg-[#2563EB] px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

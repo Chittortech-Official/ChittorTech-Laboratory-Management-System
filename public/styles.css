@@ -1170,6 +1170,10 @@ video {
   min-width: 175px;
 }
 
+.min-w-\[230px\] {
+  min-width: 230px;
+}
+
 .min-w-\[540px\] {
   min-width: 540px;
 }
@@ -1225,6 +1229,10 @@ video {
 
 .max-w-\[220px\] {
   max-width: 220px;
+}
+
+.max-w-\[300px\] {
+  max-width: 300px;
 }
 
 .max-w-full {
@@ -3078,6 +3086,11 @@ video {
 .text-\[\#92400E\] {
   --tw-text-opacity: 1;
   color: rgb(146 64 14 / var(--tw-text-opacity, 1));
+}
+
+.text-\[\#94A3B8\] {
+  --tw-text-opacity: 1;
+  color: rgb(148 163 184 / var(--tw-text-opacity, 1));
 }
 
 .text-\[\#B45309\] {
