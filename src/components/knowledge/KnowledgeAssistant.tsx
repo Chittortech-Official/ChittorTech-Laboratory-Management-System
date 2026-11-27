@@ -58,7 +58,23 @@ const SUGGESTED_QUESTIONS: string[] = [
  * Converts accidental raw LaTeX expressions into clean, readable laboratory text.
  */
 function cleanReadableFormatting(text: string): string {
-  return text
+  let cleaned = text.trim();
+  // Safety net: unwrap partial JSON wrapper if upstream response was truncated mid-stream
+  const jsonStart = cleaned.match(/^```(?:json)?\s*\{\s*"answerMarkdown"\s*:\s*"/i) ||
+    cleaned.match(/^\{\s*"answerMarkdown"\s*:\s*"/i);
+  if (jsonStart) {
+    cleaned = cleaned.slice(jsonStart[0].length);
+    const nextIdx = cleaned.search(/"\s*,\s*"(?:citedSourceIds|suggestedFollowUps|status)"/i);
+    if (nextIdx !== -1) cleaned = cleaned.slice(0, nextIdx);
+    else cleaned = cleaned.replace(/"\s*\}\s*```?\s*$/, '');
+    cleaned = cleaned
+      .replace(/\\n/g, '\n')
+      .replace(/\\t/g, '  ')
+      .replace(/\\"/g, '"')
+      .replace(/\\\\/g, '\\');
+  }
+
+  return cleaned
     .replace(/\\\[|\\\]|\\\(|\\\)/g, '')
     .replace(/\\text\{([^}]*)\}/g, '$1')
     .replace(/\\frac\{([^}]*)\}\{([^}]*)\}/g, '($1) / ($2)')
@@ -111,7 +127,7 @@ function renderInlineTokens(rawText: string): React.ReactNode[] {
  * Lightweight, XSS-safe Markdown block renderer supporting headings, blockquotes, dividers, lists, and tables.
  */
 function StructuredMarkdown({ content }: { content: string }) {
-  const lines = content.replace(/\r\n/g, '\n').split('\n');
+  const lines = cleanReadableFormatting(content).replace(/\r\n/g, '\n').split('\n');
   const elements: React.ReactNode[] = [];
   let i = 0;
 

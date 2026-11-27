@@ -253,8 +253,8 @@ STRICT COMPLIANCE & ACCURACY RULES (NON-NEGOTIABLE):
 4. When discussing an official requirement not verified in the portal sources below, explicitly advise: *"Please verify the exact clause/edition on the official BIS, NABL, or ISO portal."*
 5. NEVER reproduce copyrighted BIS or ISO standard texts in full.
 6. Match the user's language (English, Hindi Devanagari, or clean Hindi/English for Hinglish). Preserve technical terms (LOI, LSF, Blaine, ISO/IEC 17025, NABL).
-7. Format using clean Markdown headings (###), bullet points, and tables for comparisons. Do NOT use LaTeX syntax (no \\[, \\(, \\frac, \\text, etc.) — write formulas cleanly like "LOI (%) = ((W1 - W2) / (W1 - W0)) × 100".
-8. Do NOT write a "Follow-up Questions" list inside "answerMarkdown" — place follow-ups ONLY inside the "suggestedFollowUps" JSON array.
+7. Format using clean Markdown headings (###), concise bullet points, and tables for comparisons. Keep total answer concise (under 350 words). Do NOT use LaTeX syntax (no \\[, \\(, \\frac, \\text, etc.) — write formulas cleanly like "LOI (%) = ((W1 - W2) / (W1 - W0)) × 100".
+8. Do NOT write a "Follow-up Questions" list inside "answerMarkdown" — place follow-ups ONLY inside the "suggestedFollowUps" JSON array. Properly escape any double quotes inside strings as \\".
 
 Return valid JSON ONLY:
 {
@@ -300,30 +300,72 @@ function toPublicCitation(chunk: KnowledgeChunk): KnowledgeCitation {
   };
 }
 
+function unwrapEscapedJsonString(s: string): string {
+  return s
+    .replace(/\\n/g, '\n')
+    .replace(/\\r/g, '')
+    .replace(/\\t/g, '  ')
+    .replace(/\\"/g, '"')
+    .replace(/\\\\/g, '\\')
+    .trim();
+}
+
 function extractJsonObject(raw: string): any | null {
   const trimmed = raw.trim();
-  try {
-    return JSON.parse(trimmed);
-  } catch {
-    const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
-    if (fenced?.[1]) {
-      try {
-        return JSON.parse(fenced[1].trim());
-      } catch {
-        // continue
-      }
+  const tryParse = (candidate: string): any | null => {
+    try {
+      return JSON.parse(candidate);
+    } catch {
+      return null;
     }
-    const firstBrace = trimmed.indexOf('{');
-    const lastBrace = trimmed.lastIndexOf('}');
-    if (firstBrace !== -1 && lastBrace > firstBrace) {
-      try {
-        return JSON.parse(trimmed.slice(firstBrace, lastBrace + 1));
-      } catch {
-        return null;
-      }
-    }
-    return null;
+  };
+
+  const direct = tryParse(trimmed);
+  if (direct && typeof direct === 'object') return direct;
+
+  const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (fenced?.[1]) {
+    const parsedFence = tryParse(fenced[1].trim());
+    if (parsedFence && typeof parsedFence === 'object') return parsedFence;
   }
+
+  const firstBrace = trimmed.indexOf('{');
+  const lastBrace = trimmed.lastIndexOf('}');
+  if (firstBrace !== -1 && lastBrace > firstBrace) {
+    const parsedSlice = tryParse(trimmed.slice(firstBrace, lastBrace + 1));
+    if (parsedSlice && typeof parsedSlice === 'object') return parsedSlice;
+  }
+
+  // Fallback recovery when JSON is truncated or contains unescaped inner quotes
+  const mdKeyMatch = trimmed.match(/"answerMarkdown"\s*:\s*"([\s\S]*)$/i);
+  if (mdKeyMatch?.[1]) {
+    let body = mdKeyMatch[1];
+    const nextFieldIdx = body.search(/"\s*,\s*"(?:citedSourceIds|suggestedFollowUps|status)"/i);
+    if (nextFieldIdx !== -1) {
+      body = body.slice(0, nextFieldIdx);
+    } else {
+      body = body.replace(/"\s*\}\s*```?\s*$/, '').replace(/\\$/, '');
+    }
+
+    const citedMatch = trimmed.match(/"citedSourceIds"\s*:\s*\[([^\]]*)\]/i);
+    const citedSourceIds = citedMatch?.[1]
+      ? Array.from(citedMatch[1].matchAll(/"([^"]+)"/g)).map((m) => m[1])
+      : [];
+
+    const followMatch = trimmed.match(/"suggestedFollowUps"\s*:\s*\[([^\]]*)\]/i);
+    const suggestedFollowUps = followMatch?.[1]
+      ? Array.from(followMatch[1].matchAll(/"([^"]+)"/g)).map((m) => m[1])
+      : [];
+
+    return {
+      answerMarkdown: unwrapEscapedJsonString(body),
+      citedSourceIds,
+      suggestedFollowUps,
+      status: 'ai_assisted',
+    };
+  }
+
+  return null;
 }
 
 async function sleepWithJitter(baseMs: number): Promise<void> {
@@ -367,13 +409,14 @@ async function callSingleProvider(params: {
     temperature: 0.1,
   };
   if (provider === 'groq') {
-    payloadBody.max_completion_tokens = 1800;
+    // Allow sufficient budget for reasoning + complete valid JSON output without mid-stream truncation
+    payloadBody.max_completion_tokens = model.includes('120b') ? 3500 : 2200;
     // Note: reasoning model openai/gpt-oss-120b rejects strict response_format=json_object intermittently on Groq
     if (!model.includes('120b')) {
       payloadBody.response_format = { type: 'json_object' };
     }
   } else {
-    payloadBody.max_tokens = 1400;
+    payloadBody.max_tokens = 1800;
   }
 
   let res: Response;
