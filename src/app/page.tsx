@@ -7,6 +7,7 @@ import { RefreshCw } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { AuthLayout } from '@/components/auth/AuthLayout';
 import { Header } from '@/components/common/Header';
+import { DesktopOnlyGuard } from '@/components/common/DesktopOnlyGuard';
 import { ContactSupportModal } from '@/components/support/ContactSupportModal';
 import { LaboratoryDashboard } from '@/components/laboratory/LaboratoryDashboard';
 import { DashboardTab } from '@/types';
@@ -286,17 +287,19 @@ function HomePageContent() {
   // 2. If authentication check is complete and no valid session exists, render Login / Request Account
   if (!user && !justAuthenticated) {
     return (
-      <AuthLayout
-        onAuthSuccess={() => {
-          setJustAuthenticated(true);
-        }}
-      />
+      <DesktopOnlyGuard>
+        <AuthLayout
+          onAuthSuccess={() => {
+            setJustAuthenticated(true);
+          }}
+        />
+      </DesktopOnlyGuard>
     );
   }
 
   // 3. Authenticated: render protected laboratory dashboard directly without any login flash
   return (
-    <>
+    <DesktopOnlyGuard>
       <div className="min-h-[100dvh] bg-[#F5F8FC] text-[#334155] flex flex-col justify-between overflow-x-clip">
         <Header
           onOpenSettings={() => handleTabChange('settings')}
@@ -347,7 +350,7 @@ function HomePageContent() {
         onClose={() => setIsSupportOpen(false)}
         user={user}
       />
-    </>
+    </DesktopOnlyGuard>
   );
 }
 

@@ -3388,7 +3388,7 @@ body {
   }
 }
 
-/* Desktop-Only Viewport Restriction (< 1366px) */
+/* Desktop/Tablet Viewport Restriction (< 700px) */
 
 .ct-desktop-notice {
   display: none;
@@ -3398,7 +3398,7 @@ body {
   display: block;
 }
 
-@media (max-width: 1365.98px) {
+@media (max-width: 699.98px) {
   .ct-desktop-notice {
     display: flex;
   }

@@ -9,14 +9,14 @@ interface DesktopOnlyGuardProps {
 }
 
 /**
- * UI compatibility guard restricting Admin Panel visibility to viewports >= 1366px.
- * Uses CSS media queries (@media max-width: 1365.98px) in globals.css for instant,
+ * UI compatibility guard restricting visibility to viewports >= 700px.
+ * Uses CSS media queries (@media max-width: 699.98px) in globals.css for instant,
  * zero-flicker switching without requiring page reloads or losing component state.
  */
 export const DesktopOnlyGuard: React.FC<DesktopOnlyGuardProps> = ({ children }) => {
   return (
     <>
-      {/* Full-Screen Compatibility Notice (< 1366px) */}
+      {/* Full-Screen Compatibility Notice (< 700px) */}
       <div
         role="alert"
         aria-live="polite"
@@ -65,14 +65,14 @@ export const DesktopOnlyGuard: React.FC<DesktopOnlyGuardProps> = ({ children }) 
               This Laboratory Management System is designed and optimized for laptop and desktop computers.
             </p>
             <p className="text-xs sm:text-sm text-[#64748B] leading-relaxed">
-              To ensure a reliable laboratory data-entry experience, proper data visibility, accurate operations, and secure system usage, please access this application using a laptop or desktop computer with a minimum screen width of 1366 pixels.
+              To ensure a reliable laboratory data-entry experience, proper data visibility, accurate operations, and secure system usage, please access this application using a device with a minimum screen width of 700 pixels.
             </p>
           </div>
 
           {/* Minimum Width Badge */}
           <div className="rounded-xl border border-[#FDE68A] bg-[#FEF3C7] px-4 py-3 space-y-1">
             <p className="text-xs sm:text-sm font-bold text-[#B45309] font-mono">
-              Minimum Supported Screen Width: 1366px
+              Minimum Supported Screen Width: 700px
             </p>
             <p className="text-[11px] text-[#92400E]">
               Please switch to a compatible device or use a larger display.
