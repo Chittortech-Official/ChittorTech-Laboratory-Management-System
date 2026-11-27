@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import {
   Calendar,
   Clock,
@@ -116,6 +116,91 @@ export const DailyTestingSheet: React.FC<DailyTestingSheetProps> = ({ user, onSa
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [showReview, setShowReview] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Excel-like Keyboard Navigation Ref Registry & Grid Helpers
+  const cellRefs = useRef<Record<string, HTMLInputElement | null>>({});
+
+  const registerCell = useCallback(
+    (section: 'chem' | 'mech' | 'coal', row: number, col: number) => (el: HTMLInputElement | null) => {
+      cellRefs.current[`${section}:${row}:${col}`] = el;
+    },
+    []
+  );
+
+  const focusCell = useCallback((section: 'chem' | 'mech' | 'coal', row: number, col: number): boolean => {
+    const el = cellRefs.current[`${section}:${row}:${col}`];
+    if (!el || el.disabled) return false;
+    el.focus({ preventScroll: true });
+    el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    return true;
+  }, []);
+
+  const handleGridKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>, section: 'chem' | 'mech' | 'coal', row: number, col: number) => {
+      // Preserve Ctrl+C, Ctrl+V, Ctrl+Z, Ctrl+A, Cmd+*, Alt+* shortcuts and modal state
+      if (e.ctrlKey || e.metaKey || e.altKey || showReview) return;
+
+      const maxRows =
+        section === 'chem'
+          ? CHEMICAL_PARAMETERS.length + 1 // row 0 = Sample ID, rows 1..12 = 12 oxides
+          : section === 'mech'
+          ? MECHANICAL_PARAMETERS.length
+          : 4; // coal: 4 editable rows (IM, VM, ASH, GCV)
+
+      const maxCols =
+        section === 'coal'
+          ? 4 // Kiln Coal, PC Coal, NKiln Coal, NPC Coal
+          : DAILY_WORKBOOK_CATEGORIES.length; // 19 categories
+
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        // Move right to next editable cell; wrap to first editable cell of next row at end of row
+        let r = row;
+        let c = col + 1;
+        while (r < maxRows) {
+          while (c < maxCols) {
+            if (focusCell(section, r, c)) return;
+            c++;
+          }
+          r++;
+          c = 0;
+        }
+        return;
+      }
+
+      if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        for (let c = col + 1; c < maxCols; c++) {
+          if (focusCell(section, row, c)) return;
+        }
+        return;
+      }
+
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        for (let c = col - 1; c >= 0; c--) {
+          if (focusCell(section, row, c)) return;
+        }
+        return;
+      }
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        for (let r = row + 1; r < maxRows; r++) {
+          if (focusCell(section, r, col)) return;
+        }
+        return;
+      }
+
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        for (let r = row - 1; r >= 0; r--) {
+          if (focusCell(section, r, col)) return;
+        }
+      }
+    },
+    [focusCell, showReview]
+  );
 
   const [chemGrid, setChemGrid] = useState<Record<string, ChemColumnState>>(buildInitialChemGrid);
   const [mechGrid, setMechGrid] = useState<Record<string, MechColumnState>>(buildInitialMechGrid);
@@ -542,38 +627,44 @@ export const DailyTestingSheet: React.FC<DailyTestingSheetProps> = ({ user, onSa
               </tr>
             </thead>
             <tbody>
-              {/* Sample ID Row */}
+              {/* Sample ID Row (row = 0) */}
               <tr className="bg-blue-50/40 border-b border-slate-200">
                 <td className="sticky left-0 z-10 bg-blue-50 py-1.5 px-3 font-bold text-blue-950 border-r-2 border-slate-300">
                   Sample ID
                 </td>
-                {DAILY_WORKBOOK_CATEGORIES.map((cat) => (
+                {DAILY_WORKBOOK_CATEGORIES.map((cat, colIdx) => (
                   <td key={cat.dbValue} className="p-1 border-r border-slate-200">
                     <input
+                      ref={registerCell('chem', 0, colIdx)}
                       type="text"
                       value={chemGrid[cat.dbValue].sample_id}
                       onChange={(e) => handleChemChange(cat.dbValue, 'sample_id', e.target.value)}
+                      onFocus={(e) => e.currentTarget.select()}
+                      onKeyDown={(e) => handleGridKeyDown(e, 'chem', 0, colIdx)}
                       placeholder="NA"
-                      className="w-full h-7 px-1.5 text-center font-mono text-[11px] font-bold bg-white border border-blue-200 rounded focus:border-blue-600 focus:outline-none text-slate-900"
+                      className="w-full h-7 px-1.5 text-center font-mono text-[11px] font-bold bg-white border border-blue-200 rounded focus:border-blue-600 focus:ring-2 focus:ring-blue-500/30 focus:outline-none text-slate-900"
                     />
                   </td>
                 ))}
               </tr>
 
-              {/* 12 Manual Chemical Inputs */}
-              {CHEMICAL_PARAMETERS.map((p) => (
+              {/* 12 Manual Chemical Inputs (rows = 1..12) */}
+              {CHEMICAL_PARAMETERS.map((p, pIdx) => (
                 <tr key={p.key} className="border-b border-slate-200 hover:bg-slate-50/80">
                   <td className="sticky left-0 z-10 bg-white py-1.5 px-3 font-semibold text-slate-800 border-r-2 border-slate-300 whitespace-nowrap">
                     {p.symbol} <span className="text-[10px] text-slate-400">%</span>
                   </td>
-                  {DAILY_WORKBOOK_CATEGORIES.map((cat) => (
+                  {DAILY_WORKBOOK_CATEGORIES.map((cat, colIdx) => (
                     <td key={cat.dbValue} className="p-1 border-r border-slate-200">
                       <input
+                        ref={registerCell('chem', pIdx + 1, colIdx)}
                         type="text"
                         inputMode="decimal"
                         value={chemGrid[cat.dbValue][p.key]}
                         onChange={(e) => handleChemChange(cat.dbValue, p.key, e.target.value, p.decimals)}
-                        className="w-full h-7 px-1.5 text-right font-mono text-[11px] font-semibold bg-white border border-slate-200 rounded focus:border-blue-600 focus:bg-blue-50/30 focus:outline-none text-slate-900"
+                        onFocus={(e) => e.currentTarget.select()}
+                        onKeyDown={(e) => handleGridKeyDown(e, 'chem', pIdx + 1, colIdx)}
+                        className="w-full h-7 px-1.5 text-right font-mono text-[11px] font-semibold bg-white border border-slate-200 rounded focus:border-blue-600 focus:bg-blue-50/30 focus:ring-2 focus:ring-blue-500/30 focus:outline-none text-slate-900"
                       />
                     </td>
                   ))}
@@ -650,23 +741,26 @@ export const DailyTestingSheet: React.FC<DailyTestingSheetProps> = ({ user, onSa
               </tr>
             </thead>
             <tbody>
-              {MECHANICAL_PARAMETERS.map((mp) => (
+              {MECHANICAL_PARAMETERS.map((mp, mIdx) => (
                 <tr key={mp.key} className="border-b border-slate-200 hover:bg-slate-50/80">
                   <td className="sticky left-0 z-10 bg-white py-1.5 px-3 font-semibold text-slate-800 border-r-2 border-slate-300 whitespace-nowrap">
                     {mp.label}
                   </td>
-                  {DAILY_WORKBOOK_CATEGORIES.map((cat) => (
+                  {DAILY_WORKBOOK_CATEGORIES.map((cat, colIdx) => (
                     <td
                       key={cat.dbValue}
                       className={`p-1 border-r border-slate-200 ${!cat.hasMechanical ? 'bg-slate-100/80' : ''}`}
                     >
                       {cat.hasMechanical ? (
                         <input
+                          ref={registerCell('mech', mIdx, colIdx)}
                           type="text"
                           inputMode="decimal"
                           value={mechGrid[cat.dbValue][mp.key]}
                           onChange={(e) => handleMechChange(cat.dbValue, mp.key, e.target.value, mp.decimals)}
-                          className="w-full h-7 px-1.5 text-right font-mono text-[11px] font-semibold bg-white border border-slate-200 rounded focus:border-blue-600 focus:outline-none text-slate-900"
+                          onFocus={(e) => e.currentTarget.select()}
+                          onKeyDown={(e) => handleGridKeyDown(e, 'mech', mIdx, colIdx)}
+                          className="w-full h-7 px-1.5 text-right font-mono text-[11px] font-semibold bg-white border border-slate-200 rounded focus:border-blue-600 focus:bg-blue-50/30 focus:ring-2 focus:ring-blue-500/30 focus:outline-none text-slate-900"
                         />
                       ) : (
                         <div className="h-7 flex items-center justify-center text-slate-300 font-mono text-[10px]">
@@ -717,7 +811,7 @@ export const DailyTestingSheet: React.FC<DailyTestingSheetProps> = ({ user, onSa
                   { key: 'ash_pct', label: 'ASH (%)' },
                   { key: 'gcv', label: 'GCV' },
                 ] as { key: keyof CoalColumnState; label: string }[]
-              ).map((row) => {
+              ).map((row, rIdx) => {
                 const mixedVal =
                   row.key === 'im_pct'
                     ? coalCalculated.mixed.im
@@ -738,28 +832,34 @@ export const DailyTestingSheet: React.FC<DailyTestingSheetProps> = ({ user, onSa
                 return (
                   <tr key={row.key} className="border-b border-slate-200">
                     <td className="py-1.5 px-3 font-semibold text-slate-800 border-r-2 border-slate-300">{row.label}</td>
-                    {(['Kiln Coal', 'PC Coal'] as CoalStreamKey[]).map((stream) => (
+                    {(['Kiln Coal', 'PC Coal'] as CoalStreamKey[]).map((stream, cIdx) => (
                       <td key={stream} className="p-1.5 border-r border-slate-200">
                         <input
+                          ref={registerCell('coal', rIdx, cIdx)}
                           type="text"
                           inputMode="decimal"
                           value={coalGrid[stream][row.key]}
                           onChange={(e) => handleCoalChange(stream, row.key, e.target.value)}
-                          className="w-full h-8 px-2 text-right font-mono text-xs font-semibold bg-white border border-slate-200 rounded-lg focus:border-blue-600 focus:outline-none"
+                          onFocus={(e) => e.currentTarget.select()}
+                          onKeyDown={(e) => handleGridKeyDown(e, 'coal', rIdx, cIdx)}
+                          className="w-full h-8 px-2 text-right font-mono text-xs font-semibold bg-white border border-slate-200 rounded-lg focus:border-blue-600 focus:bg-blue-50/30 focus:ring-2 focus:ring-blue-500/30 focus:outline-none"
                         />
                       </td>
                     ))}
                     <td className="py-1.5 px-3 text-right font-mono font-bold bg-orange-50 text-orange-950 border-r-2 border-slate-300">
                       {mixedVal !== null ? mixedVal : '-'}
                     </td>
-                    {(['NKiln Coal', 'NPC Coal'] as CoalStreamKey[]).map((stream) => (
+                    {(['NKiln Coal', 'NPC Coal'] as CoalStreamKey[]).map((stream, cIdx) => (
                       <td key={stream} className="p-1.5 border-r border-slate-200">
                         <input
+                          ref={registerCell('coal', rIdx, cIdx + 2)}
                           type="text"
                           inputMode="decimal"
                           value={coalGrid[stream][row.key]}
                           onChange={(e) => handleCoalChange(stream, row.key, e.target.value)}
-                          className="w-full h-8 px-2 text-right font-mono text-xs font-semibold bg-white border border-slate-200 rounded-lg focus:border-blue-600 focus:outline-none"
+                          onFocus={(e) => e.currentTarget.select()}
+                          onKeyDown={(e) => handleGridKeyDown(e, 'coal', rIdx, cIdx + 2)}
+                          className="w-full h-8 px-2 text-right font-mono text-xs font-semibold bg-white border border-slate-200 rounded-lg focus:border-blue-600 focus:bg-blue-50/30 focus:ring-2 focus:ring-blue-500/30 focus:outline-none"
                         />
                       </td>
                     ))}
@@ -870,3 +970,4 @@ export const DailyTestingSheet: React.FC<DailyTestingSheetProps> = ({ user, onSa
     </div>
   );
 };
+
