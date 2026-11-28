@@ -246,7 +246,7 @@ export const RequestDemoModal: React.FC<RequestDemoModalProps> = ({ isOpen, onCl
                 Request a Product Demo
               </h2>
               <p className="text-xs text-slate-600">
-                ChittorTech DG Database • QA Laboratory Management System
+                ChittorTech • QA Laboratory Management System
               </p>
             </div>
           </div>

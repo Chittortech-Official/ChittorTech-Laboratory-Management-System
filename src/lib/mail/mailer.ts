@@ -545,7 +545,7 @@ export async function sendDemoRequestEmails(demo: DemoRequestEmailInput) {
 
   const userPlainText = `Dear ${demo.fullName},
 
-Thank you for your interest in ChittorTech DG Database / QA Laboratory Management System.
+Thank you for your interest in ChittorTech QA Laboratory Management System.
 
 Your demo request has been successfully submitted to our administration team.
 
@@ -567,11 +567,11 @@ https://chittortech.in`;
   <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden;">
     <div style="background: #eaf3ff; padding: 20px 24px; border-bottom: 1px solid #d6e8ff;">
       <h2 style="margin: 0; color: #2563eb; font-size: 18px;">ChittorTech Demo Request Submitted</h2>
-      <p style="margin: 4px 0 0; color: #64748b; font-size: 12px;">ChittorTech DG Database • QA Laboratory Management System</p>
+      <p style="margin: 4px 0 0; color: #64748b; font-size: 12px;">ChittorTech • QA Laboratory Management System</p>
     </div>
     <div style="padding: 24px; font-size: 14px; line-height: 1.6;">
       <p style="margin-top: 0;">Dear <strong>${safe.fullName}</strong>,</p>
-      <p>Thank you for your interest in <strong>ChittorTech DG Database / QA Laboratory Management System</strong>.</p>
+      <p>Thank you for your interest in <strong>ChittorTech QA Laboratory Management System</strong>.</p>
       <p>Your demo request has been successfully submitted to our administration team. Our team will review your request and contact you regarding the demo schedule.</p>
       <div style="background: #f5f8fc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 16px; margin: 16px 0; font-size: 13px;">
         <div><strong>Your Demo Request ID:</strong> <span style="font-family: monospace; color: #2563eb; font-weight: 700;">${safe.demoRequestId}</span></div>
@@ -732,13 +732,13 @@ export async function sendDemoRequestStatusEmail(input: DemoRequestStatusEmailIn
         ${safe.date ? `<div><strong>Demo Date:</strong> ${safe.date}</div>` : ''}
         ${safe.time ? `<div><strong>Demo Time:</strong> ${safe.time}</div>` : ''}
       </div>
-      <p>Our team looks forward to demonstrating the ChittorTech DG Database / QA Laboratory Management System to you.</p>
+      <p>Our team looks forward to demonstrating the ChittorTech QA Laboratory Management System to you.</p>
     `;
-    plainText = `Dear ${input.fullName},\n\nGood news! Your ChittorTech product demonstration has been scheduled.\n\nDemo Request ID: ${input.demoRequestId}\n${input.scheduledDemoDate ? `Demo Date: ${input.scheduledDemoDate}\n` : ''}${input.scheduledDemoTime ? `Demo Time: ${input.scheduledDemoTime}\n` : ''}${input.adminNotes ? `\nInstructions / Notes:\n${input.adminNotes}\n` : ''}\nOur team looks forward to demonstrating the ChittorTech DG Database / QA Laboratory Management System to you.\n\nRegards,\nTeam ChittorTech`;
+    plainText = `Dear ${input.fullName},\n\nGood news! Your ChittorTech product demonstration has been scheduled.\n\nDemo Request ID: ${input.demoRequestId}\n${input.scheduledDemoDate ? `Demo Date: ${input.scheduledDemoDate}\n` : ''}${input.scheduledDemoTime ? `Demo Time: ${input.scheduledDemoTime}\n` : ''}${input.adminNotes ? `\nInstructions / Notes:\n${input.adminNotes}\n` : ''}\nOur team looks forward to demonstrating the ChittorTech QA Laboratory Management System to you.\n\nRegards,\nTeam ChittorTech`;
   } else {
     const statusMessages: Record<string, string> = {
       Contacted: 'Our team has reviewed your demo request and reached out to coordinate your demonstration schedule.',
-      'Demo Completed': 'Thank you for attending the ChittorTech DG Database / QA Laboratory Management System demonstration. Please reply if you need pricing or onboarding details.',
+      'Demo Completed': 'Thank you for attending the ChittorTech QA Laboratory Management System demonstration. Please reply if you need pricing or onboarding details.',
       Cancelled: 'Your ChittorTech demo request has been marked as Cancelled. If you would like to reschedule, please contact our team anytime.',
     };
     const msg = statusMessages[input.status] || `Your demo request status has been updated to ${input.status}.`;
@@ -772,7 +772,7 @@ export async function sendDemoRequestStatusEmail(input: DemoRequestStatusEmailIn
   <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden;">
     <div style="background: ${headerBg}; padding: 20px 24px; border-bottom: 1px solid ${headerBorder};">
       <h2 style="margin: 0; color: ${titleColor}; font-size: 18px;">${escapeHtml(heading)}</h2>
-      <p style="margin: 4px 0 0; color: #64748b; font-size: 12px;">ChittorTech DG Database • QA Laboratory Management System</p>
+      <p style="margin: 4px 0 0; color: #64748b; font-size: 12px;">ChittorTech • QA Laboratory Management System</p>
     </div>
     <div style="padding: 24px; font-size: 14px; line-height: 1.6;">
       <p style="margin-top: 0;">Dear <strong>${safe.fullName}</strong>,</p>

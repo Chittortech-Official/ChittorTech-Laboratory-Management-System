@@ -554,6 +554,40 @@ video {
   display: none;
 }
 
+.container {
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .container {
+    max-width: 640px;
+  }
+}
+
+@media (min-width: 768px) {
+  .container {
+    max-width: 768px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .container {
+    max-width: 1024px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .container {
+    max-width: 1280px;
+  }
+}
+
+@media (min-width: 1536px) {
+  .container {
+    max-width: 1536px;
+  }
+}
+
 .pointer-events-none {
   pointer-events: none;
 }
@@ -1056,6 +1090,10 @@ video {
 
 .min-h-\[380px\] {
   min-height: 380px;
+}
+
+.min-h-\[65px\] {
+  min-height: 65px;
 }
 
 .min-h-screen {
@@ -2325,6 +2363,10 @@ video {
   background-color: rgb(254 242 242 / 0.2);
 }
 
+.bg-red-50\/30 {
+  background-color: rgb(254 242 242 / 0.3);
+}
+
 .bg-red-50\/70 {
   background-color: rgb(254 242 242 / 0.7);
 }
@@ -3031,6 +3073,11 @@ video {
 
 .italic {
   font-style: italic;
+}
+
+.tabular-nums {
+  --tw-numeric-spacing: tabular-nums;
+  font-variant-numeric: var(--tw-ordinal) var(--tw-slashed-zero) var(--tw-numeric-figure) var(--tw-numeric-spacing) var(--tw-numeric-fraction);
 }
 
 .leading-none {

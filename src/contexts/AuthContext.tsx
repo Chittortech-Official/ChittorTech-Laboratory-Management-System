@@ -12,10 +12,21 @@ interface SessionMeta {
   expiresAt: number;
 }
 
+export interface LoginActionResult {
+  success: boolean;
+  error?: string;
+  code?: string;
+  locked?: boolean;
+  lockedUntil?: number | null;
+  remainingSeconds?: number;
+  remainingAttempts?: number;
+  emailHash?: string;
+}
+
 interface AuthContextType extends AuthState {
   sessionLoginAt: number | null;
   sessionExpiresAt: number | null;
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  login: (email: string, password: string, captchaToken?: string) => Promise<LoginActionResult>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ success: boolean; error?: string }>;
   submitAccountRequest: (payload: AccountRequestPayload) => Promise<{ success: boolean; requestId?: string; error?: string }>;
@@ -418,69 +429,59 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, [applyAuthenticatedState, clearTimers, fetchNative, performSessionTermination, validateServerSession]);
 
-  const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
+  const login = async (
+    email: string,
+    password: string,
+    captchaToken?: string
+  ): Promise<LoginActionResult> => {
     explicitLogoutRef.current = false;
 
-    if (isSupabaseConfigured()) {
-      const supabase = getSupabaseClient();
-      if (!supabase) return { success: false, error: 'Database connection unavailable' };
+    const sessionRes = await fetchNative('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({
+        email: email.trim(),
+        password,
+        captchaToken: captchaToken || '',
+      }),
+    });
 
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error || !data?.user || !data?.session?.access_token) {
-        return { success: false, error: error?.message || 'Invalid credentials' };
-      }
+    const sessionData = await sessionRes.json().catch(() => ({}));
 
-      const sessionRes = await fetchNative('/api/auth/session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin',
-        body: JSON.stringify({
-          mode: 'login',
-          accessToken: data.session.access_token,
-        }),
-      });
-      const sessionData = await sessionRes.json().catch(() => ({}));
-
-      if (!sessionRes.ok || !sessionData.authenticated) {
-        await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
-        return { success: false, error: sessionData.error || 'Failed to establish authenticated session.' };
-      }
-
-      applyAuthenticatedState(sessionData.user, sessionData.loginAt, sessionData.expiresAt);
-      setLoading(false);
-      return { success: true };
-    } else {
-      // Local fallback development authentication (enforces same fixed 24h server cookie)
-      const mockUser: UserProfile = {
-        id: 'usr_' + Math.random().toString(36).substring(2, 9),
-        email,
-        fullName: email.split('@')[0].replace('.', ' ').toUpperCase(),
-        role: 'qa_engineer',
-        companyName: 'ChittorTech Cement Works',
-        plantName: 'Chittorgarh Unit 1',
-        designation: 'Senior QA / QC Chemist',
-        createdAt: new Date().toISOString(),
+    if (!sessionRes.ok || !sessionData.authenticated) {
+      return {
+        success: false,
+        error: sessionData.error || 'Invalid credentials or security check failed.',
+        code: sessionData.code,
+        locked: Boolean(sessionData.locked),
+        lockedUntil: sessionData.lockedUntil ?? null,
+        remainingSeconds: sessionData.remainingSeconds,
+        remainingAttempts: sessionData.remainingAttempts,
+        emailHash: sessionData.emailHash,
       };
-
-      const sessionRes = await fetchNative('/api/auth/session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin',
-        body: JSON.stringify({
-          mode: 'login',
-          user: mockUser,
-        }),
-      });
-      const sessionData = await sessionRes.json().catch(() => ({}));
-
-      if (!sessionRes.ok || !sessionData.authenticated) {
-        return { success: false, error: sessionData.error || 'Failed to establish local session.' };
-      }
-
-      applyAuthenticatedState(sessionData.user, sessionData.loginAt, sessionData.expiresAt);
-      setLoading(false);
-      return { success: true };
     }
+
+    // Keep client Supabase SDK session synchronized for profile updates when Supabase is enabled
+    if (
+      isSupabaseConfigured() &&
+      sessionData.supabaseSession?.access_token &&
+      sessionData.supabaseSession?.refresh_token
+    ) {
+      const supabase = getSupabaseClient();
+      if (supabase) {
+        await supabase.auth
+          .setSession({
+            access_token: sessionData.supabaseSession.access_token,
+            refresh_token: sessionData.supabaseSession.refresh_token,
+          })
+          .catch(() => {});
+      }
+    }
+
+    applyAuthenticatedState(sessionData.user, sessionData.loginAt, sessionData.expiresAt);
+    setLoading(false);
+    return { success: true };
   };
 
   const logout = async (): Promise<void> => {
